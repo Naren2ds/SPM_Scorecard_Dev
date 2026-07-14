@@ -1,0 +1,9 @@
+node_modules
+dist
+.vite
+*.local
+*.tsbuildinfo
+vite-dev.*.log
+.env
+__pycache__/
+*.pyc

@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  calculateCategoryRollup,
   calculateParentRollup,
   calculateZoneRollup,
   scoreSupplierRows,
@@ -21,12 +22,15 @@ const emptyRow = (id: string): SupplierKpiInputRow => ({
   parentSupplier: "",
   zone: "",
   country: "",
+  category: "",
   kpiApplicability: "Applicable",
   dotPercent: "",
   onTimePoLines: "",
   totalDeliveredPoLines: "",
   x1DelayedOver30Days: "",
   x2EarlyOver30Days: "",
+  year: "",
+  month: "",
 });
 
 const dotFields: Array<{
@@ -40,6 +44,7 @@ const dotFields: Array<{
   { key: "parentSupplier", label: "Parent Supplier", width: "165px" },
   { key: "zone", label: "Zone", width: "110px" },
   { key: "country", label: "Country", width: "110px" },
+  { key: "category", label: "Category", width: "140px" },
   {
     key: "kpiApplicability",
     label: "KPI Applicability",
@@ -83,24 +88,8 @@ const formatRank = (value: number | null) =>
 
 const displayText = (value: string, fallback: string) => value.trim() || fallback;
 
-const CATEGORIES = [
-  "All",
-  "LOGISTICS",
-  "PACKAGING",
-  "FOLDING CARTONS",
-  "SERVICES",
-  "RAU",
-  "INDIRECTS",
-];
-
-const MONTHS = [
-  "All",
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-const currentYear = new Date().getFullYear();
-const YEARS = ["All", ...Array.from({ length: 5 }, (_, i) => String(currentYear - 2 + i))];
+/** Normalize month to compare without leading zeros */
+const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 
 function DotKpiPage() {
   const [rows, setRows] = useState<SupplierKpiInputRow[]>([]);
@@ -115,29 +104,124 @@ function DotKpiPage() {
   const [category, setCategory] = useState("All");
   const [year, setYear] = useState("All");
   const [month, setMonth] = useState("All");
+  const [refreshing, setRefreshing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const API_BASE = "http://127.0.0.1:8000";
+
+  // Load cached data from API on mount (instant)
+  const loadFromApi = () => {
+    fetch(`${API_BASE}/api/dot-kpi`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data && json.data.length > 0) {
+          const parsed: SupplierKpiInputRow[] = json.data.map((row: Record<string, string>, i: number) => ({
+            id: row.id || `api-${i}`,
+            supplier: row.supplier || "",
+            parentSupplier: row.parentSupplier || "",
+            zone: row.zone || "",
+            country: row.country || "",
+            category: row.category || "",
+            kpiApplicability: (row.kpiApplicability === "Not Applicable" ? "Not Applicable" : "Applicable") as "Applicable" | "Not Applicable",
+            dotPercent: row.dotPercent || "",
+            onTimePoLines: row.onTimePoLines || "",
+            totalDeliveredPoLines: row.totalDeliveredPoLines || "",
+            x1DelayedOver30Days: row.x1DelayedOver30Days || "",
+            x2EarlyOver30Days: row.x2EarlyOver30Days || "",
+            year: row.year || "",
+            month: row.month || "",
+          }));
+          setRows(parsed);
+          setUploadMessage(`${parsed.length} rows loaded (${json.status}).`);
+        }
+      })
+      .catch(() => {
+        setUploadMessage("Backend not running. Upload CSV manually or start backend.");
+      });
+  };
+
+  useEffect(() => { loadFromApi(); }, []);
+
+  // Refresh: trigger Databricks fetch, then reload data
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setUploadMessage("Refreshing from Databricks...");
+    fetch(`${API_BASE}/api/dot-kpi/refresh`, { method: "POST" })
+      .then(() => {
+        // Poll until refresh completes
+        const poll = setInterval(() => {
+          fetch(`${API_BASE}/api/status`)
+            .then((res) => res.json())
+            .then((json) => {
+              if (json.status !== "refreshing") {
+                clearInterval(poll);
+                setRefreshing(false);
+                loadFromApi();
+              }
+            });
+        }, 2000);
+      })
+      .catch(() => {
+        setRefreshing(false);
+        setUploadMessage("Refresh failed. Check backend.");
+      });
+  };
 
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
-  const inputAssessments = useMemo(() => validateRows(rows), [rows]);
+
+  // Dynamic categories from loaded data
+  const availableCategories = useMemo(() => {
+    const cats = Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort();
+    return ["All", ...cats];
+  }, [rows]);
+
+  // Dynamic years from loaded data
+  const availableYears = useMemo(() => {
+    const yrs = Array.from(new Set(rows.map((r) => r.year).filter(Boolean))).sort();
+    return ["All", ...yrs];
+  }, [rows]);
+
+  // Dynamic months from loaded data
+  const availableMonths = useMemo(() => {
+    const mons = Array.from(new Set(rows.map((r) => r.month).filter(Boolean))).sort((a, b) => Number(a) - Number(b));
+    return ["All", ...mons];
+  }, [rows]);
+
+  // Filter rows by Category/Year/Month selections
+  const filteredRows = useMemo(() => {
+    return rows.filter((row) => {
+      if (category !== "All" && row.category !== category) return false;
+      if (year !== "All" && row.year !== year) return false;
+      if (month !== "All" && normalizeMonth(row.month) !== normalizeMonth(month)) return false;
+      return true;
+    });
+  }, [rows, category, year, month]);
+
+  const inputAssessments = useMemo(() => validateRows(filteredRows), [filteredRows]);
   const inputAssessmentById = useMemo(
     () => new Map(inputAssessments.map((assessment) => [assessment.id, assessment])),
     [inputAssessments],
   );
 
   const supplierScores = useMemo(
-    () => (configIsValid ? scoreSupplierRows(rows, config) : []),
-    [rows, config, configIsValid],
+    () => (configIsValid ? scoreSupplierRows(filteredRows, config) : []),
+    [filteredRows, config, configIsValid],
   );
 
   const zoneRollup = useMemo(
-    () => (configIsValid ? calculateZoneRollup(rows, config) : []),
-    [rows, config, configIsValid],
+    () => (configIsValid ? calculateZoneRollup(filteredRows, config) : []),
+    [filteredRows, config, configIsValid],
   );
 
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateParentRollup(rows, config) : []),
-    [rows, config, configIsValid],
+    () => (configIsValid ? calculateParentRollup(filteredRows, config) : []),
+    [filteredRows, config, configIsValid],
+  );
+
+  const categoryRollup = useMemo(
+    () => (configIsValid ? calculateCategoryRollup(filteredRows, config) : []),
+    [filteredRows, config, configIsValid],
   );
 
   const updateRow = (
@@ -257,6 +341,9 @@ function DotKpiPage() {
           </p>
         </div>
         <div className="header-actions">
+          <button type="button" onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? "Refreshing..." : "Refresh Data"}
+          </button>
           <button type="button" onClick={exportResults} disabled={!configIsValid || rows.length === 0}>
             Export Results
           </button>
@@ -268,7 +355,7 @@ function DotKpiPage() {
         <label>
           <span>Category</span>
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORIES.map((c) => (
+            {availableCategories.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -276,7 +363,7 @@ function DotKpiPage() {
         <label>
           <span>Year</span>
           <select value={year} onChange={(e) => setYear(e.target.value)}>
-            {YEARS.map((y) => (
+            {availableYears.map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
@@ -284,7 +371,7 @@ function DotKpiPage() {
         <label>
           <span>Month</span>
           <select value={month} onChange={(e) => setMonth(e.target.value)}>
-            {MONTHS.map((m) => (
+            {availableMonths.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
@@ -345,6 +432,7 @@ function DotKpiPage() {
             <option value="Supplier">Supplier</option>
             <option value="Parent">Parent</option>
             <option value="Zone">Zone</option>
+            <option value="Category">Category</option>
           </select>
         </label>
         <label>
@@ -413,14 +501,14 @@ function DotKpiPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {filteredRows.length === 0 ? (
                 <tr>
                   <td colSpan={dotFields.length + 2} className="empty-state-cell">
                     No data loaded. Upload a CSV or add rows manually.
                   </td>
                 </tr>
               ) : (
-                rows.map((row) => (
+                filteredRows.map((row) => (
                   <tr key={row.id}>
                     {dotFields.map((field) => (
                       <td key={field.key}>
@@ -482,8 +570,8 @@ function DotKpiPage() {
       {/* Results */}
       <section className="results-panel">
         <h2>Calculation Results</h2>
-        {rows.length === 0 ? (
-          <div className="empty-state">Load data to see scoring results.</div>
+        {filteredRows.length === 0 ? (
+          <div className="empty-state">No data matches the current filters.</div>
         ) : !configIsValid ? (
           <div className="empty-state">Fix the configuration to calculate scores.</div>
         ) : (
@@ -510,6 +598,14 @@ function DotKpiPage() {
                 <h3>Parent Level Rollup</h3>
               </summary>
               <RollupResults rows={parentRollup} label="Parent Supplier" />
+            </details>
+
+            <details className="calculation-section" open>
+              <summary className="calculation-heading level-summary">
+                <span className="level-badge">4</span>
+                <h3>Category Level Rollup</h3>
+              </summary>
+              <RollupResults rows={categoryRollup} label="Category" />
             </details>
           </div>
         )}

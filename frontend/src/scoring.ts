@@ -350,6 +350,10 @@ const cohortKeyForRow = (row: RowAssessment, cohortLevel: CohortLevel) => {
     return dimensionValue(row.zone, "Unassigned zone");
   }
 
+  if (cohortLevel === "Category") {
+    return dimensionValue(row.category, "Unassigned category");
+  }
+
   return "All suppliers";
 };
 
@@ -519,7 +523,9 @@ const groupAssessments = (assessments: RowAssessment[], level: RollupLevel) => {
     const key =
       level === "Parent"
         ? dimensionValue(row.parentSupplier, "Unassigned parent")
-        : dimensionValue(row.zone, "Unassigned zone");
+        : level === "Category"
+          ? dimensionValue(row.category, "Unassigned category")
+          : dimensionValue(row.zone, "Unassigned zone");
     const group = groups.get(key) ?? [];
     group.push(row);
     groups.set(key, group);
@@ -761,4 +767,11 @@ export function calculateZoneRollup(
   config: KpiConfig,
 ): RollupRow[] {
   return scoreRollups(buildRollupSeeds(rows, "Zone"), config);
+}
+
+export function calculateCategoryRollup(
+  rows: SupplierKpiInputRow[],
+  config: KpiConfig,
+): RollupRow[] {
+  return scoreRollups(buildRollupSeeds(rows, "Category"), config);
 }

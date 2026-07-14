@@ -103,6 +103,7 @@ export function parseSupplierRowsFromCsv(text: string): SupplierKpiInputRow[] {
       parentSupplier: pick(row, ["Parent Supplier", "Parent"]),
       zone: pick(row, ["Zone"]),
       country: pick(row, ["Country"]),
+      category: pick(row, ["Category", "GPO Category", "gpo_category"]),
       kpiApplicability: normalizeApplicability(
         pick(row, [
           "KPI Applicability",
@@ -115,8 +116,10 @@ export function parseSupplierRowsFromCsv(text: string): SupplierKpiInputRow[] {
       dotPercent: pick(row, ["DOT %", "DOT", "DOT Percent", "Delivery On Time"]),
       onTimePoLines: pick(row, ["On-Time PO Lines", "On Time PO Lines"]),
       totalDeliveredPoLines: pick(row, ["Total Delivered PO Lines"]),
-      x1DelayedOver30Days: pick(row, ["X1 Delayed Over 30 Days", "X1"]),
-      x2EarlyOver30Days: pick(row, ["X2 Early Over 30 Days", "X2"]),
+      x1DelayedOver30Days: pick(row, ["X1 Delayed Over 30 Days", "X1", "x1DelayedOver30Days"]),
+      x2EarlyOver30Days: pick(row, ["X2 Early Over 30 Days", "X2", "x2EarlyOver30Days"]),
+      year: pick(row, ["Year", "year"]),
+      month: pick(row, ["Month", "month"]),
     };
   });
 }

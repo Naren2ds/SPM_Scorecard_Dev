@@ -1,0 +1,53 @@
+id,supplier,parentSupplier,zone,country,category,kpiApplicability,dotPercent,onTimePoLines,totalDeliveredPoLines,x1DelayedOver30Days,x2EarlyOver30Days,year,month
+dot-0,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,OTHER PACKAGING,Applicable,,7,7,0,0,2025,04
+dot-1,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,OTHER PACKAGING,Applicable,,4,4,0,0,2025,04
+dot-2,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,68,68,0,0,2025,07
+dot-3,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,MARKETING,Applicable,,1,1,0,0,2025,07
+dot-4,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,OTHER PACKAGING,Applicable,,5,5,0,0,2025,07
+dot-5,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,8,8,0,0,2025,07
+dot-6,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,OTHER PACKAGING,Applicable,,2,2,0,0,2025,07
+dot-7,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,123,123,0,0,2025,08
+dot-8,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,14,14,0,0,2025,08
+dot-9,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,93,93,2,0,2025,09
+dot-10,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,MARKETING,Applicable,,1,1,0,0,2025,09
+dot-11,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,9,9,1,0,2025,09
+dot-12,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Sweden,MARKETING,Applicable,,2,2,0,0,2025,09
+dot-13,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,The Netherlands,MARKETING,Applicable,,2,2,0,0,2025,09
+dot-14,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,100,100,0,0,2025,10
+dot-15,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,MARKETING,Applicable,,1,1,0,0,2025,10
+dot-16,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,OTHER PACKAGING,Applicable,,5,5,0,0,2025,10
+dot-17,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,13,13,0,0,2025,10
+dot-18,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,OTHER PACKAGING,Applicable,,2,2,0,0,2025,10
+dot-19,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,TRE,MARKETING,Applicable,,1,1,0,0,2025,10
+dot-20,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,The Netherlands,MARKETING,Applicable,,1,1,0,0,2025,10
+dot-21,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,81,81,0,0,2025,11
+dot-22,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,MARKETING,Applicable,,1,1,0,0,2025,11
+dot-23,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,16,16,0,0,2025,11
+dot-24,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,76,76,0,0,2025,12
+dot-25,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,MARKETING,Applicable,,6,6,1,0,2025,12
+dot-26,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,TRE,MARKETING,Applicable,,1,1,0,0,2025,12
+dot-27,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,The Netherlands,MARKETING,Applicable,,1,1,0,0,2025,12
+dot-28,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,90,90,0,0,2026,01
+dot-29,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,MARKETING,Applicable,,2,2,0,0,2026,01
+dot-30,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,9,9,0,0,2026,01
+dot-31,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,TRE,MARKETING,Applicable,,1,1,0,0,2026,01
+dot-32,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,The Netherlands,MARKETING,Applicable,,1,1,0,0,2026,01
+dot-33,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,68,68,0,0,2026,02
+dot-34,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,OTHER PACKAGING,Applicable,,5,5,0,0,2026,02
+dot-35,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,France,MARKETING,Applicable,,1,1,0,0,2026,02
+dot-36,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,6,6,0,0,2026,02
+dot-37,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,OTHER PACKAGING,Applicable,,2,2,0,0,2026,02
+dot-38,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Italy,MARKETING,Applicable,,1,1,0,0,2026,02
+dot-39,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,75,75,1,0,2026,03
+dot-40,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,13,13,0,0,2026,03
+dot-41,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,58,58,0,0,2026,04
+dot-42,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,OTHER PACKAGING,Applicable,,0,0,1,0,2026,04
+dot-43,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,5,5,0,0,2026,04
+dot-44,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,57,57,0,0,2026,05
+dot-45,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,OTHER PACKAGING,Applicable,,2,2,0,0,2026,05
+dot-46,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,8,8,1,0,2026,05
+dot-47,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,OTHER PACKAGING,Applicable,,1,1,0,0,2026,05
+dot-48,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,71,71,0,0,2026,06
+dot-49,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,13,13,0,0,2026,06
+dot-50,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Belgium,CANS,Applicable,,20,20,0,0,2026,07
+dot-51,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Germany,CANS,Applicable,,3,3,0,2,2026,07

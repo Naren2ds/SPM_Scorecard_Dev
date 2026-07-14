@@ -5,5 +5,7 @@ dist
 *.tsbuildinfo
 vite-dev.*.log
 .env
+backend/.env
+backend/data/
 __pycache__/
 *.pyc

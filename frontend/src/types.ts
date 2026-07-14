@@ -1,4 +1,4 @@
-export type CohortLevel = "Supplier" | "Parent" | "Zone";
+export type CohortLevel = "Supplier" | "Parent" | "Zone" | "Category";
 
 export type FormulaMode = "softStretch" | "strict";
 
@@ -10,12 +10,15 @@ export interface SupplierKpiInputRow {
   parentSupplier: string;
   zone: string;
   country: string;
+  category: string;
   kpiApplicability: KpiApplicability;
   dotPercent: string;
   onTimePoLines: string;
   totalDeliveredPoLines: string;
   x1DelayedOver30Days: string;
   x2EarlyOver30Days: string;
+  year: string;
+  month: string;
 }
 
 export interface KpiConfig {
@@ -64,7 +67,7 @@ export interface ScoredKpiRow extends RowAssessment {
   explanation: string;
 }
 
-export type RollupLevel = "Parent" | "Zone";
+export type RollupLevel = "Parent" | "Zone" | "Category";
 
 export interface RollupRow {
   id: string;

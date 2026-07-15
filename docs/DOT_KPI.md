@@ -5,36 +5,15 @@
 brewdat_uc_supchn_dev.gld_ghq_procurement_spm.supplier_delivery_performance
 ```
 
-## Raw Columns (from Databricks)
-| # | Column | Sample |
-|---|---|---|
-| 1 | zone | EUR |
-| 2 | country | Belgium |
-| 3 | company_code | BE11 |
-| 4 | vendor_name | Benepack |
-| 5 | vendor_account_number | 0003022912 |
-| 6 | vendor_type | Third Party |
-| 7 | gpo_category | LOGISTICS |
-| 8 | sub_category | LOGISTICS |
-| 9 | purchasing_category | LOGISTICS |
-| 10 | purchase_document_type | ZAB - Call-off |
-| 11 | parent_name | Benepack |
-| 12 | delivery_month | 2026-04 |
-| 13 | total_po_lines | 166 |
-| 14 | total_delivered | 166 |
-| 15 | on_time_delivered | 166 |
-| 16 | late_delivered | 0 |
-| 17 | x1_overdue | 0 |
-| 18 | x2_future_due | 0 |
-| 19 | dot_not_applicable_lines | 0 |
-| 20 | dot_applicable | Y |
-| 21 | total_order_value | 1193885.14 |
-| 22 | dot_percentage | 100.00 |
-| 23 | __insert_gmt_ts | 2026-07-13 |
+## Query
+```sql
+SELECT * FROM brewdat_uc_supchn_dev.gld_ghq_procurement_spm.supplier_delivery_performance
+```
+No vendor filter — fetches ALL suppliers.
 
 ---
 
-## Backend Processing Steps (`backend/fetch_dot_kpi.py`)
+## Backend Processing (`backend/fetch_dot_kpi.py`)
 
 ### Step 1 — Column Mapping
 | Raw Column | → | Frontend Field |
@@ -53,7 +32,7 @@ brewdat_uc_supchn_dev.gld_ghq_procurement_spm.supplier_delivery_performance
 ### Step 2 — Extract Year & Month
 From `delivery_month` (format `YYYY-MM`):
 - `year` = first 4 chars (e.g. `"2026"`)
-- `month` = chars 5-6 (e.g. `"04"`)
+- `month` = chars 5-6 (e.g. `"4"`)
 
 ### Step 3 — Aggregate
 **Group by:** `year`, `month`, `supplier`, `parentSupplier`, `zone`, `country`, `category`, `kpiApplicability`
@@ -61,66 +40,72 @@ From `delivery_month` (format `YYYY-MM`):
 **SUM:** `onTimePoLines`, `totalDeliveredPoLines`, `x1DelayedOver30Days`, `x2EarlyOver30Days`
 
 ### Step 4 — dotPercent
-Left empty (`""`). Frontend calculates from raw values automatically.
-
-### Step 5 — Output
-CSV with columns:
-```
-id, supplier, parentSupplier, zone, country, category, kpiApplicability, dotPercent, onTimePoLines, totalDeliveredPoLines, x1DelayedOver30Days, x2EarlyOver30Days, year, month
-```
-Output path: `frontend/public/data/dot_kpi.csv`
-
----
-
-## Frontend Scoring (unchanged from original)
-
-### DOT Formula (calculated by frontend)
+Left empty (`""`). Frontend calculates DOT from raw values automatically using:
 ```
 DOT = onTimePoLines / (totalDeliveredPoLines + 0.99 × x1DelayedOver30Days + 0.10 × x2EarlyOver30Days)
 ```
 
-### Scoring Hierarchy (4 levels)
+### Step 5 — Output
+- Path: `backend/data/dot_kpi.csv`
+- Columns: `id, supplier, parentSupplier, zone, country, category, kpiApplicability, dotPercent, onTimePoLines, totalDeliveredPoLines, x1DelayedOver30Days, x2EarlyOver30Days, year, month`
+- ~29,967 rows, ~3,212 unique suppliers
 
-| Level | What it does |
+---
+
+## Frontend Page (`frontend/src/DotKpiPage.tsx`)
+
+### Filters (multi-select dropdowns, dynamic from data)
+| Filter | Default | Behavior |
+|---|---|---|
+| Category | All | Multi-select, dynamic options from loaded data |
+| Year | 2025, 2026 (pre-selected) | Multi-select |
+| Month | All | Multi-select |
+| Parent Supplier | All | Multi-select |
+| Supplier | All | Multi-select |
+| Zone | All | Multi-select |
+| Country | All | Multi-select |
+
+Empty selection = All (no filter applied).
+
+### Configuration
+| Parameter | Default |
 |---|---|
-| **1. Supplier** | Score each row individually |
-| **2. Zone Rollup** | Group by zone → sum raw PO-lines → recalculate DOT → score |
-| **3. Parent Rollup** | Group by parent supplier → sum raw PO-lines → recalculate DOT → score |
-| **4. Category Rollup** | Group by category → sum raw PO-lines → recalculate DOT → score |
+| Max Score | 15 |
+| Critical Floor % | 70 |
+| Target % | 85 |
+| Formula Mode | Softer Percentile Stretch |
 
-### Attainment Factor
+### Scoring Hierarchy (4 levels, all scrollable with sticky headers)
+| Level | Groups by | Method |
+|---|---|---|
+| 1. Supplier Level | Individual rows | Score each row (first 200 displayed) |
+| 2. Zone Rollup | zone | Sum raw PO-lines → recalculate DOT → score |
+| 3. Parent Rollup | parentSupplier | Sum raw PO-lines → recalculate DOT → score |
+| 4. Category Rollup | category | Sum raw PO-lines → recalculate DOT → score |
+
+### Formulas (unchanged from original repo)
+
+**Attainment:**
 ```
-if DOT < Critical Floor (70%):  Attainment = 0
-if DOT >= Target (85%):         Attainment = 1
-else:                           Attainment = (DOT - Floor) / (Target - Floor)
+if DOT < Floor:   Attainment = 0
+if DOT >= Target: Attainment = 1
+else:             Attainment = (DOT - Floor) / (Target - Floor)
 ```
 
-### Percentile
+**Percentile:**
 ```
 Percentile = (N - Rank) / (N - 1)
 ```
-- Rank 1 = best = 100th percentile
-- Ties get average rank
 
-### Earned Score
-**Soft Stretch (default):**
+**Earned Score (Soft Stretch):**
 ```
 Earned Score = Max Score × Attainment × (0.70 + 0.30 × Percentile)
 ```
 
-**Strict:**
+**Earned Score (Strict):**
 ```
 Earned Score = Max Score × Percentile × Attainment
 ```
-
-### Configuration Defaults
-| Parameter | Default |
-|---|---|
-| Max Score | 15 |
-| Critical Floor | 70% |
-| Target | 85% |
-| Cohort Level | Supplier |
-| Formula Mode | Softer Percentile Stretch |
 
 ### Edge Cases
 | Situation | Rule |
@@ -136,66 +121,102 @@ Earned Score = Max Score × Percentile × Attainment
 
 ## Architecture
 
-### Data Flow
 ```
-Databricks SQL Warehouse
-        ↓ (on-demand via /api/dot-kpi/refresh)
-FastAPI backend (port 8000)
-  ├── In-memory cache (serves instantly)
-  └── CSV file cache (survives restarts)
-        ↓ (JSON API)
-React frontend (port 5173)
-  ├── Loads cached data on mount (instant)
-  ├── "Refresh Data" button → triggers background Databricks fetch
-  └── Auto-updates UI when fresh data arrives
+Databricks SQL Warehouse (all suppliers, no filter)
+        ↓
+backend/fetch_dot_kpi.py (process + aggregate)
+        ↓
+backend/data/dot_kpi.csv (cached on disk)
+        ↓
+backend/server.py (FastAPI, loads CSV into memory on startup)
+        ↓  GET /api/dot-kpi (JSON, instant)
+        ↓  POST /api/dot-kpi/refresh (background Databricks re-fetch)
+        ↓
+frontend/src/DotKpiPage.tsx (React, loads from API on mount)
+  ├── Multi-select filters → filter rows
+  ├── Configuration → scoring params
+  ├── Scoring engine (scoring.ts) → compute results
+  └── Scrollable result tables with sticky headers
 ```
 
 ### API Endpoints
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/dot-kpi` | Return cached DOT KPI data instantly (JSON) |
-| POST | `/api/dot-kpi/refresh` | Trigger background refresh from Databricks |
-| GET | `/api/status` | Health check + cache status |
+| GET | `/api/dot-kpi` | Return cached data (JSON) |
+| POST | `/api/dot-kpi/refresh` | Background Databricks re-fetch |
+| GET | `/api/status` | Health check + row count |
 
-### Stale-While-Revalidate Pattern
-1. App starts → backend loads last CSV from disk into memory (instant)
-2. Frontend fetches from `/api/dot-kpi` on page mount (instant, ~10ms)
-3. User clicks "Refresh Data" → backend fetches from Databricks in background thread
-4. Once done → cache updated, frontend polls and auto-loads fresh data
-5. No blocking, no spinners on initial load
-
----
-
-## Frontend Filtering (Live)
-
-The configuration bar includes **Category**, **Year**, and **Month** dropdowns that filter data **before** scoring.
-
-| Filter | Values | Behavior |
-|---|---|---|
-| Category | All, LOGISTICS, PACKAGING, CANS, etc. | Matches `category` field exactly |
-| Year | All, 2024, 2025, 2026, ... | Matches `year` field (4-digit string) |
-| Month | All, 01–12 | Matches `month` field (2-digit string) |
-
-**How it works:**
-- When any filter is set to "All", that dimension is not filtered
-- When a specific value is selected, only rows matching that value are passed to scoring
-- All 4 rollup levels (Supplier, Zone, Parent, Category) recalculate live based on filtered data
-- Changing Max Score, Floor, Target, Cohort Level, or Formula Mode also recalculates instantly
+### Key Design Decisions
+- `use_cloud_fetch=False` in Databricks connector (corporate SSL proxy blocks cloud fetch)
+- Data lives in `backend/data/` only (not in frontend)
+- Supplier-level table capped at 200 rows in UI (full data in Export CSV)
+- Year filter defaults to 2025+2026 on first load
+- `run.bat` auto-kills old processes before starting
 
 ---
 
 ## How to Run
-```powershell
-# Option 1: Batch file (starts both backend + frontend)
-cd C:\Users\C416241\Documents\SPM_Scorecard_Dev
-.\run.bat
 
-# Option 2: Manual (two terminals)
-# Terminal 1 - Backend:
-cd backend
-python -m uvicorn server:app --host 127.0.0.1 --port 8000 --reload
-
-# Terminal 2 - Frontend:
-cd frontend
-npm run dev
+### First time setup
+```bash
+git clone https://github.com/Sarthak-ABIIN/SPM_Scorecard_Dev.git
+cd SPM_Scorecard_Dev
+conda create -n spm_scorecard python=3.13 -y
+conda activate spm_scorecard
+pip install -r backend/requirements.txt
+cd frontend && npm install && cd ..
 ```
+
+### Configure credentials
+Create `backend/.env`:
+```
+DATABRICKS_SERVER_HOSTNAME=adb-xxxx.x.azuredatabricks.net
+DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/xxxx
+DATABRICKS_TOKEN=dapiXXXXXXXXXXXX
+```
+
+### Seed initial data
+```bash
+conda activate spm_scorecard
+python backend/fetch_dot_kpi.py
+```
+
+### Run app
+```bash
+conda activate spm_scorecard
+.\run.bat
+```
+Opens backend on `http://127.0.0.1:8000` + frontend on `http://127.0.0.1:5173`
+
+### Stop app
+```bash
+taskkill /F /IM python.exe
+taskkill /F /IM node.exe
+```
+
+---
+
+## Template for Adding New KPIs
+
+Follow this pattern for each new KPI:
+
+1. **Backend**: Create `backend/fetch_<kpi_name>.py`
+   - Define SQL query for the source table
+   - Map raw columns → frontend field names
+   - Aggregate as needed
+   - Output to `backend/data/<kpi_name>.csv`
+
+2. **Backend server**: Add API endpoint in `backend/server.py`
+   - `GET /api/<kpi-name>` — serve cached data
+   - `POST /api/<kpi-name>/refresh` — background refresh
+
+3. **Frontend**: Create `frontend/src/<KpiName>KpiPage.tsx`
+   - Load from API on mount
+   - Add filters (dynamic multi-select from data)
+   - Add configuration bar
+   - Connect to scoring engine
+   - Display results in scrollable tables
+
+4. **Frontend App.tsx**: Add tab for the new KPI
+
+5. **Docs**: Create `docs/<KPI_NAME>.md` following this same template

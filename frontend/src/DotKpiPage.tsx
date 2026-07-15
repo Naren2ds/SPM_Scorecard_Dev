@@ -146,7 +146,7 @@ function DotKpiPage() {
 
   // Multi-select filter states (empty = All)
   const [selCategory, setSelCategory] = useState<string[]>([]);
-  const [selYear, setSelYear] = useState<string[]>([]);
+  const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
   const [selMonth, setSelMonth] = useState<string[]>([]);
   const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
   const [selSupplier, setSelSupplier] = useState<string[]>([]);

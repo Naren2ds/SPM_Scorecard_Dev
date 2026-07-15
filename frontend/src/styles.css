@@ -1267,14 +1267,35 @@ details.summary-section:not([open]) > .summary-section-summary {
 /* ── Scrollable Rollups with Sticky Headers ─── */
 .rollup-scroll {
   max-height: 400px;
+  max-width: 100%;
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
+  scrollbar-width: thin;
+}
+
+.rollup-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.rollup-scroll::-webkit-scrollbar-thumb {
+  background: #b0b0a8;
+  border-radius: 5px;
+}
+
+.rollup-scroll::-webkit-scrollbar-track {
+  background: var(--panel-soft);
 }
 
 .rollup-scroll .table-frame {
   border: none;
   border-radius: 0;
+  overflow: visible;
+}
+
+.rollup-scroll .data-table {
+  min-width: max-content;
 }
 
 .rollup-scroll .data-table th {
@@ -1283,6 +1304,17 @@ details.summary-section:not([open]) > .summary-section-summary {
   z-index: 2;
   background: var(--panel-soft);
   box-shadow: 0 1px 0 var(--line-strong);
+}
+
+/* Constrain the results panel width */
+.results-panel {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.calculation-section {
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .empty-state-cell {

@@ -20,7 +20,6 @@ TOKEN = os.environ["DATABRICKS_TOKEN"]
 QUERY = """
 SELECT *
 FROM brewdat_uc_supchn_dev.gld_ghq_procurement_spm.supplier_delivery_performance
-WHERE vendor_name = 'Benepack'
 """
 
 OUTPUT_PATH = Path(__file__).resolve().parent.parent / "frontend" / "public" / "data" / "dot_kpi.csv"

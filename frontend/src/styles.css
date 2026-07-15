@@ -1170,21 +1170,16 @@ details.summary-section:not([open]) > .summary-section-summary {
   background: var(--accent-soft);
 }
 
-/* ── Multi-select Filter ──────────────────────── */
-.filters-bar {
-  gap: 16px;
-  padding: 14px 16px;
-}
-
-.multi-select {
+/* ── Multi-select Dropdown ────────────────────── */
+.ms-dropdown {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 140px;
-  max-width: 200px;
+  min-width: 130px;
 }
 
-.multi-select-label {
+.ms-label {
   font-family: var(--mono);
   font-size: 0.68rem;
   font-weight: 700;
@@ -1193,26 +1188,67 @@ details.summary-section:not([open]) > .summary-section-summary {
   color: var(--muted);
 }
 
-.multi-select-options {
-  max-height: 120px;
-  overflow-y: auto;
+.ms-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fff;
-  padding: 4px 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
 }
 
-.multi-select-option {
+.ms-trigger:hover {
+  border-color: var(--ink);
+}
+
+.ms-arrow {
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.ms-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  min-width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 4px 0;
+}
+
+.ms-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 0;
+  gap: 8px;
+  padding: 5px 10px;
   font-size: 0.82rem;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.multi-select-option input[type="checkbox"] {
+.ms-item:hover {
+  background: var(--accent-soft);
+}
+
+.ms-item input[type="checkbox"] {
   width: 14px;
   height: 14px;
   min-height: auto;
@@ -1221,10 +1257,11 @@ details.summary-section:not([open]) > .summary-section-summary {
 }
 
 .filter-summary {
-  align-self: flex-end;
+  align-self: center;
   font-size: 0.84rem;
   color: var(--muted);
   white-space: nowrap;
+  margin-left: auto;
 }
 
 /* ── Scrollable Rollups ───────────────────────── */

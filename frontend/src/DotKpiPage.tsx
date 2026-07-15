@@ -17,6 +17,48 @@ import type {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+const emptyRow = (id: string): SupplierKpiInputRow => ({
+  id,
+  supplier: "",
+  parentSupplier: "",
+  zone: "",
+  country: "",
+  category: "",
+  kpiApplicability: "Applicable",
+  dotPercent: "",
+  onTimePoLines: "",
+  totalDeliveredPoLines: "",
+  x1DelayedOver30Days: "",
+  x2EarlyOver30Days: "",
+  year: "",
+  month: "",
+});
+
+const dotFields: Array<{
+  key: keyof SupplierKpiInputRow;
+  label: string;
+  width: string;
+  type?: string;
+  options?: Array<SupplierKpiInputRow[keyof SupplierKpiInputRow]>;
+}> = [
+  { key: "supplier", label: "Supplier", width: "150px" },
+  { key: "parentSupplier", label: "Parent Supplier", width: "165px" },
+  { key: "zone", label: "Zone", width: "110px" },
+  { key: "country", label: "Country", width: "110px" },
+  { key: "category", label: "Category", width: "140px" },
+  {
+    key: "kpiApplicability",
+    label: "KPI Applicability",
+    width: "155px",
+    options: ["Applicable", "Not Applicable"],
+  },
+  { key: "dotPercent", label: "DOT % Override", width: "135px" },
+  { key: "onTimePoLines", label: "On-Time PO Lines", width: "130px", type: "number" },
+  { key: "totalDeliveredPoLines", label: "Total Delivered PO Lines", width: "160px", type: "number" },
+  { key: "x1DelayedOver30Days", label: "X1 Delayed >30d", width: "140px", type: "number" },
+  { key: "x2EarlyOver30Days", label: "X2 Early >30d", width: "130px", type: "number" },
+];
+
 const percent = (value: number | null, digits = 1) =>
   value === null || !Number.isFinite(value) ? "-" : `${(value * 100).toFixed(digits)}%`;
 
@@ -34,9 +76,9 @@ const displayText = (value: string, fallback: string) => value.trim() || fallbac
 
 const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 
-// ─── Multi-select filter component ─────────────────────────────────────────
+// ─── Multi-select dropdown component ────────────────────────────────────────
 
-function MultiSelect({
+function MultiSelectDropdown({
   label,
   options,
   selected,
@@ -47,51 +89,53 @@ function MultiSelect({
   selected: string[];
   onChange: (values: string[]) => void;
 }) {
-  const handleToggle = (value: string) => {
-    if (selected.includes(value)) {
-      onChange(selected.filter((v) => v !== value));
-    } else {
-      onChange([...selected, value]);
-    }
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const toggleValue = (val: string) => {
+    if (selected.includes(val)) onChange(selected.filter((v) => v !== val));
+    else onChange([...selected, val]);
   };
 
-  const allSelected = selected.length === 0;
+  const displayLabel = selected.length === 0 ? "All" : selected.length === 1 ? selected[0] : `${selected.length} selected`;
 
   return (
-    <div className="multi-select">
-      <span className="multi-select-label">{label}</span>
-      <div className="multi-select-options">
-        <label className="multi-select-option">
-          <input
-            type="checkbox"
-            checked={allSelected}
-            onChange={() => onChange([])}
-          />
-          All
-        </label>
-        {options.map((opt) => (
-          <label key={opt} className="multi-select-option">
-            <input
-              type="checkbox"
-              checked={selected.includes(opt)}
-              onChange={() => handleToggle(opt)}
-            />
-            {opt}
+    <div className="ms-dropdown" ref={ref}>
+      <span className="ms-label">{label}</span>
+      <button type="button" className="ms-trigger" onClick={() => setOpen(!open)}>
+        {displayLabel} <span className="ms-arrow">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="ms-panel">
+          <label className="ms-item">
+            <input type="checkbox" checked={selected.length === 0} onChange={() => onChange([])} />
+            All
           </label>
-        ))}
-      </div>
+          {options.map((opt) => (
+            <label key={opt} className="ms-item">
+              <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggleValue(opt)} />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-type TabMode = "filters" | "config";
-
 function DotKpiPage() {
   const [rows, setRows] = useState<SupplierKpiInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<TabMode>("filters");
   const [config, setConfig] = useState<KpiConfig>({
     maxScore: 15,
     criticalFloor: 0.7,
@@ -100,7 +144,7 @@ function DotKpiPage() {
     formulaMode: "softStretch",
   });
 
-  // Multi-select filter states (empty array = All)
+  // Multi-select filter states (empty = All)
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>([]);
   const [selMonth, setSelMonth] = useState<string[]>([]);
@@ -114,7 +158,7 @@ function DotKpiPage() {
 
   const API_BASE = "http://127.0.0.1:8000";
 
-  // Load cached data from API on mount (instant)
+  // Load cached data from API on mount
   const loadFromApi = () => {
     fetch(`${API_BASE}/api/dot-kpi`)
       .then((res) => res.json())
@@ -142,19 +186,16 @@ function DotKpiPage() {
             }),
           );
           setRows(parsed);
-          setUploadMessage(`${parsed.length} rows loaded (${json.status}).`);
+          setUploadMessage(`${parsed.length} rows loaded.`);
         }
       })
       .catch(() => {
-        setUploadMessage("Backend not running. Upload CSV manually or start backend.");
+        setUploadMessage("Backend not running. Upload CSV manually.");
       });
   };
 
-  useEffect(() => {
-    loadFromApi();
-  }, []);
+  useEffect(() => { loadFromApi(); }, []);
 
-  // Refresh: trigger Databricks fetch, then reload data
   const handleRefresh = () => {
     setRefreshing(true);
     setUploadMessage("Refreshing from Databricks...");
@@ -172,10 +213,7 @@ function DotKpiPage() {
             });
         }, 2000);
       })
-      .catch(() => {
-        setRefreshing(false);
-        setUploadMessage("Refresh failed. Check backend.");
-      });
+      .catch(() => { setRefreshing(false); setUploadMessage("Refresh failed."); });
   };
 
   const handleCsvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,60 +221,30 @@ function DotKpiPage() {
     if (!file) return;
     const text = await file.text();
     const parsedRows = parseSupplierRowsFromCsv(text);
-    if (parsedRows.length === 0) {
-      setUploadMessage("No supplier DOT rows were found in the CSV.");
-      return;
-    }
+    if (parsedRows.length === 0) { setUploadMessage("No rows found in CSV."); return; }
     setRows(parsedRows);
     setUploadMessage(`${parsedRows.length} rows loaded from ${file.name}.`);
     event.target.value = "";
   };
 
-  // ─── Dynamic filter options from data ───────────────────────────────────
-  const availableCategories = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort(),
-    [rows],
-  );
-  const availableYears = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.year).filter(Boolean))).sort(),
-    [rows],
-  );
-  const availableMonths = useMemo(
-    () =>
-      Array.from(new Set(rows.map((r) => r.month).filter(Boolean))).sort(
-        (a, b) => Number(a) - Number(b),
-      ),
-    [rows],
-  );
-  const availableParentSuppliers = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.parentSupplier).filter(Boolean))).sort(),
-    [rows],
-  );
-  const availableSuppliers = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.supplier).filter(Boolean))).sort(),
-    [rows],
-  );
-  const availableCountries = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.country).filter(Boolean))).sort(),
-    [rows],
-  );
-  const availableZones = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.zone).filter(Boolean))).sort(),
-    [rows],
-  );
+  // ─── Dynamic filter options ─────────────────────────────────────────────
+  const opts = useMemo(() => ({
+    categories: Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort(),
+    years: Array.from(new Set(rows.map((r) => r.year).filter(Boolean))).sort(),
+    months: Array.from(new Set(rows.map((r) => r.month).filter(Boolean))).sort((a, b) => Number(a) - Number(b)),
+    parentSuppliers: Array.from(new Set(rows.map((r) => r.parentSupplier).filter(Boolean))).sort(),
+    suppliers: Array.from(new Set(rows.map((r) => r.supplier).filter(Boolean))).sort(),
+    countries: Array.from(new Set(rows.map((r) => r.country).filter(Boolean))).sort(),
+    zones: Array.from(new Set(rows.map((r) => r.zone).filter(Boolean))).sort(),
+  }), [rows]);
 
   // ─── Apply filters ──────────────────────────────────────────────────────
   const filteredRows = useMemo(() => {
     return rows.filter((row) => {
       if (selCategory.length > 0 && !selCategory.includes(row.category)) return false;
       if (selYear.length > 0 && !selYear.includes(row.year)) return false;
-      if (
-        selMonth.length > 0 &&
-        !selMonth.some((m) => normalizeMonth(m) === normalizeMonth(row.month))
-      )
-        return false;
-      if (selParentSupplier.length > 0 && !selParentSupplier.includes(row.parentSupplier))
-        return false;
+      if (selMonth.length > 0 && !selMonth.some((m) => normalizeMonth(m) === normalizeMonth(row.month))) return false;
+      if (selParentSupplier.length > 0 && !selParentSupplier.includes(row.parentSupplier)) return false;
       if (selSupplier.length > 0 && !selSupplier.includes(row.supplier)) return false;
       if (selCountry.length > 0 && !selCountry.includes(row.country)) return false;
       if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
@@ -247,6 +255,12 @@ function DotKpiPage() {
   // ─── Scoring ────────────────────────────────────────────────────────────
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
+
+  const inputAssessments = useMemo(() => validateRows(filteredRows), [filteredRows]);
+  const inputAssessmentById = useMemo(
+    () => new Map(inputAssessments.map((a) => [a.id, a])),
+    [inputAssessments],
+  );
 
   const supplierScores = useMemo(
     () => (configIsValid ? scoreSupplierRows(filteredRows, config) : []),
@@ -266,41 +280,23 @@ function DotKpiPage() {
   );
 
   // ─── Config helpers ─────────────────────────────────────────────────────
-  const updateNumericConfig = (
-    field: "maxScore" | "criticalFloor" | "target",
-    value: string,
-    scale = 1,
-  ) => {
+  const updateNumericConfig = (field: "maxScore" | "criticalFloor" | "target", value: string, scale = 1) => {
     setConfig((c) => ({ ...c, [field]: value === "" ? Number.NaN : Number(value) / scale }));
   };
 
+  const updateRow = (id: string, field: keyof SupplierKpiInputRow, value: SupplierKpiInputRow[keyof SupplierKpiInputRow]) => {
+    setRows((cur) => cur.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
+  };
+
+  const addRow = () => setRows((cur) => [...cur, emptyRow(`manual-${Date.now()}`)]);
+  const removeRow = (id: string) => setRows((cur) => cur.filter((r) => r.id !== id));
+
   const exportResults = () => {
     const csv = toCsv([
-      ["DOT Config Values Used"],
-      ["Max Score", config.maxScore],
-      ["Critical Floor %", percent(config.criticalFloor, 2)],
-      ["Target %", percent(config.target, 2)],
-      ["Formula Mode", config.formulaMode === "softStretch" ? "Softer Percentile Stretch" : "Strict Percentile x Attainment"],
-      ["Filtered Rows", filteredRows.length],
-      [],
-      ["Supplier Level Results"],
-      ["Supplier", "Parent Supplier", "Zone", "Country", "Category", "DOT %", "Rank", "Percentile", "Attainment", "Max Score", "Earned Score", "Score %", "Status", "Explanation"],
-      ...supplierScores.map((row) => [
-        displayText(row.supplier, `Row ${row.rowNumber}`),
-        displayText(row.parentSupplier, ""),
-        displayText(row.zone, ""),
-        displayText(row.country, ""),
-        displayText(row.category, ""),
-        percent(row.normalizedDot, 2),
-        formatRank(row.rankDescending),
-        percent(row.percentile, 2),
-        numeric(row.attainmentFactor, 4),
-        numeric(row.maxScore, 2),
-        numeric(row.earnedScore, 2),
-        percent(row.scorePercent, 2),
-        row.scoreStatus,
-        row.explanation,
-      ]),
+      ["DOT Config"], ["Max Score", config.maxScore], ["Floor %", percent(config.criticalFloor, 2)], ["Target %", percent(config.target, 2)], ["Rows", filteredRows.length], [],
+      ["Supplier Level"],
+      ["Supplier", "Parent", "Zone", "Country", "Category", "DOT %", "Rank", "Percentile", "Attainment", "Max", "Earned", "Score %", "Status"],
+      ...supplierScores.map((r) => [r.supplier, r.parentSupplier, r.zone, r.country, r.category, percent(r.normalizedDot, 2), formatRank(r.rankDescending), percent(r.percentile, 2), numeric(r.attainmentFactor, 4), numeric(r.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.scoreStatus]),
     ]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -314,13 +310,13 @@ function DotKpiPage() {
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
     <>
+      {/* Header */}
       <section className="top-bar kpi-page-heading">
         <div>
           <p className="eyebrow">Delivery KPI</p>
           <h1>DOT Percentile Scoring</h1>
           <p className="kpi-value-note">
-            Value = On-Time PO Lines / (Total Delivered PO Lines + 0.99 &times;
-            X1&nbsp;Delayed&nbsp;&gt;30d + 0.10 &times; X2&nbsp;Early&nbsp;&gt;30d)
+            Value = On-Time PO Lines / (Total Delivered PO Lines + 0.99 &times; X1&nbsp;Delayed&nbsp;&gt;30d + 0.10 &times; X2&nbsp;Early&nbsp;&gt;30d)
           </p>
           {uploadMessage && <p className="supporting">{uploadMessage}</p>}
         </div>
@@ -328,174 +324,131 @@ function DotKpiPage() {
           <button type="button" onClick={handleRefresh} disabled={refreshing}>
             {refreshing ? "Refreshing..." : "Refresh Data"}
           </button>
-          <button type="button" onClick={() => fileInputRef.current?.click()}>
-            Upload CSV
-          </button>
-          <input
-            ref={fileInputRef}
-            className="visually-hidden"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={handleCsvUpload}
-          />
-          <button
-            type="button"
-            onClick={exportResults}
-            disabled={!configIsValid || filteredRows.length === 0}
-          >
+          <button type="button" onClick={exportResults} disabled={!configIsValid || filteredRows.length === 0}>
             Export Results
           </button>
         </div>
       </section>
 
-      {/* ─── Tabs: Filters | Configuration ─────────────────────────────── */}
-      <section className="config-tabs">
-        <div className="config-tab-buttons">
-          <button
-            type="button"
-            className={activeTab === "filters" ? "active" : ""}
-            onClick={() => setActiveTab("filters")}
-          >
-            Filters
-          </button>
-          <button
-            type="button"
-            className={activeTab === "config" ? "active" : ""}
-            onClick={() => setActiveTab("config")}
-          >
-            Configuration
-          </button>
+      {/* Filters Row */}
+      <section className="config-bar">
+        <MultiSelectDropdown label="Category" options={opts.categories} selected={selCategory} onChange={setSelCategory} />
+        <MultiSelectDropdown label="Year" options={opts.years} selected={selYear} onChange={setSelYear} />
+        <MultiSelectDropdown label="Month" options={opts.months} selected={selMonth} onChange={setSelMonth} />
+        <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} />
+        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} />
+        <MultiSelectDropdown label="Zone" options={opts.zones} selected={selZone} onChange={setSelZone} />
+        <MultiSelectDropdown label="Country" options={opts.countries} selected={selCountry} onChange={setSelCountry} />
+        <div className="filter-summary">
+          <strong>{filteredRows.length}</strong> / {rows.length} rows
         </div>
+      </section>
 
-        {activeTab === "filters" && (
-          <div className="config-bar filters-bar">
-            <MultiSelect label="Category" options={availableCategories} selected={selCategory} onChange={setSelCategory} />
-            <MultiSelect label="Year" options={availableYears} selected={selYear} onChange={setSelYear} />
-            <MultiSelect label="Month" options={availableMonths} selected={selMonth} onChange={setSelMonth} />
-            <MultiSelect label="Parent Supplier" options={availableParentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} />
-            <MultiSelect label="Supplier" options={availableSuppliers} selected={selSupplier} onChange={setSelSupplier} />
-            <MultiSelect label="Zone" options={availableZones} selected={selZone} onChange={setSelZone} />
-            <MultiSelect label="Country" options={availableCountries} selected={selCountry} onChange={setSelCountry} />
-            <div className="filter-summary">
-              Showing <strong>{filteredRows.length}</strong> of {rows.length} rows
-            </div>
-          </div>
-        )}
-
-        {activeTab === "config" && (
-          <div className="config-bar">
-            <label>
-              <span>Max Score</span>
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                value={Number.isFinite(config.maxScore) ? config.maxScore : ""}
-                onChange={(e) => updateNumericConfig("maxScore", e.target.value)}
-              />
-            </label>
-            <label>
-              <span>Critical Floor %</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={
-                  Number.isFinite(config.criticalFloor)
-                    ? Number((config.criticalFloor * 100).toFixed(4))
-                    : ""
-                }
-                onChange={(e) => updateNumericConfig("criticalFloor", e.target.value, 100)}
-              />
-            </label>
-            <label>
-              <span>Target %</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={
-                  Number.isFinite(config.target)
-                    ? Number((config.target * 100).toFixed(4))
-                    : ""
-                }
-                onChange={(e) => updateNumericConfig("target", e.target.value, 100)}
-              />
-            </label>
-            <label>
-              <span>Formula Mode</span>
-              <select
-                value={config.formulaMode}
-                onChange={(e) =>
-                  setConfig((c) => ({
-                    ...c,
-                    formulaMode: e.target.value as "softStretch" | "strict",
-                  }))
-                }
-              >
-                <option value="softStretch">Softer Percentile Stretch</option>
-                <option value="strict">Strict Percentile &times; Attainment</option>
-              </select>
-            </label>
-            {configErrors.length > 0 && (
-              <div className="validation-box config-bar-errors">
-                {configErrors.map((error) => (
-                  <p key={error}>{error}</p>
-                ))}
-              </div>
-            )}
+      {/* Configuration Row */}
+      <section className="config-bar">
+        <label>
+          <span>Max Score</span>
+          <input type="number" min="0" step="0.5" value={Number.isFinite(config.maxScore) ? config.maxScore : ""} onChange={(e) => updateNumericConfig("maxScore", e.target.value)} />
+        </label>
+        <label>
+          <span>Critical Floor %</span>
+          <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.criticalFloor) ? Number((config.criticalFloor * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("criticalFloor", e.target.value, 100)} />
+        </label>
+        <label>
+          <span>Target %</span>
+          <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.target) ? Number((config.target * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("target", e.target.value, 100)} />
+        </label>
+        <label>
+          <span>Formula Mode</span>
+          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as "softStretch" | "strict" }))}>
+            <option value="softStretch">Softer Percentile Stretch</option>
+            <option value="strict">Strict Percentile &times; Attainment</option>
+          </select>
+        </label>
+        {configErrors.length > 0 && (
+          <div className="validation-box config-bar-errors">
+            {configErrors.map((err) => <p key={err}>{err}</p>)}
           </div>
         )}
       </section>
 
-      {/* ─── Results (scrollable rollups) ──────────────────────────────── */}
+      {/* Data Input Table */}
+      <section className="input-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Data Input</h2>
+            <p className="supporting">DOT is calculated from raw PO-line values. DOT % Override is only a fallback.</p>
+          </div>
+          <div className="table-actions">
+            <button type="button" onClick={addRow}>Add Row</button>
+            <button type="button" onClick={() => fileInputRef.current?.click()}>Upload CSV</button>
+            <input ref={fileInputRef} className="visually-hidden" type="file" accept=".csv,text/csv" onChange={handleCsvUpload} />
+          </div>
+        </div>
+        <div className="table-frame input-table-frame">
+          <table className="data-table input-table">
+            <thead>
+              <tr>
+                {dotFields.map((f) => <th key={f.key} style={{ minWidth: f.width }}>{f.label}</th>)}
+                <th className="calculated-dot-column">Calc DOT %</th>
+                <th className="row-action">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.length === 0 ? (
+                <tr><td colSpan={dotFields.length + 2} className="empty-state-cell">No data. Upload CSV or click Refresh Data.</td></tr>
+              ) : (
+                filteredRows.map((row) => (
+                  <tr key={row.id}>
+                    {dotFields.map((f) => (
+                      <td key={f.key}>
+                        {f.options ? (
+                          <select value={row[f.key]} onChange={(e) => updateRow(row.id, f.key, e.target.value as SupplierKpiInputRow[keyof SupplierKpiInputRow])}>
+                            {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        ) : (
+                          <input type={f.type ?? "text"} value={row[f.key]} onChange={(e) => updateRow(row.id, f.key, e.target.value)} />
+                        )}
+                      </td>
+                    ))}
+                    <td className="calculated-dot-cell">
+                      {inputAssessmentById.get(row.id)?.isApplicable === false ? "N/A"
+                        : inputAssessmentById.get(row.id)?.isValid === false ? "Invalid"
+                        : percent(inputAssessmentById.get(row.id)?.normalizedDot ?? null, 2)}
+                    </td>
+                    <td><button type="button" className="ghost-button" onClick={() => removeRow(row.id)}>Remove</button></td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Results (scrollable rollups) */}
       <section className="results-panel">
+        <h2>Calculation Results</h2>
         {filteredRows.length === 0 ? (
-          <div className="empty-state">No data matches the current filters.</div>
+          <div className="empty-state">No data matches filters.</div>
         ) : !configIsValid ? (
-          <div className="empty-state">Fix the configuration to calculate scores.</div>
+          <div className="empty-state">Fix configuration errors.</div>
         ) : (
           <div className="calculation-stack">
             <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary">
-                <span className="level-badge">1</span>
-                <h3>Supplier Level Calculation</h3>
-              </summary>
-              <div className="rollup-scroll">
-                <SupplierResults rows={supplierScores} />
-              </div>
+              <summary className="calculation-heading level-summary"><span className="level-badge">1</span><h3>Supplier Level</h3></summary>
+              <div className="rollup-scroll"><SupplierResults rows={supplierScores} /></div>
             </details>
-
             <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary">
-                <span className="level-badge">2</span>
-                <h3>Zone Level Rollup</h3>
-              </summary>
-              <div className="rollup-scroll">
-                <RollupResults rows={zoneRollup} label="Zone" />
-              </div>
+              <summary className="calculation-heading level-summary"><span className="level-badge">2</span><h3>Zone Rollup</h3></summary>
+              <div className="rollup-scroll"><RollupResults rows={zoneRollup} label="Zone" /></div>
             </details>
-
             <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary">
-                <span className="level-badge">3</span>
-                <h3>Parent Level Rollup</h3>
-              </summary>
-              <div className="rollup-scroll">
-                <RollupResults rows={parentRollup} label="Parent Supplier" />
-              </div>
+              <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Rollup</h3></summary>
+              <div className="rollup-scroll"><RollupResults rows={parentRollup} label="Parent Supplier" /></div>
             </details>
-
             <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary">
-                <span className="level-badge">4</span>
-                <h3>Category Level Rollup</h3>
-              </summary>
-              <div className="rollup-scroll">
-                <RollupResults rows={categoryRollup} label="Category" />
-              </div>
+              <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>
+              <div className="rollup-scroll"><RollupResults rows={categoryRollup} label="Category" /></div>
             </details>
           </div>
         )}
@@ -510,24 +463,11 @@ function SupplierResults({ rows }: { rows: ScoredKpiRow[] }) {
   return (
     <div className="table-frame">
       <table className="data-table results-table">
-        <thead>
-          <tr>
-            <th>Supplier</th>
-            <th>Parent Supplier</th>
-            <th>Zone</th>
-            <th>Country</th>
-            <th>Category</th>
-            <th>DOT %</th>
-            <th>Rank</th>
-            <th>Percentile</th>
-            <th>Attainment</th>
-            <th>Max Score</th>
-            <th>Earned Score</th>
-            <th>Score %</th>
-            <th>Status</th>
-            <th>Explanation</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
+          <th>DOT %</th><th>Rank</th><th>Percentile</th><th>Attainment</th>
+          <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Explanation</th>
+        </tr></thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className={rowClass(row.scoreStatus)}>
@@ -543,11 +483,7 @@ function SupplierResults({ rows }: { rows: ScoredKpiRow[] }) {
               <td>{numeric(row.maxScore, 2)}</td>
               <td>{numeric(row.earnedScore, 2)}</td>
               <td>{percent(row.scorePercent, 2)}</td>
-              <td>
-                <span className={`status-pill ${statusClass(row.scoreStatus)}`}>
-                  {row.scoreStatus}
-                </span>
-              </td>
+              <td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td>
               <td className="explanation-cell">{row.explanation}</td>
             </tr>
           ))}
@@ -561,21 +497,11 @@ function RollupResults({ rows, label }: { rows: RollupRow[]; label: string }) {
   return (
     <div className="table-frame">
       <table className="data-table results-table">
-        <thead>
-          <tr>
-            <th>{label}</th>
-            <th>DOT %</th>
-            <th>Rank</th>
-            <th>Percentile</th>
-            <th>Attainment</th>
-            <th>Max Score</th>
-            <th>Earned Score</th>
-            <th>Score %</th>
-            <th>Status</th>
-            <th>Rows</th>
-            <th>Explanation</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>{label}</th><th>DOT %</th><th>Rank</th><th>Percentile</th>
+          <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
+          <th>Status</th><th>Rows</th><th>Explanation</th>
+        </tr></thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className={rowClass(row.scoreStatus)}>
@@ -587,11 +513,7 @@ function RollupResults({ rows, label }: { rows: RollupRow[]; label: string }) {
               <td>{numeric(row.maxScore, 2)}</td>
               <td>{numeric(row.earnedScore, 2)}</td>
               <td>{percent(row.scorePercent, 2)}</td>
-              <td>
-                <span className={`status-pill ${statusClass(row.scoreStatus)}`}>
-                  {row.scoreStatus}
-                </span>
-              </td>
+              <td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td>
               <td>{row.contributingRows}</td>
               <td className="explanation-cell">{row.explanation}</td>
             </tr>
@@ -601,8 +523,6 @@ function RollupResults({ rows, label }: { rows: RollupRow[]; label: string }) {
     </div>
   );
 }
-
-// ─── Status helpers ─────────────────────────────────────────────────────────
 
 const rowClass = (status: string) => {
   if (status === "Invalid DOT") return "invalid-row";

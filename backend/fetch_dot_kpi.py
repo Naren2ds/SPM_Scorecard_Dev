@@ -22,7 +22,7 @@ SELECT *
 FROM brewdat_uc_supchn_dev.gld_ghq_procurement_spm.supplier_delivery_performance
 """
 
-OUTPUT_PATH = Path(__file__).resolve().parent.parent / "frontend" / "public" / "data" / "dot_kpi.csv"
+OUTPUT_PATH = Path(__file__).resolve().parent / "data" / "dot_kpi.csv"
 
 
 def fetch_raw():
@@ -31,6 +31,7 @@ def fetch_raw():
         server_hostname=SERVER_HOSTNAME,
         http_path=HTTP_PATH,
         access_token=TOKEN,
+        use_cloud_fetch=False,
     ) as conn:
         with conn.cursor() as cursor:
             cursor.execute(QUERY)

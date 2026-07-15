@@ -1264,10 +1264,25 @@ details.summary-section:not([open]) > .summary-section-summary {
   margin-left: auto;
 }
 
-/* ── Scrollable Rollups ───────────────────────── */
+/* ── Scrollable Rollups with Sticky Headers ─── */
 .rollup-scroll {
-  max-height: 350px;
+  max-height: 400px;
   overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.rollup-scroll .table-frame {
+  border: none;
+  border-radius: 0;
+}
+
+.rollup-scroll .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel-soft);
+  box-shadow: 0 1px 0 var(--line-strong);
 }
 
 .empty-state-cell {

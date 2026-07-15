@@ -372,58 +372,75 @@ function DotKpiPage() {
         )}
       </section>
 
-      {/* Data Input Table */}
+      {/* Data Summary */}
       <section className="input-panel">
         <div className="panel-heading">
           <div>
-            <h2>Data Input</h2>
-            <p className="supporting">DOT is calculated from raw PO-line values. DOT % Override is only a fallback.</p>
+            <h2>Data Summary</h2>
+            <p className="supporting">
+              {rows.length > 0
+                ? `${rows.length} total rows loaded. Showing ${filteredRows.length} after filters.`
+                : "No data. Click Refresh Data or Upload CSV."}
+            </p>
           </div>
           <div className="table-actions">
-            <button type="button" onClick={addRow}>Add Row</button>
             <button type="button" onClick={() => fileInputRef.current?.click()}>Upload CSV</button>
             <input ref={fileInputRef} className="visually-hidden" type="file" accept=".csv,text/csv" onChange={handleCsvUpload} />
           </div>
         </div>
-        <div className="table-frame input-table-frame">
-          <table className="data-table input-table">
-            <thead>
-              <tr>
-                {dotFields.map((f) => <th key={f.key} style={{ minWidth: f.width }}>{f.label}</th>)}
-                <th className="calculated-dot-column">Calc DOT %</th>
-                <th className="row-action">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.length === 0 ? (
-                <tr><td colSpan={dotFields.length + 2} className="empty-state-cell">No data. Upload CSV or click Refresh Data.</td></tr>
-              ) : (
-                filteredRows.map((row) => (
-                  <tr key={row.id}>
-                    {dotFields.map((f) => (
-                      <td key={f.key}>
-                        {f.options ? (
-                          <select value={row[f.key]} onChange={(e) => updateRow(row.id, f.key, e.target.value as SupplierKpiInputRow[keyof SupplierKpiInputRow])}>
-                            {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        ) : (
-                          <input type={f.type ?? "text"} value={row[f.key]} onChange={(e) => updateRow(row.id, f.key, e.target.value)} />
-                        )}
-                      </td>
-                    ))}
-                    <td className="calculated-dot-cell">
-                      {inputAssessmentById.get(row.id)?.isApplicable === false ? "N/A"
-                        : inputAssessmentById.get(row.id)?.isValid === false ? "Invalid"
-                        : percent(inputAssessmentById.get(row.id)?.normalizedDot ?? null, 2)}
-                    </td>
-                    <td><button type="button" className="ghost-button" onClick={() => removeRow(row.id)}>Remove</button></td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </section>
+
+      {/* How DOT Earned Score is Calculated */}
+      <details className="formula-panel collapsible-section" open>
+        <summary>How DOT Earned Score Is Calculated</summary>
+        <div className="formula-ribbon" aria-label="DOT formula summary">
+          <div>
+            <span>1. Earned Score</span>
+            <strong>
+              {config.formulaMode === "strict"
+                ? "Max Score × Percentile × Attainment"
+                : "Max Score × Attainment × (70% + 30% × Percentile)"}
+            </strong>
+          </div>
+          <div>
+            <span>2. Attainment</span>
+            <strong>(DOT &minus; Critical Floor) / (Target &minus; Critical Floor), clamped 0&ndash;1</strong>
+          </div>
+          <div>
+            <span>3. Percentile</span>
+            <strong>(N &minus; Rank) / (N &minus; 1). Rank 1 = best = 100th percentile.</strong>
+          </div>
+        </div>
+        <div className="formula-callout">
+          <strong>Selected formula:</strong>{" "}
+          {config.formulaMode === "softStretch"
+            ? "Softer Percentile Stretch — Earned Score = Max Score × Attainment × (70% + 30% × Percentile)"
+            : "Strict Percentile × Attainment — Earned Score = Max Score × Percentile × Attainment"}
+        </div>
+        <details className="formula-details">
+          <summary>Show short explanation</summary>
+          <ul>
+            <li><strong>Raw DOT values are preferred.</strong> DOT % Override is used only when raw PO-line fields are not available.</li>
+            <li><strong>Rank valid suppliers within the cohort.</strong> Rank 1 is best. Percentile = (N − Rank) / (N − 1).</li>
+            <li><strong>Attainment = (DOT − Critical Floor) / (Target − Critical Floor).</strong> Capped 0–1. Below floor = 0.</li>
+            <li><strong>Softer Stretch:</strong> Max × Attainment × (0.7 + 0.3 × Percentile). Even the lowest-ranked supplier keeps 70% of attainment value.</li>
+            <li><strong>Strict:</strong> Max × Percentile × Attainment. Rank matters fully — last place gets near-zero.</li>
+            <li><strong>Not Applicable and invalid DOT rows are excluded.</strong> They are not treated as zero performance.</li>
+          </ul>
+        </details>
+      </details>
+
+      {/* Why This Method Is Needed */}
+      <details className="formula-panel collapsible-section" open>
+        <summary>Why This Method Is Needed</summary>
+        <ol>
+          <li>Threshold scoring can hide differences between suppliers that are both above or below the same bucket.</li>
+          <li>Pure percentile can reward weak performance when every supplier in the cohort is weak.</li>
+          <li>The attainment gate prevents below-floor DOT from receiving score just because it ranks well.</li>
+          <li>Raw PO-line aggregation keeps high-volume and low-volume suppliers from being averaged incorrectly in rollups.</li>
+          <li>Every score traces back to DOT, percentile, floor, target, attainment, and earned score.</li>
+        </ol>
+      </details>
 
       {/* Results (scrollable rollups) */}
       <section className="results-panel">
@@ -435,8 +452,8 @@ function DotKpiPage() {
         ) : (
           <div className="calculation-stack">
             <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary"><span className="level-badge">1</span><h3>Supplier Level</h3></summary>
-              <div className="rollup-scroll"><SupplierResults rows={supplierScores} /></div>
+              <summary className="calculation-heading level-summary"><span className="level-badge">1</span><h3>Supplier Level ({supplierScores.length} rows{supplierScores.length > 200 ? ", showing first 200" : ""})</h3></summary>
+              <div className="rollup-scroll"><SupplierResults rows={supplierScores.slice(0, 200)} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">2</span><h3>Zone Rollup</h3></summary>

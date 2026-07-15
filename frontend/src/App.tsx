@@ -2,8 +2,9 @@ import { useState } from "react";
 import DotKpiPage from "./DotKpiPage";
 import SummaryPage from "./SummaryPage";
 import SupplierAssessmentPage from "./SupplierAssessmentPage";
+import SupplierCompliancePage from "./SupplierCompliancePage";
 
-type KpiTab = "summary" | "dot" | "supplierAssessment";
+type KpiTab = "summary" | "dot" | "supplierAssessment" | "supplierCompliance";
 
 function App() {
   const [activeKpi, setActiveKpi] = useState<KpiTab>("summary");
@@ -32,11 +33,19 @@ function App() {
         >
           Supplier Assessment
         </button>
+        <button
+          type="button"
+          className={activeKpi === "supplierCompliance" ? "active" : ""}
+          onClick={() => setActiveKpi("supplierCompliance")}
+        >
+          Supplier Compliance
+        </button>
       </nav>
 
       {activeKpi === "summary" && <SummaryPage />}
       {activeKpi === "dot" && <DotKpiPage />}
       {activeKpi === "supplierAssessment" && <SupplierAssessmentPage />}
+      {activeKpi === "supplierCompliance" && <SupplierCompliancePage />}
     </main>
   );
 }

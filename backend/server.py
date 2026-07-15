@@ -18,19 +18,28 @@ from fetch_supplier_assessment import (
     process as sa_process,
     OUTPUT_PATH as SA_OUTPUT_PATH,
 )
+from fetch_supplier_compliance import (
+    fetch_raw as sc_fetch_raw,
+    process as sc_process,
+    OUTPUT_PATH as SC_OUTPUT_PATH,
+)
 
 
 # In-memory cache
 _cache: dict = {
     "dot_kpi": [],
     "supplier_assessment": [],
+    "supplier_compliance": [],
     "status": "idle",
     "last_refresh": None,
     "sa_status": "idle",
     "sa_last_refresh": None,
+    "sc_status": "idle",
+    "sc_last_refresh": None,
 }
 _lock = threading.Lock()
 _sa_lock = threading.Lock()
+_sc_lock = threading.Lock()
 
 
 def _load_cache_from_disk():
@@ -50,6 +59,13 @@ def _load_cache_from_disk():
         _cache["sa_last_refresh"] = SA_OUTPUT_PATH.stat().st_mtime
     else:
         _cache["supplier_assessment"] = []
+
+    if SC_OUTPUT_PATH.exists():
+        df = pd.read_csv(SC_OUTPUT_PATH, dtype=str).fillna("")
+        _cache["supplier_compliance"] = df.to_dict(orient="records")
+        _cache["sc_last_refresh"] = SC_OUTPUT_PATH.stat().st_mtime
+    else:
+        _cache["supplier_compliance"] = []
 
 
 def _background_refresh():
@@ -96,12 +112,35 @@ def _background_refresh_supplier_assessment():
         _cache["sa_status"] = f"error: {str(e)}"
 
 
+def _background_refresh_supplier_compliance():
+    """Fetch fresh Supplier Compliance data from Databricks and update cache."""
+    from datetime import datetime
+
+    with _sc_lock:
+        if _cache["sc_status"] == "refreshing":
+            return
+        _cache["sc_status"] = "refreshing"
+
+    try:
+        raw = sc_fetch_raw()
+        processed = sc_process(raw)
+        SC_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        processed.to_csv(SC_OUTPUT_PATH, index=False)
+
+        _cache["supplier_compliance"] = processed.fillna("").to_dict(orient="records")
+        _cache["sc_last_refresh"] = datetime.now().isoformat()
+        _cache["sc_status"] = "ready"
+    except Exception as e:
+        _cache["sc_status"] = f"error: {str(e)}"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # On startup: load cached data from disk (instant)
     _load_cache_from_disk()
     _cache["status"] = "ready"
     _cache["sa_status"] = "ready"
+    _cache["sc_status"] = "ready"
     yield
 
 
@@ -147,6 +186,9 @@ def get_status():
         "sa_status": _cache["sa_status"],
         "supplier_assessment_rows": len(_cache["supplier_assessment"]),
         "sa_last_refresh": _cache["sa_last_refresh"],
+        "sc_status": _cache["sc_status"],
+        "supplier_compliance_rows": len(_cache["supplier_compliance"]),
+        "sc_last_refresh": _cache["sc_last_refresh"],
     })
 
 
@@ -169,6 +211,30 @@ def refresh_supplier_assessment():
 
     thread = threading.Thread(
         target=_background_refresh_supplier_assessment, daemon=True,
+    )
+    thread.start()
+    return JSONResponse({"message": "Refresh started.", "status": "refreshing"})
+
+
+@app.get("/api/supplier-compliance")
+def get_supplier_compliance():
+    """Return cached Supplier Compliance data instantly."""
+    return JSONResponse({
+        "data": _cache["supplier_compliance"],
+        "count": len(_cache["supplier_compliance"]),
+        "status": _cache["sc_status"],
+        "last_refresh": _cache["sc_last_refresh"],
+    })
+
+
+@app.post("/api/supplier-compliance/refresh")
+def refresh_supplier_compliance():
+    """Trigger background refresh of Supplier Compliance data from Databricks."""
+    if _cache["sc_status"] == "refreshing":
+        return JSONResponse({"message": "Refresh already in progress.", "status": "refreshing"})
+
+    thread = threading.Thread(
+        target=_background_refresh_supplier_compliance, daemon=True,
     )
     thread.start()
     return JSONResponse({"message": "Refresh started.", "status": "refreshing"})

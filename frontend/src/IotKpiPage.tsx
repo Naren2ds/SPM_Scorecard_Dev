@@ -32,6 +32,7 @@ interface IotScoredRow extends IotInputRow {
   earnedScore: number | null;
   scorePercent: number | null;
   status: string;
+  explanation: string;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -98,6 +99,20 @@ function MultiSelectDropdown({
 
 // ─── IOT Scoring ────────────────────────────────────────────────────────────
 
+interface IotRollupRow {
+  id: string;
+  label: string;
+  iotPercent: number | null;
+  rank: number | null;
+  percentile: number | null;
+  attainment: number | null;
+  earnedScore: number | null;
+  scorePercent: number | null;
+  status: string;
+  explanation: string;
+  contributingRows: number;
+}
+
 function scoreIotRows(rows: IotInputRow[], config: KpiConfig): IotScoredRow[] {
   // Calculate IOT% for each applicable row
   const assessed = rows.map((row) => {
@@ -117,10 +132,10 @@ function scoreIotRows(rows: IotInputRow[], config: KpiConfig): IotScoredRow[] {
 
   return assessed.map((row) => {
     if (!row.isApplicable) {
-      return { ...row, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Not Applicable" };
+      return { ...row, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Not Applicable", explanation: "Not applicable: excluded from ranking and scoring." };
     }
     if (row.iotPercent === null) {
-      return { ...row, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Missing Data" };
+      return { ...row, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Missing Data", explanation: "Missing data: no valid PO lines available." };
     }
 
     const rankInfo = ranks.get(row.id);
@@ -134,6 +149,12 @@ function scoreIotRows(rows: IotInputRow[], config: KpiConfig): IotScoredRow[] {
     if (row.iotPercent <= config.criticalFloor) status = "Below critical floor";
     else if (row.iotPercent === 0) status = "Zero IOT";
 
+    const explanation = status === "Below critical floor"
+      ? `Below critical floor: IOT ${(row.iotPercent * 100).toFixed(2)}% ≤ floor ${(config.criticalFloor * 100).toFixed(2)}%. Attainment = 0, earned score = 0.`
+      : config.formulaMode === "softStretch"
+        ? `Valid score: IOT ${(row.iotPercent * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned Score = ${config.maxScore} × ${attainment.toFixed(4)} × (70% + 30% × ${percentile !== null ? (percentile * 100).toFixed(2) : 0}%) = ${earnedScore?.toFixed(2) ?? 0}.`
+        : `Valid score: IOT ${(row.iotPercent * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned Score = ${config.maxScore} × ${percentile !== null ? (percentile * 100).toFixed(2) : 0}% × ${attainment.toFixed(4)} = ${earnedScore?.toFixed(2) ?? 0}.`;
+
     return {
       ...row,
       rank: rankInfo?.rank ?? null,
@@ -142,6 +163,69 @@ function scoreIotRows(rows: IotInputRow[], config: KpiConfig): IotScoredRow[] {
       earnedScore,
       scorePercent: earnedScore !== null ? earnedScore / config.maxScore : null,
       status,
+      explanation,
+    };
+  });
+}
+
+function calculateIotRollup(
+  rows: IotInputRow[],
+  config: KpiConfig,
+  groupBy: "zone" | "parentSupplier" | "category",
+): IotRollupRow[] {
+  // Group and sum
+  const groups = new Map<string, { onTime: number; total: number; count: number }>();
+  rows.forEach((row) => {
+    if (row.kpiApplicability === "Not Applicable") return;
+    const key = row[groupBy]?.trim() || "Unassigned";
+    const existing = groups.get(key) || { onTime: 0, total: 0, count: 0 };
+    existing.onTime += Number(row.invoiceOnTimeCount) || 0;
+    existing.total += Number(row.totalPoLines) || 0;
+    existing.count += 1;
+    groups.set(key, existing);
+  });
+
+  // Calculate IOT% per group
+  const seeds = Array.from(groups.entries()).map(([label, g], i) => ({
+    id: `rollup-${groupBy}-${i}`,
+    label,
+    iotPercent: g.total > 0 ? g.onTime / g.total : null,
+    contributingRows: g.count,
+  }));
+
+  // Rank
+  const validSeeds = seeds.filter((s) => s.iotPercent !== null);
+  const ranks = calculatePercentileRanks(
+    validSeeds.map((s) => ({ id: s.id, dot: s.iotPercent as number })),
+    config.target,
+  );
+
+  return seeds.map((seed) => {
+    if (seed.iotPercent === null) {
+      return { ...seed, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Missing Data", explanation: "No valid data for this group." };
+    }
+    const rankInfo = ranks.get(seed.id);
+    const percentile = rankInfo?.percentile ?? null;
+    const attainment = calculateAttainmentFactor(seed.iotPercent, config.criticalFloor, config.target);
+    const earnedScore = percentile !== null
+      ? calculateEarnedScore(config.maxScore, percentile, attainment, config.formulaMode)
+      : null;
+    let status = "Valid score";
+    if (seed.iotPercent <= config.criticalFloor) status = "Below critical floor";
+
+    const explanation = status === "Below critical floor"
+      ? `Below critical floor: IOT ${(seed.iotPercent * 100).toFixed(2)}% ≤ floor ${(config.criticalFloor * 100).toFixed(2)}%. Earned score = 0.`
+      : `Valid score: IOT ${(seed.iotPercent * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned = ${earnedScore?.toFixed(2) ?? 0}. Rollup of ${seed.contributingRows} rows.`;
+
+    return {
+      ...seed,
+      rank: rankInfo?.rank ?? null,
+      percentile,
+      attainment,
+      earnedScore,
+      scorePercent: earnedScore !== null ? earnedScore / config.maxScore : null,
+      status,
+      explanation,
     };
   });
 }
@@ -246,6 +330,19 @@ function IotKpiPage() {
 
   const scoredRows = useMemo(
     () => (configIsValid ? scoreIotRows(filteredRows, config) : []),
+    [filteredRows, config, configIsValid],
+  );
+
+  const zoneRollup = useMemo(
+    () => (configIsValid ? calculateIotRollup(filteredRows, config, "zone") : []),
+    [filteredRows, config, configIsValid],
+  );
+  const parentRollup = useMemo(
+    () => (configIsValid ? calculateIotRollup(filteredRows, config, "parentSupplier") : []),
+    [filteredRows, config, configIsValid],
+  );
+  const categoryRollup = useMemo(
+    () => (configIsValid ? calculateIotRollup(filteredRows, config, "category") : []),
     [filteredRows, config, configIsValid],
   );
 
@@ -364,7 +461,7 @@ function IotKpiPage() {
                     <thead><tr>
                       <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
                       <th>IOT %</th><th>Rank</th><th>Percentile</th><th>Attainment</th>
-                      <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th>
+                      <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Explanation</th>
                     </tr></thead>
                     <tbody>
                       {scoredRows.slice(0, 200).map((row) => (
@@ -382,6 +479,7 @@ function IotKpiPage() {
                           <td>{numeric(row.earnedScore, 2)}</td>
                           <td>{percent(row.scorePercent, 2)}</td>
                           <td><span className={`status-pill ${row.status === "Valid score" ? "status-valid" : row.status === "Below critical floor" ? "status-floor" : "status-na"}`}>{row.status}</span></td>
+                          <td className="explanation-cell">{row.explanation}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -389,10 +487,53 @@ function IotKpiPage() {
                 </div>
               </div>
             </details>
+            <details className="calculation-section" open>
+              <summary className="calculation-heading level-summary"><span className="level-badge">2</span><h3>Zone Rollup</h3></summary>
+              <div className="rollup-scroll"><RollupTable rows={zoneRollup} label="Zone" /></div>
+            </details>
+            <details className="calculation-section" open>
+              <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Supplier Rollup</h3></summary>
+              <div className="rollup-scroll"><RollupTable rows={parentRollup} label="Parent Supplier" /></div>
+            </details>
+            <details className="calculation-section" open>
+              <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>
+              <div className="rollup-scroll"><RollupTable rows={categoryRollup} label="Category" /></div>
+            </details>
           </div>
         )}
       </section>
     </>
+  );
+}
+
+function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
+  return (
+    <div className="table-frame">
+      <table className="data-table results-table">
+        <thead><tr>
+          <th>{label}</th><th>IOT %</th><th>Rank</th><th>Percentile</th>
+          <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
+          <th>Status</th><th>Rows</th><th>Explanation</th>
+        </tr></thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id} className={row.status === "Below critical floor" ? "invalid-row" : ""}>
+              <td>{row.label}</td>
+              <td>{percent(row.iotPercent, 2)}</td>
+              <td>{formatRank(row.rank)}</td>
+              <td>{percent(row.percentile, 2)}</td>
+              <td>{numeric(row.attainment, 4)}</td>
+              <td>{numeric(15, 2)}</td>
+              <td>{numeric(row.earnedScore, 2)}</td>
+              <td>{percent(row.scorePercent, 2)}</td>
+              <td><span className={`status-pill ${row.status === "Valid score" ? "status-valid" : row.status === "Below critical floor" ? "status-floor" : "status-na"}`}>{row.status}</span></td>
+              <td>{row.contributingRows}</td>
+              <td className="explanation-cell">{row.explanation}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

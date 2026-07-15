@@ -50,7 +50,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "zone": "zone",
         "country": "country",
         "gpo_category": "category",
-        "invoice_ontime_count": "invoiceOnTimeCount",
+        "invoice_on_time_count": "invoiceOnTimeCount",
         "total_po_lines": "totalPoLines",
         "iot_applicable": "kpiApplicability",
     })

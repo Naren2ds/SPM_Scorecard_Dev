@@ -23,6 +23,11 @@ from fetch_supplier_compliance import (
     process as sc_process,
     OUTPUT_PATH as SC_OUTPUT_PATH,
 )
+from fetch_supplier_maturity import (
+    fetch_raw as sm_fetch_raw,
+    process as sm_process,
+    OUTPUT_PATH as SM_OUTPUT_PATH,
+)
 
 
 # In-memory cache
@@ -30,16 +35,20 @@ _cache: dict = {
     "dot_kpi": [],
     "supplier_assessment": [],
     "supplier_compliance": [],
+    "supplier_maturity": [],
     "status": "idle",
     "last_refresh": None,
     "sa_status": "idle",
     "sa_last_refresh": None,
     "sc_status": "idle",
     "sc_last_refresh": None,
+    "sm_status": "idle",
+    "sm_last_refresh": None,
 }
 _lock = threading.Lock()
 _sa_lock = threading.Lock()
 _sc_lock = threading.Lock()
+_sm_lock = threading.Lock()
 
 
 def _load_cache_from_disk():
@@ -66,6 +75,13 @@ def _load_cache_from_disk():
         _cache["sc_last_refresh"] = SC_OUTPUT_PATH.stat().st_mtime
     else:
         _cache["supplier_compliance"] = []
+
+    if SM_OUTPUT_PATH.exists():
+        df = pd.read_csv(SM_OUTPUT_PATH, dtype=str).fillna("")
+        _cache["supplier_maturity"] = df.to_dict(orient="records")
+        _cache["sm_last_refresh"] = SM_OUTPUT_PATH.stat().st_mtime
+    else:
+        _cache["supplier_maturity"] = []
 
 
 def _background_refresh():
@@ -134,6 +150,28 @@ def _background_refresh_supplier_compliance():
         _cache["sc_status"] = f"error: {str(e)}"
 
 
+def _background_refresh_supplier_maturity():
+    """Fetch fresh Supplier Maturity data from Databricks and update cache."""
+    from datetime import datetime
+
+    with _sm_lock:
+        if _cache["sm_status"] == "refreshing":
+            return
+        _cache["sm_status"] = "refreshing"
+
+    try:
+        raw = sm_fetch_raw()
+        processed = sm_process(raw)
+        SM_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        processed.to_csv(SM_OUTPUT_PATH, index=False)
+
+        _cache["supplier_maturity"] = processed.fillna("").to_dict(orient="records")
+        _cache["sm_last_refresh"] = datetime.now().isoformat()
+        _cache["sm_status"] = "ready"
+    except Exception as e:
+        _cache["sm_status"] = f"error: {str(e)}"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # On startup: load cached data from disk (instant)
@@ -141,6 +179,7 @@ async def lifespan(app: FastAPI):
     _cache["status"] = "ready"
     _cache["sa_status"] = "ready"
     _cache["sc_status"] = "ready"
+    _cache["sm_status"] = "ready"
     yield
 
 
@@ -189,6 +228,9 @@ def get_status():
         "sc_status": _cache["sc_status"],
         "supplier_compliance_rows": len(_cache["supplier_compliance"]),
         "sc_last_refresh": _cache["sc_last_refresh"],
+        "sm_status": _cache["sm_status"],
+        "supplier_maturity_rows": len(_cache["supplier_maturity"]),
+        "sm_last_refresh": _cache["sm_last_refresh"],
     })
 
 
@@ -235,6 +277,30 @@ def refresh_supplier_compliance():
 
     thread = threading.Thread(
         target=_background_refresh_supplier_compliance, daemon=True,
+    )
+    thread.start()
+    return JSONResponse({"message": "Refresh started.", "status": "refreshing"})
+
+
+@app.get("/api/supplier-maturity")
+def get_supplier_maturity():
+    """Return cached Supplier Maturity data instantly."""
+    return JSONResponse({
+        "data": _cache["supplier_maturity"],
+        "count": len(_cache["supplier_maturity"]),
+        "status": _cache["sm_status"],
+        "last_refresh": _cache["sm_last_refresh"],
+    })
+
+
+@app.post("/api/supplier-maturity/refresh")
+def refresh_supplier_maturity():
+    """Trigger background refresh of Supplier Maturity data from Databricks."""
+    if _cache["sm_status"] == "refreshing":
+        return JSONResponse({"message": "Refresh already in progress.", "status": "refreshing"})
+
+    thread = threading.Thread(
+        target=_background_refresh_supplier_maturity, daemon=True,
     )
     thread.start()
     return JSONResponse({"message": "Refresh started.", "status": "refreshing"})

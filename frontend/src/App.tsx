@@ -3,8 +3,14 @@ import DotKpiPage from "./DotKpiPage";
 import SummaryPage from "./SummaryPage";
 import SupplierAssessmentPage from "./SupplierAssessmentPage";
 import SupplierCompliancePage from "./SupplierCompliancePage";
+import SupplierMaturityPage from "./SupplierMaturityPage";
 
-type KpiTab = "summary" | "dot" | "supplierAssessment" | "supplierCompliance";
+type KpiTab =
+  | "summary"
+  | "dot"
+  | "supplierAssessment"
+  | "supplierCompliance"
+  | "supplierMaturity";
 
 function App() {
   const [activeKpi, setActiveKpi] = useState<KpiTab>("summary");
@@ -40,12 +46,20 @@ function App() {
         >
           Supplier Compliance
         </button>
+        <button
+          type="button"
+          className={activeKpi === "supplierMaturity" ? "active" : ""}
+          onClick={() => setActiveKpi("supplierMaturity")}
+        >
+          Supplier Maturity
+        </button>
       </nav>
 
       {activeKpi === "summary" && <SummaryPage />}
       {activeKpi === "dot" && <DotKpiPage />}
       {activeKpi === "supplierAssessment" && <SupplierAssessmentPage />}
       {activeKpi === "supplierCompliance" && <SupplierCompliancePage />}
+      {activeKpi === "supplierMaturity" && <SupplierMaturityPage />}
     </main>
   );
 }

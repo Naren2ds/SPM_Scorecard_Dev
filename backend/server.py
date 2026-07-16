@@ -39,6 +39,11 @@ from fetch_eclipse import (
     process as ecl_process,
     OUTPUT_PATH as ECL_OUTPUT_PATH,
 )
+from fetch_invoice_conformity import (
+    fetch_raw as ic_fetch_raw,
+    process as ic_process,
+    OUTPUT_PATH as IC_OUTPUT_PATH,
+)
 
 
 # In-memory cache
@@ -50,6 +55,7 @@ _cache: dict = {
     "supplier_maturity": [],
     "co2_emission": [],
     "eclipse": [],
+    "invoice_conformity": [],
     "status": "idle",
     "last_refresh": None,
     "sa_status": "idle",
@@ -115,6 +121,12 @@ def _load_cache_from_disk():
         _cache["eclipse"] = df.to_dict(orient="records")
     else:
         _cache["eclipse"] = []
+
+    if IC_OUTPUT_PATH.exists():
+        df = pd.read_csv(IC_OUTPUT_PATH, dtype=str).fillna("")
+        _cache["invoice_conformity"] = df.to_dict(orient="records")
+    else:
+        _cache["invoice_conformity"] = []
 
 
 def _background_refresh_dot():
@@ -459,3 +471,31 @@ def refresh_eclipse():
     thread = threading.Thread(target=_background_refresh_eclipse, daemon=True)
     thread.start()
     return JSONResponse({"message": "Eclipse refresh started."})
+
+
+# ─── Invoice Conformity endpoints ────────────────────────────────────────────
+
+def _background_refresh_ic():
+    try:
+        raw = ic_fetch_raw()
+        processed = ic_process(raw)
+        IC_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        processed.to_csv(IC_OUTPUT_PATH, index=False)
+        _cache["invoice_conformity"] = processed.fillna("").to_dict(orient="records")
+    except Exception:
+        pass
+
+
+@app.get("/api/invoice-conformity")
+def get_invoice_conformity():
+    return JSONResponse({
+        "data": _cache["invoice_conformity"],
+        "count": len(_cache["invoice_conformity"]),
+    })
+
+
+@app.post("/api/invoice-conformity/refresh")
+def refresh_invoice_conformity():
+    thread = threading.Thread(target=_background_refresh_ic, daemon=True)
+    thread.start()
+    return JSONResponse({"message": "Invoice Conformity refresh started."})

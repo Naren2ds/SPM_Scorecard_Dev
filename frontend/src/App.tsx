@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Co2EmissionPage from "./Co2EmissionPage";
 import DotKpiPage from "./DotKpiPage";
+import EclipsePage from "./EclipsePage";
 import IotKpiPage from "./IotKpiPage";
 import SummaryPage from "./SummaryPage";
 import SupplierAssessmentPage from "./SupplierAssessmentPage";
@@ -14,7 +15,8 @@ type KpiTab =
   | "supplierAssessment"
   | "supplierCompliance"
   | "supplierMaturity"
-  | "co2Emission";
+  | "co2Emission"
+  | "eclipse";
 
 function App() {
   const [activeKpi, setActiveKpi] = useState<KpiTab>("summary");
@@ -71,6 +73,13 @@ function App() {
         >
           CO₂ Emission
         </button>
+        <button
+          type="button"
+          className={activeKpi === "eclipse" ? "active" : ""}
+          onClick={() => setActiveKpi("eclipse")}
+        >
+          Eclipse Score
+        </button>
       </nav>
 
       {activeKpi === "summary" && <SummaryPage />}
@@ -80,6 +89,7 @@ function App() {
       {activeKpi === "supplierCompliance" && <SupplierCompliancePage />}
       {activeKpi === "supplierMaturity" && <SupplierMaturityPage />}
       {activeKpi === "co2Emission" && <Co2EmissionPage />}
+      {activeKpi === "eclipse" && <EclipsePage />}
     </main>
   );
 }

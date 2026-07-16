@@ -34,6 +34,11 @@ from fetch_co2_emission import (
     process as co2_process,
     OUTPUT_PATH as CO2_OUTPUT_PATH,
 )
+from fetch_eclipse import (
+    fetch_raw as ecl_fetch_raw,
+    process as ecl_process,
+    OUTPUT_PATH as ECL_OUTPUT_PATH,
+)
 
 
 # In-memory cache
@@ -44,6 +49,7 @@ _cache: dict = {
     "supplier_compliance": [],
     "supplier_maturity": [],
     "co2_emission": [],
+    "eclipse": [],
     "status": "idle",
     "last_refresh": None,
     "sa_status": "idle",
@@ -103,6 +109,12 @@ def _load_cache_from_disk():
         _cache["co2_last_refresh"] = CO2_OUTPUT_PATH.stat().st_mtime
     else:
         _cache["co2_emission"] = []
+
+    if ECL_OUTPUT_PATH.exists():
+        df = pd.read_csv(ECL_OUTPUT_PATH, dtype=str).fillna("")
+        _cache["eclipse"] = df.to_dict(orient="records")
+    else:
+        _cache["eclipse"] = []
 
 
 def _background_refresh_dot():
@@ -416,3 +428,34 @@ def refresh_co2_emission():
     )
     thread.start()
     return JSONResponse({"message": "Refresh started.", "status": "refreshing"})
+
+
+# ─── Eclipse Score endpoints ─────────────────────────────────────────────────
+
+def _background_refresh_eclipse():
+    from datetime import datetime
+    try:
+        raw = ecl_fetch_raw()
+        processed = ecl_process(raw)
+        ECL_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        processed.to_csv(ECL_OUTPUT_PATH, index=False)
+        _cache["eclipse"] = processed.fillna("").to_dict(orient="records")
+    except Exception as e:
+        pass
+
+
+@app.get("/api/eclipse")
+def get_eclipse():
+    """Return cached Eclipse Score data instantly."""
+    return JSONResponse({
+        "data": _cache["eclipse"],
+        "count": len(_cache["eclipse"]),
+    })
+
+
+@app.post("/api/eclipse/refresh")
+def refresh_eclipse():
+    """Trigger background refresh of Eclipse data from Databricks."""
+    thread = threading.Thread(target=_background_refresh_eclipse, daemon=True)
+    thread.start()
+    return JSONResponse({"message": "Eclipse refresh started."})

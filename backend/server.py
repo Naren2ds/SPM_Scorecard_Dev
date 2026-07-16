@@ -44,6 +44,11 @@ from fetch_invoice_conformity import (
     process as ic_process,
     OUTPUT_PATH as IC_OUTPUT_PATH,
 )
+from fetch_price_divergence import (
+    fetch_raw as pdiv_fetch_raw,
+    process as pdiv_process,
+    OUTPUT_PATH as PDIV_OUTPUT_PATH,
+)
 
 
 # In-memory cache
@@ -56,6 +61,7 @@ _cache: dict = {
     "co2_emission": [],
     "eclipse": [],
     "invoice_conformity": [],
+    "price_divergence": [],
     "status": "idle",
     "last_refresh": None,
     "sa_status": "idle",
@@ -127,6 +133,12 @@ def _load_cache_from_disk():
         _cache["invoice_conformity"] = df.to_dict(orient="records")
     else:
         _cache["invoice_conformity"] = []
+
+    if PDIV_OUTPUT_PATH.exists():
+        df = pd.read_csv(PDIV_OUTPUT_PATH, dtype=str).fillna("")
+        _cache["price_divergence"] = df.to_dict(orient="records")
+    else:
+        _cache["price_divergence"] = []
 
 
 def _background_refresh_dot():
@@ -499,3 +511,31 @@ def refresh_invoice_conformity():
     thread = threading.Thread(target=_background_refresh_ic, daemon=True)
     thread.start()
     return JSONResponse({"message": "Invoice Conformity refresh started."})
+
+
+# ─── Price Divergence endpoints ──────────────────────────────────────────────
+
+def _background_refresh_pdiv():
+    try:
+        raw = pdiv_fetch_raw()
+        processed = pdiv_process(raw)
+        PDIV_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        processed.to_csv(PDIV_OUTPUT_PATH, index=False)
+        _cache["price_divergence"] = processed.fillna("").to_dict(orient="records")
+    except Exception:
+        pass
+
+
+@app.get("/api/price-divergence")
+def get_price_divergence():
+    return JSONResponse({
+        "data": _cache["price_divergence"],
+        "count": len(_cache["price_divergence"]),
+    })
+
+
+@app.post("/api/price-divergence/refresh")
+def refresh_price_divergence():
+    thread = threading.Thread(target=_background_refresh_pdiv, daemon=True)
+    thread.start()
+    return JSONResponse({"message": "Price Divergence refresh started."})

@@ -1,10 +1,16 @@
 import { useState } from "react";
+import Co2EmissionPage from "./Co2EmissionPage";
 import DotKpiPage from "./DotKpiPage";
 import SummaryPage from "./SummaryPage";
 import SupplierAssessmentPage from "./SupplierAssessmentPage";
 import SupplierCompliancePage from "./SupplierCompliancePage";
 
-type KpiTab = "summary" | "dot" | "supplierAssessment" | "supplierCompliance";
+type KpiTab =
+  | "summary"
+  | "dot"
+  | "supplierAssessment"
+  | "supplierCompliance"
+  | "co2Emission";
 
 function App() {
   const [activeKpi, setActiveKpi] = useState<KpiTab>("summary");
@@ -40,12 +46,20 @@ function App() {
         >
           Supplier Compliance
         </button>
+        <button
+          type="button"
+          className={activeKpi === "co2Emission" ? "active" : ""}
+          onClick={() => setActiveKpi("co2Emission")}
+        >
+          CO₂ Emission
+        </button>
       </nav>
 
       {activeKpi === "summary" && <SummaryPage />}
       {activeKpi === "dot" && <DotKpiPage />}
       {activeKpi === "supplierAssessment" && <SupplierAssessmentPage />}
       {activeKpi === "supplierCompliance" && <SupplierCompliancePage />}
+      {activeKpi === "co2Emission" && <Co2EmissionPage />}
     </main>
   );
 }

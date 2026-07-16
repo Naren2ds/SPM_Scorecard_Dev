@@ -28,6 +28,11 @@ from fetch_supplier_maturity import (
     process as sm_process,
     OUTPUT_PATH as SM_OUTPUT_PATH,
 )
+from fetch_co2_emission import (
+    fetch_raw as co2_fetch_raw,
+    process as co2_process,
+    OUTPUT_PATH as CO2_OUTPUT_PATH,
+)
 
 
 # In-memory cache
@@ -36,6 +41,7 @@ _cache: dict = {
     "supplier_assessment": [],
     "supplier_compliance": [],
     "supplier_maturity": [],
+    "co2_emission": [],
     "status": "idle",
     "last_refresh": None,
     "sa_status": "idle",
@@ -44,11 +50,14 @@ _cache: dict = {
     "sc_last_refresh": None,
     "sm_status": "idle",
     "sm_last_refresh": None,
+    "co2_status": "idle",
+    "co2_last_refresh": None,
 }
 _lock = threading.Lock()
 _sa_lock = threading.Lock()
 _sc_lock = threading.Lock()
 _sm_lock = threading.Lock()
+_co2_lock = threading.Lock()
 
 
 def _load_cache_from_disk():
@@ -82,6 +91,13 @@ def _load_cache_from_disk():
         _cache["sm_last_refresh"] = SM_OUTPUT_PATH.stat().st_mtime
     else:
         _cache["supplier_maturity"] = []
+
+    if CO2_OUTPUT_PATH.exists():
+        df = pd.read_csv(CO2_OUTPUT_PATH, dtype=str).fillna("")
+        _cache["co2_emission"] = df.to_dict(orient="records")
+        _cache["co2_last_refresh"] = CO2_OUTPUT_PATH.stat().st_mtime
+    else:
+        _cache["co2_emission"] = []
 
 
 def _background_refresh():
@@ -172,6 +188,28 @@ def _background_refresh_supplier_maturity():
         _cache["sm_status"] = f"error: {str(e)}"
 
 
+def _background_refresh_co2_emission():
+    """Fetch fresh CO2 Emission data from Databricks and update cache."""
+    from datetime import datetime
+
+    with _co2_lock:
+        if _cache["co2_status"] == "refreshing":
+            return
+        _cache["co2_status"] = "refreshing"
+
+    try:
+        raw = co2_fetch_raw()
+        processed = co2_process(raw)
+        CO2_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        processed.to_csv(CO2_OUTPUT_PATH, index=False)
+
+        _cache["co2_emission"] = processed.fillna("").to_dict(orient="records")
+        _cache["co2_last_refresh"] = datetime.now().isoformat()
+        _cache["co2_status"] = "ready"
+    except Exception as e:
+        _cache["co2_status"] = f"error: {str(e)}"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # On startup: load cached data from disk (instant)
@@ -180,6 +218,7 @@ async def lifespan(app: FastAPI):
     _cache["sa_status"] = "ready"
     _cache["sc_status"] = "ready"
     _cache["sm_status"] = "ready"
+    _cache["co2_status"] = "ready"
     yield
 
 
@@ -231,6 +270,9 @@ def get_status():
         "sm_status": _cache["sm_status"],
         "supplier_maturity_rows": len(_cache["supplier_maturity"]),
         "sm_last_refresh": _cache["sm_last_refresh"],
+        "co2_status": _cache["co2_status"],
+        "co2_emission_rows": len(_cache["co2_emission"]),
+        "co2_last_refresh": _cache["co2_last_refresh"],
     })
 
 
@@ -301,6 +343,30 @@ def refresh_supplier_maturity():
 
     thread = threading.Thread(
         target=_background_refresh_supplier_maturity, daemon=True,
+    )
+    thread.start()
+    return JSONResponse({"message": "Refresh started.", "status": "refreshing"})
+
+
+@app.get("/api/co2-emission")
+def get_co2_emission():
+    """Return cached CO2 Emission data instantly."""
+    return JSONResponse({
+        "data": _cache["co2_emission"],
+        "count": len(_cache["co2_emission"]),
+        "status": _cache["co2_status"],
+        "last_refresh": _cache["co2_last_refresh"],
+    })
+
+
+@app.post("/api/co2-emission/refresh")
+def refresh_co2_emission():
+    """Trigger background refresh of CO2 Emission data from Databricks."""
+    if _cache["co2_status"] == "refreshing":
+        return JSONResponse({"message": "Refresh already in progress.", "status": "refreshing"})
+
+    thread = threading.Thread(
+        target=_background_refresh_co2_emission, daemon=True,
     )
     thread.start()
     return JSONResponse({"message": "Refresh started.", "status": "refreshing"})

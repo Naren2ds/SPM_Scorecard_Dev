@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from fetch_dot_kpi import fetch_raw as dot_fetch_raw, process as dot_process, OUTPUT_PATH as DOT_OUTPUT_PATH
@@ -49,6 +50,7 @@ from fetch_price_divergence import (
     process as pdiv_process,
     OUTPUT_PATH as PDIV_OUTPUT_PATH,
 )
+from scorecard import compute_scorecard, list_filter_options
 
 
 # In-memory cache
@@ -290,6 +292,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Gzip everything larger than ~1 KB — cuts the scorecard payload ~10×.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
 # ─── DOT KPI endpoints ──────────────────────────────────────────────────────
@@ -539,3 +544,91 @@ def refresh_price_divergence():
     thread = threading.Thread(target=_background_refresh_pdiv, daemon=True)
     thread.start()
     return JSONResponse({"message": "Price Divergence refresh started."})
+
+
+# ─── Normalized Scorecard endpoints ──────────────────────────────────────────
+
+def _split_csv_param(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [v.strip() for v in value.split(",") if v.strip()]
+
+
+@app.get("/api/scorecard")
+def get_scorecard(
+    zones: str | None = None,
+    categories: str | None = None,
+    parents: str | None = None,
+    top_n: int = 20,
+):
+    """
+    Normalized Supplier Scorecard.
+
+    Defaults to the Top 20 parent suppliers ranked by aggregated invoice value
+    (from ``price_divergence``) — this keeps the response tiny (~50 KB) so the
+    UI stays snappy. Pass ``top_n=0`` to disable the cap and return every
+    matching parent.
+    """
+    result = compute_scorecard(
+        _cache,
+        zones=_split_csv_param(zones),
+        categories=_split_csv_param(categories),
+        parents=_split_csv_param(parents),
+        include_kpi_breakdown=True,
+        top_n=top_n if top_n and top_n > 0 else None,
+    )
+    return JSONResponse(result)
+
+
+@app.get("/api/scorecard/leaderboard")
+def get_scorecard_leaderboard(
+    zones: str | None = None,
+    categories: str | None = None,
+    parents: str | None = None,
+    top_n: int = 20,
+):
+    """
+    Lightweight per-parent summary for the leaderboard view. Drops the per-KPI
+    breakdown, keeping only pillar %s + normalized/coverage/adjusted totals.
+    """
+    result = compute_scorecard(
+        _cache,
+        zones=_split_csv_param(zones),
+        categories=_split_csv_param(categories),
+        parents=_split_csv_param(parents),
+        include_kpi_breakdown=False,
+        top_n=top_n if top_n and top_n > 0 else None,
+    )
+    return JSONResponse(result)
+
+
+@app.get("/api/scorecard/parent")
+def get_scorecard_parent(
+    name: str,
+    zones: str | None = None,
+    categories: str | None = None,
+):
+    """
+    Full drill-down (pillar + per-KPI breakdown) for a single parent supplier.
+    ``name`` is required and case-sensitive to match the leaderboard row.
+    """
+    result = compute_scorecard(
+        _cache,
+        zones=_split_csv_param(zones),
+        categories=_split_csv_param(categories),
+        parents=[name],
+        include_kpi_breakdown=True,
+    )
+    parent = result["scorecards"][0] if result["scorecards"] else None
+    return JSONResponse({
+        "pillar_weights": result["pillar_weights"],
+        "total_expected_kpi_weight": result["total_expected_kpi_weight"],
+        "kpis": result["kpis"],
+        "scorecard": parent,
+    })
+
+
+@app.get("/api/scorecard/filters")
+def get_scorecard_filters():
+    """Distinct zones / categories / parent suppliers across all KPI datasets."""
+    return JSONResponse(list_filter_options(_cache))

@@ -9,3 +9,5 @@ backend/.env
 backend/data/
 __pycache__/
 *.pyc
+.venv/
+scorecard_preview.png

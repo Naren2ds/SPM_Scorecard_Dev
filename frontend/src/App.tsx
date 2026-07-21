@@ -5,6 +5,7 @@ import EclipsePage from "./EclipsePage";
 import InvoiceConformityPage from "./InvoiceConformityPage";
 import IotKpiPage from "./IotKpiPage";
 import PriceDivergencePage from "./PriceDivergencePage";
+import ScorecardPage from "./ScorecardPage";
 import SummaryPage from "./SummaryPage";
 import SupplierAssessmentPage from "./SupplierAssessmentPage";
 import SupplierCompliancePage from "./SupplierCompliancePage";
@@ -12,6 +13,7 @@ import SupplierMaturityPage from "./SupplierMaturityPage";
 
 type KpiTab =
   | "summary"
+  | "scorecard"
   | "dot"
   | "iot"
   | "supplierAssessment"
@@ -34,6 +36,13 @@ function App() {
           onClick={() => setActiveKpi("summary")}
         >
           Scoring Guide
+        </button>
+        <button
+          type="button"
+          className={activeKpi === "scorecard" ? "active" : ""}
+          onClick={() => setActiveKpi("scorecard")}
+        >
+          Normalized Scorecard
         </button>
         <button
           type="button"
@@ -101,6 +110,7 @@ function App() {
       </nav>
 
       {activeKpi === "summary" && <SummaryPage />}
+      {activeKpi === "scorecard" && <ScorecardPage />}
       {activeKpi === "dot" && <DotKpiPage />}
       {activeKpi === "iot" && <IotKpiPage />}
       {activeKpi === "supplierAssessment" && <SupplierAssessmentPage />}

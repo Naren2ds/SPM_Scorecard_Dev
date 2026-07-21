@@ -6,14 +6,14 @@ import {
   scoreSupplierRows,
   validateConfig,
   validateRows,
-} from "./scoring";
-import { parseSupplierRowsFromCsv, toCsv } from "./csv";
+} from "../shared/scoring";
+import { parseSupplierRowsFromCsv, toCsv } from "../shared/csv";
 import type {
   KpiConfig,
   RollupRow,
   ScoredKpiRow,
   SupplierKpiInputRow,
-} from "./types";
+} from "../shared/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

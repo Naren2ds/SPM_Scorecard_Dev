@@ -22,7 +22,7 @@ import type {
   RollupAssessmentRow,
   ScoredAssessmentRow,
   SupplierAssessmentInputRow,
-} from "./supplierAssessmentTypes";
+} from "./types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

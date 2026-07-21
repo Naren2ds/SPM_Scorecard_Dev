@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// Supplier Assessment (Quality) KPI Page
-// Mirrors DotKpiPage exactly: API-backed data + refresh button, multi-select
-// filter bar, configuration bar, hierarchical rollup tables.
-// Only the scoring math differs (see supplierAssessmentScoring.ts, which
-// implements docs/Support_Docs/supplier-assessment-percentile-scoring.md).
+// Supplier Compliance % KPI Page
+// Mirrors the DOT + Supplier Assessment layout exactly: API-backed data +
+// refresh button, multi-select filter bar, configuration bar, hierarchical
+// rollup tables.
+// Scoring math per docs/Support_Docs/supplier-compliance-scoring.md.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,14 +16,14 @@ import {
   formulaModeLabel,
   toCsv,
   validateConfig,
-} from "./supplierAssessmentScoring";
+} from "../features/supplier-compliance/scoring";
 import type {
-  AssessmentConfig,
-  AssessmentFormulaMode,
-  RollupAssessmentRow,
-  ScoredAssessmentRow,
-  SupplierAssessmentInputRow,
-} from "./supplierAssessmentTypes";
+  ComplianceConfig,
+  ComplianceFormulaMode,
+  RollupComplianceRow,
+  ScoredComplianceRow,
+  SupplierComplianceInputRow,
+} from "../features/supplier-compliance/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ const formatRank = (value: number | null) =>
 const displayText = (value: string, fallback: string) =>
   (value ?? "").trim() || fallback;
 
-// ─── Multi-select dropdown (identical UX to DOT) ───────────────────────────
+// ─── Multi-select dropdown (matches DOT/SA UX) ─────────────────────────────
 
 function MultiSelectDropdown({
   label,
@@ -84,11 +84,7 @@ function MultiSelectDropdown({
   return (
     <div className="ms-dropdown" ref={ref}>
       <span className="ms-label">{label}</span>
-      <button
-        type="button"
-        className="ms-trigger"
-        onClick={() => setOpen(!open)}
-      >
+      <button type="button" className="ms-trigger" onClick={() => setOpen(!open)}>
         {displayLabel} <span className="ms-arrow">{open ? "▲" : "▼"}</span>
       </button>
       {open && (
@@ -121,23 +117,17 @@ function MultiSelectDropdown({
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function SupplierAssessmentPage() {
-  const [rows, setRows] = useState<SupplierAssessmentInputRow[]>([]);
+function SupplierCompliancePage() {
+  const [rows, setRows] = useState<SupplierComplianceInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<AssessmentConfig>({
+  const [config, setConfig] = useState<ComplianceConfig>({
     maxScore: 10,
-    greenWeight: 1,
-    yellowWeight: 0.5,
-    redWeight: 0,
-    criticalFloor: 0.5,
-    target: 0.8,
+    criticalFloor: 0.6,
+    target: 0.9,
     cohortLevel: "Supplier",
     formulaMode: "softStretch",
-    redWarningThreshold: 0.05,
-    redCapThreshold: 0.1,
-    capScoreIfRedExceedsThreshold: false,
   });
 
   // Multi-select filter states (empty = All). Year defaults to "2026".
@@ -150,11 +140,11 @@ function SupplierAssessmentPage() {
 
   // ─── Load cached data from API on mount ─────────────────────────────────
   const loadFromApi = () => {
-    fetch(`${API_BASE}/api/supplier-assessment`)
+    fetch(`${API_BASE}/api/supplier-compliance`)
       .then((res) => res.json())
       .then((json) => {
         if (json.data && json.data.length > 0) {
-          const parsed: SupplierAssessmentInputRow[] = json.data.map(
+          const parsed: SupplierComplianceInputRow[] = json.data.map(
             (row: Record<string, string>, i: number) => ({
               id: row.id || `api-${i}`,
               supplier: row.supplier || "",
@@ -167,11 +157,7 @@ function SupplierAssessmentPage() {
                   ? ("Not Applicable" as const)
                   : ("Applicable" as const),
               supplierApprovalStatus: row.supplierApprovalStatus || "",
-              greenCount: row.greenCount || "",
-              yellowCount: row.yellowCount || "",
-              redCount: row.redCount || "",
-              naCount: row.naCount || "",
-              blankCount: row.blankCount || "",
+              compliancePct: row.compliancePct || "",
               year: row.year || "",
             }),
           );
@@ -179,7 +165,7 @@ function SupplierAssessmentPage() {
           setStatusMessage(`${parsed.length} rows loaded.`);
         } else {
           setStatusMessage(
-            "No cached Supplier Assessment data. Click Refresh Data to fetch from Databricks.",
+            "No cached Supplier Compliance data. Click Refresh Data to fetch from Databricks.",
           );
         }
       })
@@ -195,13 +181,13 @@ function SupplierAssessmentPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     setStatusMessage("Refreshing from Databricks...");
-    fetch(`${API_BASE}/api/supplier-assessment/refresh`, { method: "POST" })
+    fetch(`${API_BASE}/api/supplier-compliance/refresh`, { method: "POST" })
       .then(() => {
         const poll = setInterval(() => {
           fetch(`${API_BASE}/api/status`)
             .then((res) => res.json())
             .then((json) => {
-              if (json.sa_status !== "refreshing") {
+              if (json.sc_status !== "refreshing") {
                 clearInterval(poll);
                 setRefreshing(false);
                 loadFromApi();
@@ -284,15 +270,7 @@ function SupplierAssessmentPage() {
 
   // ─── Config helpers ─────────────────────────────────────────────────────
   const updateNumericConfig = (
-    field:
-      | "maxScore"
-      | "greenWeight"
-      | "yellowWeight"
-      | "redWeight"
-      | "criticalFloor"
-      | "target"
-      | "redWarningThreshold"
-      | "redCapThreshold",
+    field: "maxScore" | "criticalFloor" | "target",
     value: string,
     scale = 1,
   ) => {
@@ -305,18 +283,16 @@ function SupplierAssessmentPage() {
   // ─── Export ─────────────────────────────────────────────────────────────
   const exportResults = () => {
     const csv = toCsv([
-      ["Supplier Assessment Config"],
+      ["Supplier Compliance Config"],
       ["Max Score", config.maxScore],
-      ["Green / Yellow / Red Weights", `${config.greenWeight} / ${config.yellowWeight} / ${config.redWeight}`],
       ["Critical Floor %", percent(config.criticalFloor, 2)],
       ["Target %", percent(config.target, 2)],
       ["Formula", formulaModeLabel(config.formulaMode)],
-      ["Cap Score If Red % ≥ Threshold", config.capScoreIfRedExceedsThreshold ? `Yes (@ ${percent(config.redCapThreshold, 2)})` : "No"],
       ["Rows (after filters)", filteredRows.length],
       [],
       ["Supplier Level"],
-      ["Supplier", "Parent", "Zone", "Country", "Category", "Approval Status", "Green", "Yellow", "Red", "N/A", "Valid", "Health %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Status"],
-      ...supplierScores.map((r) => [r.supplier, r.parentSupplier, r.zone, r.country, r.category, r.supplierApprovalStatus, r.greenCount, r.yellowCount, r.redCount, r.naCount, r.totalValidAssessments, percent(r.assessmentHealthIndex, 2), formatRank(r.rankDescending), percent(r.percentile, 2), numeric(r.attainmentFactor, 4), numeric(r.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.scoreStatus]),
+      ["Supplier", "Parent", "Zone", "Country", "Category", "Approval Status", "Compliance %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Status"],
+      ...supplierScores.map((r) => [r.supplier, r.parentSupplier, r.zone, r.country, r.category, r.supplierApprovalStatus, percent(r.compliancePct, 2), formatRank(r.rankDescending), percent(r.percentile, 2), numeric(r.attainmentFactor, 4), numeric(r.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.scoreStatus]),
       [],
       ["Zone Rollup"],
       ...rollupExportRows(zoneRollup, "Zone"),
@@ -334,7 +310,7 @@ function SupplierAssessmentPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "supplier-assessment-results.csv";
+    link.download = "supplier-compliance-results.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -346,9 +322,9 @@ function SupplierAssessmentPage() {
       <section className="top-bar kpi-page-heading">
         <div>
           <p className="eyebrow">Quality KPI</p>
-          <h1>Supplier Assessment — Percentile Scoring</h1>
+          <h1>Supplier Compliance — Percentile Scoring</h1>
           <p className="kpi-value-note">
-            Health Index = (Green × w<sub>G</sub> + Yellow × w<sub>Y</sub> + Red × w<sub>R</sub>) / Total Valid Assessments
+            Compliance % is sourced pre-computed per supplier. Rollups use the simple average of contributing suppliers (proxy).
           </p>
           {statusMessage && <p className="supporting">{statusMessage}</p>}
         </div>
@@ -386,18 +362,6 @@ function SupplierAssessmentPage() {
           <input type="number" min="0" step="0.5" value={Number.isFinite(config.maxScore) ? config.maxScore : ""} onChange={(e) => updateNumericConfig("maxScore", e.target.value)} />
         </label>
         <label>
-          <span>Green Weight</span>
-          <input type="number" min="0" max="1" step="0.05" value={Number.isFinite(config.greenWeight) ? config.greenWeight : ""} onChange={(e) => updateNumericConfig("greenWeight", e.target.value)} />
-        </label>
-        <label>
-          <span>Yellow Weight</span>
-          <input type="number" min="0" max="1" step="0.05" value={Number.isFinite(config.yellowWeight) ? config.yellowWeight : ""} onChange={(e) => updateNumericConfig("yellowWeight", e.target.value)} />
-        </label>
-        <label>
-          <span>Red Weight</span>
-          <input type="number" min="0" max="1" step="0.05" value={Number.isFinite(config.redWeight) ? config.redWeight : ""} onChange={(e) => updateNumericConfig("redWeight", e.target.value)} />
-        </label>
-        <label>
           <span>Critical Floor %</span>
           <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.criticalFloor) ? Number((config.criticalFloor * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("criticalFloor", e.target.value, 100)} />
         </label>
@@ -407,27 +371,10 @@ function SupplierAssessmentPage() {
         </label>
         <label>
           <span>Formula Mode</span>
-          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as AssessmentFormulaMode }))}>
+          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as ComplianceFormulaMode }))}>
             <option value="softStretch">Softer Percentile Stretch</option>
             <option value="strict">Strict Percentile &times; Attainment</option>
           </select>
-        </label>
-        <label>
-          <span>Cap @ Red %</span>
-          <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.redCapThreshold) ? Number((config.redCapThreshold * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("redCapThreshold", e.target.value, 100)} />
-        </label>
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={config.capScoreIfRedExceedsThreshold}
-            onChange={(e) =>
-              setConfig((c) => ({
-                ...c,
-                capScoreIfRedExceedsThreshold: e.target.checked,
-              }))
-            }
-          />
-          <span>Enable Red Cap</span>
         </label>
         {configErrors.length > 0 && (
           <div className="validation-box config-bar-errors">
@@ -450,10 +397,10 @@ function SupplierAssessmentPage() {
         </div>
       </section>
 
-      {/* How Supplier Assessment Earned Score is Calculated */}
+      {/* How Supplier Compliance Earned Score is Calculated */}
       <details className="formula-panel collapsible-section" open>
-        <summary>How Supplier Assessment Earned Score Is Calculated</summary>
-        <div className="formula-ribbon" aria-label="Supplier Assessment formula summary">
+        <summary>How Supplier Compliance Earned Score Is Calculated</summary>
+        <div className="formula-ribbon" aria-label="Supplier Compliance formula summary">
           <div>
             <span>1. Earned Score</span>
             <strong>
@@ -464,7 +411,7 @@ function SupplierAssessmentPage() {
           </div>
           <div>
             <span>2. Attainment</span>
-            <strong>(Health Index &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong>
+            <strong>(Compliance &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong>
           </div>
           <div>
             <span>3. Percentile</span>
@@ -480,12 +427,11 @@ function SupplierAssessmentPage() {
         <details className="formula-details">
           <summary>Show short explanation</summary>
           <ul>
-            <li><strong>Green / Yellow / Red are weighted into a Health Index.</strong> N/A and blank are excluded from the valid denominator.</li>
-            <li><strong>Rank valid suppliers within the selected cohort.</strong> Highest Health Index = Rank 1 = strongest percentile.</li>
-            <li><strong>Floor and Target apply to the Health Index.</strong> Below floor → Attainment = 0. Above target → Attainment = 1.</li>
+            <li><strong>Compliance % arrives pre-computed</strong> from the source system. Values in (1, 100] are normalised to [0, 1].</li>
+            <li><strong>Rank valid suppliers within the selected cohort.</strong> Highest compliance = Rank 1 = strongest percentile.</li>
+            <li><strong>Floor and Target apply to compliance directly.</strong> Below floor → Attainment = 0. Above target → Attainment = 1.</li>
             <li><strong>Softer formula protects 70% of the attainment-adjusted score</strong> even at 0th percentile — 30% is stretched by rank.</li>
-            <li><strong>Optional Red Guardrail caps earned score at 50% of Max</strong> when Red % ≥ threshold.</li>
-            <li><strong>Rollups aggregate counts first</strong>, then recalculate Health Index — never average supplier percentages.</li>
+            <li><strong>Rollups use simple average</strong> because the source has no completed / required document counts — flagged as <em>Proxy Calculation</em>.</li>
           </ul>
         </details>
       </details>
@@ -531,15 +477,14 @@ function SupplierAssessmentPage() {
 
 // ─── Result Tables ─────────────────────────────────────────────────────────
 
-function SupplierResults({ rows }: { rows: ScoredAssessmentRow[] }) {
+function SupplierResults({ rows }: { rows: ScoredComplianceRow[] }) {
   return (
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
           <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
           <th>Approval Status</th>
-          <th>Green</th><th>Yellow</th><th>Red</th><th>N/A</th><th>Valid</th>
-          <th>Health %</th><th>Red %</th>
+          <th>Compliance %</th>
           <th>Rank</th><th>Percentile</th><th>Attainment</th>
           <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th>
         </tr></thead>
@@ -552,13 +497,7 @@ function SupplierResults({ rows }: { rows: ScoredAssessmentRow[] }) {
               <td>{displayText(row.country, "")}</td>
               <td>{displayText(row.category, "")}</td>
               <td>{displayText(row.supplierApprovalStatus, "-")}</td>
-              <td>{row.greenCount}</td>
-              <td>{row.yellowCount}</td>
-              <td>{row.redCount}</td>
-              <td>{row.naCount}</td>
-              <td>{row.totalValidAssessments}</td>
-              <td>{percent(row.assessmentHealthIndex, 2)}</td>
-              <td>{percent(row.redPercent, 2)}</td>
+              <td>{percent(row.compliancePct, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainmentFactor, 4)}</td>
@@ -578,7 +517,7 @@ function RollupResults({
   rows,
   label,
 }: {
-  rows: RollupAssessmentRow[];
+  rows: RollupComplianceRow[];
   label: string;
 }) {
   return (
@@ -586,23 +525,16 @@ function RollupResults({
       <table className="data-table results-table">
         <thead><tr>
           <th>{label}</th>
-          <th>Green</th><th>Yellow</th><th>Red</th><th>N/A</th><th>Valid</th>
-          <th>Health %</th><th>Red %</th>
+          <th>Compliance %</th>
           <th>Rank</th><th>Percentile</th><th>Attainment</th>
           <th>Max</th><th>Earned</th><th>Score %</th>
-          <th>Contributing</th><th>Status</th>
+          <th>Contributing</th><th>Aggregation</th><th>Status</th>
         </tr></thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className={rowClass(row.scoreStatus)}>
               <td>{row.label}</td>
-              <td>{row.greenCount}</td>
-              <td>{row.yellowCount}</td>
-              <td>{row.redCount}</td>
-              <td>{row.naCount}</td>
-              <td>{row.totalValidAssessments}</td>
-              <td>{percent(row.assessmentHealthIndex, 2)}</td>
-              <td>{percent(row.redPercent, 2)}</td>
+              <td>{percent(row.compliancePct, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainmentFactor, 4)}</td>
@@ -610,6 +542,7 @@ function RollupResults({
               <td>{numeric(row.earnedScore, 2)}</td>
               <td>{percent(row.scorePercent, 2)}</td>
               <td>{row.contributingSuppliers}</td>
+              <td>{row.aggregationMethod}</td>
               <td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td>
             </tr>
           ))}
@@ -621,17 +554,11 @@ function RollupResults({
 
 // ─── Export helper ─────────────────────────────────────────────────────────
 
-const rollupExportRows = (rows: RollupAssessmentRow[], label: string) => [
-  [label, "Green", "Yellow", "Red", "N/A", "Valid", "Health %", "Red %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Contributing", "Status"],
+const rollupExportRows = (rows: RollupComplianceRow[], label: string) => [
+  [label, "Compliance %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Contributing", "Aggregation", "Status"],
   ...rows.map((r) => [
     r.label,
-    r.greenCount,
-    r.yellowCount,
-    r.redCount,
-    r.naCount,
-    r.totalValidAssessments,
-    percent(r.assessmentHealthIndex, 2),
-    percent(r.redPercent, 2),
+    percent(r.compliancePct, 2),
     formatRank(r.rankDescending),
     percent(r.percentile, 2),
     numeric(r.attainmentFactor, 4),
@@ -639,6 +566,7 @@ const rollupExportRows = (rows: RollupAssessmentRow[], label: string) => [
     numeric(r.earnedScore, 2),
     percent(r.scorePercent, 2),
     r.contributingSuppliers,
+    r.aggregationMethod,
     r.scoreStatus,
   ]),
 ];
@@ -646,29 +574,27 @@ const rollupExportRows = (rows: RollupAssessmentRow[], label: string) => [
 // ─── Status styling ────────────────────────────────────────────────────────
 
 const rowClass = (status: string) => {
-  if (
-    status === "Not Applicable" ||
-    status === "No Valid Assessment" ||
-    status === "Missing Assessment"
-  ) {
+  if (status === "Invalid Data") return "invalid-row";
+  if (status === "Not Applicable" || status === "Missing Compliance") {
     return "not-applicable-row";
   }
   return "";
 };
 
 const statusClass = (status: string) => {
-  if (
-    status === "Not Applicable" ||
-    status === "No Valid Assessment" ||
-    status === "Missing Assessment"
-  ) {
+  if (status === "Invalid Data") return "status-invalid";
+  if (status === "Not Applicable" || status === "Missing Compliance") {
     return "status-na";
   }
   if (status === "Zero Score") return "status-floor";
-  if (status === "No Variance" || status === "Single Observation") {
+  if (
+    status === "No Variance" ||
+    status === "Single Observation" ||
+    status === "Proxy Calculation"
+  ) {
     return "status-note";
   }
   return "status-valid";
 };
 
-export default SupplierAssessmentPage;
+export default SupplierCompliancePage;

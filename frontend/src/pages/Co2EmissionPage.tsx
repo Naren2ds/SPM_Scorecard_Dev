@@ -1,28 +1,29 @@
 // ---------------------------------------------------------------------------
-// Supplier Maturity Score KPI Page
-// Same layout / formulas as Supplier Compliance, but:
-//   - Value is Maturity Score (%) with fixed defaults Floor=60%, Target=80%
-//   - No country, no approval status
-//   - Rollups: Zone + Parent + Category (no Country)
+// CO2 Emission KPI Page
+// Same layout as Supplier Compliance but:
+//   - Value is absolute tonnes CO2e (no % display)
+//   - Critical Floor / Target defaults come from Q1 / Q3 of the currently
+//     filtered rows (auto-derive checkbox; user can override).
+//   - Rollups: Zone + Parent only.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  calculateCategoryRollup,
   calculateParentRollup,
   calculateSupplierScores,
   calculateZoneRollup,
+  computeQuartileDefaults,
   formulaModeLabel,
   toCsv,
   validateConfig,
-} from "./supplierMaturityScoring";
+} from "../features/co2-emission/scoring";
 import type {
-  MaturityConfig,
-  MaturityFormulaMode,
-  RollupMaturityRow,
-  ScoredMaturityRow,
-  SupplierMaturityInputRow,
-} from "./supplierMaturityTypes";
+  Co2Config,
+  Co2EmissionInputRow,
+  Co2FormulaMode,
+  RollupCo2Row,
+  ScoredCo2Row,
+} from "../features/co2-emission/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,14 @@ const percent = (value: number | null, digits = 1) =>
 const numeric = (value: number | null, digits = 2) =>
   value === null || !Number.isFinite(value) ? "-" : value.toFixed(digits);
 
+const tonnes = (value: number | null, digits = 2) =>
+  value === null || !Number.isFinite(value)
+    ? "-"
+    : value.toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      });
+
 const formatRank = (value: number | null) =>
   value === null || !Number.isFinite(value)
     ? "-"
@@ -44,7 +53,7 @@ const formatRank = (value: number | null) =>
 const displayText = (value: string, fallback: string) =>
   (value ?? "").trim() || fallback;
 
-// ─── Multi-select dropdown (matches DOT/SA/SC/CO2 UX) ──────────────────────
+// ─── Multi-select dropdown (matches DOT/SA/SC UX) ──────────────────────────
 
 function MultiSelectDropdown({
   label,
@@ -116,33 +125,37 @@ function MultiSelectDropdown({
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function SupplierMaturityPage() {
-  const [rows, setRows] = useState<SupplierMaturityInputRow[]>([]);
+function Co2EmissionPage() {
+  const [rows, setRows] = useState<Co2EmissionInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<MaturityConfig>({
+  const [config, setConfig] = useState<Co2Config>({
     maxScore: 10,
-    criticalFloor: 0.6,
-    target: 0.8,
+    criticalFloor: 0,
+    target: 1,
     cohortLevel: "Supplier",
     formulaMode: "softStretch",
   });
 
-  // Multi-select filter states (empty = All). Year defaults to 2025 & 2026.
+  // When true, Floor/Target auto-track Q1/Q3 of the currently filtered rows.
+  const [autoQuartiles, setAutoQuartiles] = useState(true);
+
+  // Multi-select filter states (empty = All). Year defaults to "2024" to
+  // match the source column `emissions_tco2e_2024`.
   const [selCategory, setSelCategory] = useState<string[]>([]);
-  const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
+  const [selYear, setSelYear] = useState<string[]>(["2024"]);
   const [selParent, setSelParent] = useState<string[]>([]);
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
   // ─── Load cached data from API on mount ─────────────────────────────────
   const loadFromApi = () => {
-    fetch(`${API_BASE}/api/supplier-maturity`)
+    fetch(`${API_BASE}/api/co2-emission`)
       .then((res) => res.json())
       .then((json) => {
         if (json.data && json.data.length > 0) {
-          const parsed: SupplierMaturityInputRow[] = json.data.map(
+          const parsed: Co2EmissionInputRow[] = json.data.map(
             (row: Record<string, string>, i: number) => ({
               id: row.id || `api-${i}`,
               supplier: row.supplier || "",
@@ -153,7 +166,7 @@ function SupplierMaturityPage() {
                 row.kpiApplicability === "Not Applicable"
                   ? ("Not Applicable" as const)
                   : ("Applicable" as const),
-              maturityScore: row.maturityScore || "",
+              co2Emission: row.co2Emission || "",
               year: row.year || "",
             }),
           );
@@ -161,7 +174,7 @@ function SupplierMaturityPage() {
           setStatusMessage(`${parsed.length} rows loaded.`);
         } else {
           setStatusMessage(
-            "No cached Supplier Maturity data. Click Refresh Data to fetch from Databricks.",
+            "No cached CO2 Emission data. Click Refresh Data to fetch from Databricks.",
           );
         }
       })
@@ -177,13 +190,13 @@ function SupplierMaturityPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     setStatusMessage("Refreshing from Databricks...");
-    fetch(`${API_BASE}/api/supplier-maturity/refresh`, { method: "POST" })
+    fetch(`${API_BASE}/api/co2-emission/refresh`, { method: "POST" })
       .then(() => {
         const poll = setInterval(() => {
           fetch(`${API_BASE}/api/status`)
             .then((res) => res.json())
             .then((json) => {
-              if (json.sm_status !== "refreshing") {
+              if (json.co2_status !== "refreshing") {
                 clearInterval(poll);
                 setRefreshing(false);
                 loadFromApi();
@@ -234,6 +247,24 @@ function SupplierMaturityPage() {
     [rows, selCategory, selYear, selParent, selSupplier, selZone],
   );
 
+  // ─── Quartile defaults (Floor = Q1, Target = Q3) ────────────────────────
+  const quartiles = useMemo(
+    () => computeQuartileDefaults(filteredRows),
+    [filteredRows],
+  );
+
+  // Apply auto-quartile defaults to config whenever filtered data changes
+  // (only when the user has NOT manually overridden the values).
+  useEffect(() => {
+    if (!autoQuartiles) return;
+    if (quartiles.q1 === null || quartiles.q3 === null) return;
+    // Guard against equal Q1/Q3 (no variance) — push target slightly above.
+    const q1 = quartiles.q1;
+    let q3 = quartiles.q3;
+    if (q3 <= q1) q3 = q1 + 1;
+    setConfig((c) => ({ ...c, criticalFloor: q1, target: q3 }));
+  }, [autoQuartiles, quartiles.q1, quartiles.q3]);
+
   // ─── Scoring ────────────────────────────────────────────────────────────
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
@@ -250,51 +281,53 @@ function SupplierMaturityPage() {
     () => (configIsValid ? calculateParentRollup(filteredRows, config) : []),
     [filteredRows, config, configIsValid],
   );
-  const categoryRollup = useMemo(
-    () => (configIsValid ? calculateCategoryRollup(filteredRows, config) : []),
-    [filteredRows, config, configIsValid],
-  );
 
   // ─── Config helpers ─────────────────────────────────────────────────────
   const updateNumericConfig = (
     field: "maxScore" | "criticalFloor" | "target",
     value: string,
-    scale = 1,
   ) => {
     setConfig((c) => ({
       ...c,
-      [field]: value === "" ? Number.NaN : Number(value) / scale,
+      [field]: value === "" ? Number.NaN : Number(value),
     }));
+    if (field === "criticalFloor" || field === "target") {
+      setAutoQuartiles(false);
+    }
+  };
+
+  const resetToQuartiles = () => {
+    setAutoQuartiles(true);
   };
 
   // ─── Export ─────────────────────────────────────────────────────────────
   const exportResults = () => {
     const csv = toCsv([
-      ["Supplier Maturity Score Config"],
+      ["CO2 Emission Config"],
       ["Max Score", config.maxScore],
-      ["Critical Floor %", percent(config.criticalFloor, 2)],
-      ["Target %", percent(config.target, 2)],
+      ["Critical Floor (tCO2e)", numeric(config.criticalFloor, 4)],
+      ["Target (tCO2e)", numeric(config.target, 4)],
       ["Formula", formulaModeLabel(config.formulaMode)],
+      ["Auto Quartile Defaults", autoQuartiles ? "Yes" : "No"],
+      ["Q1 (filtered)", numeric(quartiles.q1, 4)],
+      ["Q3 (filtered)", numeric(quartiles.q3, 4)],
       ["Rows (after filters)", filteredRows.length],
       [],
       ["Supplier Level"],
-      ["Supplier", "Parent", "Zone", "Category", "Maturity Score %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Status"],
-      ...supplierScores.map((r) => [r.supplier, r.parentSupplier, r.zone, r.category, percent(r.maturityScore, 2), formatRank(r.rankDescending), percent(r.percentile, 2), numeric(r.attainmentFactor, 4), numeric(r.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.scoreStatus]),
+      ["Supplier", "Parent", "Zone", "Category", "CO2 (tCO2e)", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Status"],
+      ...supplierScores.map((r) => [r.supplier, r.parentSupplier, r.zone, r.category, tonnes(r.co2Emission, 2), formatRank(r.rankDescending), percent(r.percentile, 2), numeric(r.attainmentFactor, 4), numeric(r.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.scoreStatus]),
       [],
       ["Zone Rollup"],
       ...rollupExportRows(zoneRollup, "Zone"),
       [],
       ["Parent Rollup"],
       ...rollupExportRows(parentRollup, "Parent Supplier"),
-      [],
-      ["Category Rollup"],
-      ...rollupExportRows(categoryRollup, "Category"),
     ]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "supplier-maturity-results.csv";
+    link.download = "co2-emission-results.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -306,9 +339,9 @@ function SupplierMaturityPage() {
       <section className="top-bar kpi-page-heading">
         <div>
           <p className="eyebrow">Sustainability KPI</p>
-          <h1>Supplier Maturity Score — Percentile Scoring</h1>
+          <h1>CO<sub>2</sub> Emission — Percentile Scoring</h1>
           <p className="kpi-value-note">
-            Maturity Score is sourced pre-computed per supplier (0-100 scale, normalised to 0-100%). Higher = better. Rollups use the simple average of contributing suppliers (proxy).
+            CO<sub>2</sub> Reduction Potential (tonnes CO<sub>2</sub>e) is sourced per supplier. Higher value = better. Critical Floor and Target default to Q1 / Q3 of the currently filtered rows.
           </p>
           {statusMessage && <p className="supporting">{statusMessage}</p>}
         </div>
@@ -342,23 +375,58 @@ function SupplierMaturityPage() {
       <section className="config-bar">
         <label>
           <span>Max Score</span>
-          <input type="number" min="0" step="0.5" value={Number.isFinite(config.maxScore) ? config.maxScore : ""} onChange={(e) => updateNumericConfig("maxScore", e.target.value)} />
+          <input
+            type="number"
+            min="0"
+            step="0.5"
+            value={Number.isFinite(config.maxScore) ? config.maxScore : ""}
+            onChange={(e) => updateNumericConfig("maxScore", e.target.value)}
+          />
         </label>
         <label>
-          <span>Critical Floor %</span>
-          <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.criticalFloor) ? Number((config.criticalFloor * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("criticalFloor", e.target.value, 100)} />
+          <span>Critical Floor (tCO<sub>2</sub>e)</span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={Number.isFinite(config.criticalFloor) ? Number(config.criticalFloor.toFixed(4)) : ""}
+            onChange={(e) => updateNumericConfig("criticalFloor", e.target.value)}
+          />
         </label>
         <label>
-          <span>Target %</span>
-          <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.target) ? Number((config.target * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("target", e.target.value, 100)} />
+          <span>Target (tCO<sub>2</sub>e)</span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={Number.isFinite(config.target) ? Number(config.target.toFixed(4)) : ""}
+            onChange={(e) => updateNumericConfig("target", e.target.value)}
+          />
         </label>
         <label>
           <span>Formula Mode</span>
-          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as MaturityFormulaMode }))}>
+          <select
+            value={config.formulaMode}
+            onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as Co2FormulaMode }))}
+          >
             <option value="softStretch">Softer Percentile Stretch</option>
             <option value="strict">Strict Percentile &times; Attainment</option>
           </select>
         </label>
+        <label className="checkbox-inline">
+          <input
+            type="checkbox"
+            checked={autoQuartiles}
+            onChange={(e) => {
+              if (e.target.checked) resetToQuartiles();
+              else setAutoQuartiles(false);
+            }}
+          />
+          <span>Auto Q1 / Q3 defaults</span>
+        </label>
+        <div className="filter-summary">
+          Q1: <strong>{numeric(quartiles.q1, 2)}</strong> &middot; Q3: <strong>{numeric(quartiles.q3, 2)}</strong>
+        </div>
         {configErrors.length > 0 && (
           <div className="validation-box config-bar-errors">
             {configErrors.map((err) => <p key={err}>{err}</p>)}
@@ -380,10 +448,10 @@ function SupplierMaturityPage() {
         </div>
       </section>
 
-      {/* How Supplier Maturity Earned Score is Calculated */}
+      {/* How CO2 Emission Earned Score is Calculated */}
       <details className="formula-panel collapsible-section" open>
-        <summary>How Supplier Maturity Earned Score Is Calculated</summary>
-        <div className="formula-ribbon" aria-label="Supplier Maturity formula summary">
+        <summary>How CO<sub>2</sub> Emission Earned Score Is Calculated</summary>
+        <div className="formula-ribbon" aria-label="CO2 Emission formula summary">
           <div>
             <span>1. Earned Score</span>
             <strong>
@@ -394,11 +462,11 @@ function SupplierMaturityPage() {
           </div>
           <div>
             <span>2. Attainment</span>
-            <strong>(Score &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong>
+            <strong>(Value &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong>
           </div>
           <div>
             <span>3. Percentile</span>
-            <strong>(N &minus; Rank) / (N &minus; 1). Rank 1 = highest score = 100th percentile.</strong>
+            <strong>(N &minus; Rank) / (N &minus; 1). Rank 1 = highest value = 100th percentile.</strong>
           </div>
         </div>
         <div className="formula-callout">
@@ -410,11 +478,12 @@ function SupplierMaturityPage() {
         <details className="formula-details">
           <summary>Show short explanation</summary>
           <ul>
-            <li><strong>Maturity Score arrives pre-computed</strong> from the source system (0-100). Values are normalised to 0-100% internally.</li>
-            <li><strong>Rank valid suppliers within the selected cohort.</strong> Highest score = Rank 1 = strongest percentile.</li>
-            <li><strong>Floor and Target apply to the score directly.</strong> Below floor → Attainment = 0. Above target → Attainment = 1.</li>
+            <li><strong>CO<sub>2</sub> value arrives pre-computed</strong> from the source system as absolute tonnes CO<sub>2</sub>e. Higher = better.</li>
+            <li><strong>Critical Floor and Target</strong> default to Q1 and Q3 of the currently filtered rows respectively. Toggle off "Auto Q1 / Q3 defaults" to enter manual values.</li>
+            <li><strong>Rank valid suppliers within the selected cohort.</strong> Highest value = Rank 1 = strongest percentile.</li>
+            <li><strong>Below floor</strong> → Attainment = 0 → Earned Score = 0.</li>
             <li><strong>Softer formula protects 70% of the attainment-adjusted score</strong> even at 0th percentile — 30% is stretched by rank.</li>
-            <li><strong>Rollups (Zone, Parent, Category) use simple average</strong> — flagged as <em>Proxy Calculation</em>.</li>
+            <li><strong>Rollups (Zone and Parent) use simple average</strong> of contributing suppliers — flagged as <em>Proxy Calculation</em>.</li>
           </ul>
         </details>
       </details>
@@ -443,10 +512,6 @@ function SupplierMaturityPage() {
               <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Rollup ({parentRollup.length})</h3></summary>
               <div className="rollup-scroll"><RollupResults rows={parentRollup} label="Parent Supplier" /></div>
             </details>
-            <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup ({categoryRollup.length})</h3></summary>
-              <div className="rollup-scroll"><RollupResults rows={categoryRollup} label="Category" /></div>
-            </details>
           </div>
         )}
       </section>
@@ -456,13 +521,13 @@ function SupplierMaturityPage() {
 
 // ─── Result Tables ─────────────────────────────────────────────────────────
 
-function SupplierResults({ rows }: { rows: ScoredMaturityRow[] }) {
+function SupplierResults({ rows }: { rows: ScoredCo2Row[] }) {
   return (
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
           <th>Supplier</th><th>Parent</th><th>Zone</th><th>Category</th>
-          <th>Maturity %</th>
+          <th>CO<sub>2</sub> (tCO<sub>2</sub>e)</th>
           <th>Rank</th><th>Percentile</th><th>Attainment</th>
           <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th>
         </tr></thead>
@@ -473,7 +538,7 @@ function SupplierResults({ rows }: { rows: ScoredMaturityRow[] }) {
               <td>{displayText(row.parentSupplier, "")}</td>
               <td>{displayText(row.zone, "")}</td>
               <td>{displayText(row.category, "")}</td>
-              <td>{percent(row.maturityScore, 2)}</td>
+              <td>{tonnes(row.co2Emission, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainmentFactor, 4)}</td>
@@ -493,7 +558,7 @@ function RollupResults({
   rows,
   label,
 }: {
-  rows: RollupMaturityRow[];
+  rows: RollupCo2Row[];
   label: string;
 }) {
   return (
@@ -501,7 +566,7 @@ function RollupResults({
       <table className="data-table results-table">
         <thead><tr>
           <th>{label}</th>
-          <th>Maturity %</th>
+          <th>CO<sub>2</sub> (tCO<sub>2</sub>e)</th>
           <th>Rank</th><th>Percentile</th><th>Attainment</th>
           <th>Max</th><th>Earned</th><th>Score %</th>
           <th>Contributing</th><th>Aggregation</th><th>Status</th>
@@ -510,7 +575,7 @@ function RollupResults({
           {rows.map((row) => (
             <tr key={row.id} className={rowClass(row.scoreStatus)}>
               <td>{row.label}</td>
-              <td>{percent(row.maturityScore, 2)}</td>
+              <td>{tonnes(row.co2Emission, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainmentFactor, 4)}</td>
@@ -530,11 +595,11 @@ function RollupResults({
 
 // ─── Export helper ─────────────────────────────────────────────────────────
 
-const rollupExportRows = (rows: RollupMaturityRow[], label: string) => [
-  [label, "Maturity %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Contributing", "Aggregation", "Status"],
+const rollupExportRows = (rows: RollupCo2Row[], label: string) => [
+  [label, "CO2 (tCO2e)", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Contributing", "Aggregation", "Status"],
   ...rows.map((r) => [
     r.label,
-    percent(r.maturityScore, 2),
+    tonnes(r.co2Emission, 2),
     formatRank(r.rankDescending),
     percent(r.percentile, 2),
     numeric(r.attainmentFactor, 4),
@@ -551,7 +616,7 @@ const rollupExportRows = (rows: RollupMaturityRow[], label: string) => [
 
 const rowClass = (status: string) => {
   if (status === "Invalid Data") return "invalid-row";
-  if (status === "Not Applicable" || status === "Missing Score") {
+  if (status === "Not Applicable" || status === "Missing Value") {
     return "not-applicable-row";
   }
   return "";
@@ -559,7 +624,7 @@ const rowClass = (status: string) => {
 
 const statusClass = (status: string) => {
   if (status === "Invalid Data") return "status-invalid";
-  if (status === "Not Applicable" || status === "Missing Score") {
+  if (status === "Not Applicable" || status === "Missing Value") {
     return "status-na";
   }
   if (status === "Zero Score") return "status-floor";
@@ -573,4 +638,4 @@ const statusClass = (status: string) => {
   return "status-valid";
 };
 
-export default SupplierMaturityPage;
+export default Co2EmissionPage;

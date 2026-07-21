@@ -1,24 +1,28 @@
 // ---------------------------------------------------------------------------
-// Supplier Maturity Score — scoring engine
-// Same math as Supplier Compliance:
-//   1) Parse the maturity score (stored in [0, 1] by backend)
-//   2) Rank within cohort → percentile (Rank 1 = highest score = best)
-//   3) Attainment: (score - floor) / (target - floor), clamped 0..1
-//   4) Earned Score (Strict or Soft Stretch)
-//   5) Rollups by Parent / Zone / Category using SIMPLE AVERAGE → Proxy
+// CO2 Emission KPI — scoring engine
+// Same structural pattern as Supplier Compliance scoring, but:
+//   - Value is an absolute tonnes CO2e number (no [0, 1] normalisation).
+//   - Higher value = better (CO2 Reduction Potential).
+//   - Floor / Target default to Q1 / Q3 of the filtered rows.
+// Flow:
+//   1) Parse the direct CO2 tonnes value per supplier
+//   2) Rank within cohort → percentile (Rank 1 = highest value)
+//   3) Attainment factor: (value - floor) / (target - floor), clamped 0..1
+//   4) Earned Score (Strict or Soft Stretch), identical to Compliance
+//   5) Roll up Parent / Zone using SIMPLE AVERAGE → "Proxy Calculation"
 // ---------------------------------------------------------------------------
 
 import type {
-  MaturityAssessmentRow,
-  MaturityConfig,
-  MaturityFormulaMode,
-  MaturityPercentileRank,
-  MaturityRollupLevel,
-  MaturityScoreStatus,
-  RollupMaturityRow,
-  ScoredMaturityRow,
-  SupplierMaturityInputRow,
-} from "./supplierMaturityTypes";
+  Co2AssessmentRow,
+  Co2Config,
+  Co2FormulaMode,
+  Co2PercentileRank,
+  Co2RollupLevel,
+  Co2ScoreStatus,
+  Co2EmissionInputRow,
+  RollupCo2Row,
+  ScoredCo2Row,
+} from "./types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -28,46 +32,72 @@ const clamp = (value: number, min: number, max: number) =>
 const dim = (value: string, fallback: string) =>
   (value ?? "").trim() || fallback;
 
-const parseMaturity = (
+const parseCo2 = (
   value: string,
 ): { value: number | null; error: string | null } => {
   const raw = String(value ?? "").trim();
   if (!raw) return { value: null, error: null };
-  const cleaned = raw.replace(/,/g, "").replace("%", "").trim();
+  const cleaned = raw.replace(/,/g, "").trim();
   const parsed = Number(cleaned);
   if (!Number.isFinite(parsed)) {
-    return { value: null, error: `Maturity score "${raw}" is not numeric.` };
+    return { value: null, error: `CO2 value "${raw}" is not numeric.` };
   }
   if (parsed < 0) {
-    return { value: null, error: "Maturity score is below 0." };
+    return { value: null, error: "CO2 value is below 0." };
   }
-  // Values in [0, 1] pass through, values in (1, 100] treated as %.
-  if (parsed <= 1) return { value: parsed, error: null };
-  if (parsed <= 100) return { value: parsed / 100, error: null };
-  return { value: null, error: "Maturity score is above 100." };
+  return { value: parsed, error: null };
 };
+
+// ─── Quartile helpers (used to seed Critical Floor / Target defaults) ──────
+
+/** Linear-interpolation percentile (matches numpy default "linear"). */
+export function percentileOf(values: number[], p: number): number | null {
+  const clean = values
+    .filter((v) => Number.isFinite(v))
+    .slice()
+    .sort((a, b) => a - b);
+  if (clean.length === 0) return null;
+  if (clean.length === 1) return clean[0];
+  const rank = p * (clean.length - 1);
+  const lo = Math.floor(rank);
+  const hi = Math.ceil(rank);
+  if (lo === hi) return clean[lo];
+  const frac = rank - lo;
+  return clean[lo] + (clean[hi] - clean[lo]) * frac;
+}
+
+/**
+ * Compute Q1 (25th percentile) and Q3 (75th percentile) from the numeric
+ * CO2 values of the applicable rows. Returns nulls if no valid values.
+ */
+export function computeQuartileDefaults(
+  rows: Co2EmissionInputRow[],
+): { q1: number | null; q3: number | null } {
+  const values: number[] = [];
+  rows.forEach((r) => {
+    if (r.kpiApplicability === "Not Applicable") return;
+    const parsed = parseCo2(r.co2Emission);
+    if (parsed.value !== null) values.push(parsed.value);
+  });
+  return {
+    q1: percentileOf(values, 0.25),
+    q3: percentileOf(values, 0.75),
+  };
+}
 
 // ─── Config validation ─────────────────────────────────────────────────────
 
-export function validateConfig(config: MaturityConfig): string[] {
+export function validateConfig(config: Co2Config): string[] {
   const errors: string[] = [];
 
   if (!Number.isFinite(config.maxScore) || config.maxScore <= 0) {
     errors.push("Max Score must be greater than 0.");
   }
-  if (
-    !Number.isFinite(config.criticalFloor) ||
-    config.criticalFloor < 0 ||
-    config.criticalFloor > 1
-  ) {
-    errors.push("Critical Floor must be between 0% and 100%.");
+  if (!Number.isFinite(config.criticalFloor) || config.criticalFloor < 0) {
+    errors.push("Critical Floor must be a non-negative number.");
   }
-  if (
-    !Number.isFinite(config.target) ||
-    config.target < 0 ||
-    config.target > 1
-  ) {
-    errors.push("Target must be between 0% and 100%.");
+  if (!Number.isFinite(config.target) || config.target < 0) {
+    errors.push("Target must be a non-negative number.");
   }
   if (
     Number.isFinite(config.criticalFloor) &&
@@ -82,10 +112,10 @@ export function validateConfig(config: MaturityConfig): string[] {
 // ─── Convert input rows → typed assessment rows ────────────────────────────
 
 const toAssessmentRow = (
-  row: SupplierMaturityInputRow,
+  row: Co2EmissionInputRow,
   index: number,
-): MaturityAssessmentRow => {
-  const parsed = parseMaturity(row.maturityScore);
+): Co2AssessmentRow => {
+  const parsed = parseCo2(row.co2Emission);
   const errors = parsed.error ? [parsed.error] : [];
   return {
     id: row.id || `supplier-${index}`,
@@ -94,7 +124,7 @@ const toAssessmentRow = (
     zone: dim(row.zone, "Unassigned zone"),
     category: dim(row.category, "Unassigned category"),
     isApplicable: row.kpiApplicability !== "Not Applicable",
-    maturityScore: parsed.value,
+    co2Emission: parsed.value,
     errors,
   };
 };
@@ -104,8 +134,8 @@ const toAssessmentRow = (
 export function calculatePercentileRanks(
   rows: Array<{ id: string; value: number }>,
   target: number,
-): Map<string, MaturityPercentileRank> {
-  const result = new Map<string, MaturityPercentileRank>();
+): Map<string, Co2PercentileRank> {
+  const result = new Map<string, Co2PercentileRank>();
   const validRows = rows.filter((r) => Number.isFinite(r.value));
   const count = validRows.length;
 
@@ -125,6 +155,7 @@ export function calculatePercentileRanks(
     return result;
   }
 
+  // Sort descending: highest CO2 value = Rank 1 = best.
   const sorted = [...validRows].sort((a, b) => b.value - a.value);
   let cursor = 0;
   while (cursor < sorted.length) {
@@ -144,21 +175,21 @@ export function calculatePercentileRanks(
 }
 
 export function calculateAttainmentFactor(
-  score: number,
+  value: number,
   criticalFloor: number,
   target: number,
 ): number {
-  if (score < criticalFloor) return 0;
-  if (score >= target) return 1;
+  if (value < criticalFloor) return 0;
+  if (value >= target) return 1;
   if (target === criticalFloor) return 0;
-  return clamp((score - criticalFloor) / (target - criticalFloor), 0, 1);
+  return clamp((value - criticalFloor) / (target - criticalFloor), 0, 1);
 }
 
-export function calculateMaturityEarnedScore(
+export function calculateCo2EarnedScore(
   maxScore: number,
   percentile: number,
   attainmentFactor: number,
-  formulaMode: MaturityFormulaMode,
+  formulaMode: Co2FormulaMode,
 ): number {
   return formulaMode === "softStretch"
     ? maxScore * attainmentFactor * (0.7 + 0.3 * percentile)
@@ -167,20 +198,19 @@ export function calculateMaturityEarnedScore(
 
 // ─── Row scoring orchestration ─────────────────────────────────────────────
 
-const cohortKeyForRow = (row: MaturityAssessmentRow, config: MaturityConfig) => {
+const cohortKeyForRow = (row: Co2AssessmentRow, config: Co2Config) => {
   if (config.cohortLevel === "Parent") return row.parentSupplier;
   if (config.cohortLevel === "Zone") return row.zone;
-  if (config.cohortLevel === "Category") return row.category;
   return "All suppliers";
 };
 
 const invalidBaseScore = (
-  row: MaturityAssessmentRow,
-  config: MaturityConfig,
-  status: MaturityScoreStatus,
+  row: Co2AssessmentRow,
+  config: Co2Config,
+  status: Co2ScoreStatus,
   explanation: string,
   cohortKey = "Excluded",
-): ScoredMaturityRow => ({
+): ScoredCo2Row => ({
   ...row,
   cohortKey,
   rankDescending: null,
@@ -197,12 +227,12 @@ const invalidBaseScore = (
 });
 
 const scoreNarrative = (
-  score: number,
-  rank: MaturityPercentileRank,
+  value: number,
+  rank: Co2PercentileRank,
   attainmentFactor: number,
   earnedScore: number,
-  config: MaturityConfig,
-): { status: MaturityScoreStatus; explanation: string } => {
+  config: Co2Config,
+): { status: Co2ScoreStatus; explanation: string } => {
   const messages: string[] = [];
   const percentile = rank.percentile;
   const formulaMessage =
@@ -213,24 +243,24 @@ const scoreNarrative = (
       : `Earned Score = ${config.maxScore.toFixed(2)} x ${(percentile * 100).toFixed(
           2,
         )}% x ${attainmentFactor.toFixed(4)} = ${earnedScore.toFixed(2)}.`;
-  const belowFloor = score < config.criticalFloor || attainmentFactor === 0;
+  const belowFloor = value < config.criticalFloor || attainmentFactor === 0;
   const formulaZero = earnedScore === 0;
 
   if (rank.note === "single") {
     messages.push("Single observation: percentile set to 100% by rule.");
   }
   if (rank.note === "noVariance") {
-    messages.push("No variance: all suppliers have identical maturity scores.");
+    messages.push("No variance: all suppliers have identical CO2 values.");
   }
 
   if (belowFloor) {
-    messages.push("Below critical floor: maturity score too low, earned score set to 0.");
+    messages.push("Below critical floor: CO2 value too low, earned score set to 0.");
   } else if (formulaZero) {
     messages.push("Zero score: strict formula produces 0 because percentile component is 0.");
-  } else if (score >= config.target) {
-    messages.push("Valid: maturity score is at or above target and percentile-adjusted.");
+  } else if (value >= config.target) {
+    messages.push("Valid: CO2 value is at or above target and percentile-adjusted.");
   } else {
-    messages.push("Valid: maturity score between floor and target — attainment is proportional.");
+    messages.push("Valid: CO2 value between floor and target — attainment is proportional.");
   }
 
   if (config.formulaMode === "softStretch" && !belowFloor) {
@@ -253,25 +283,25 @@ const scoreNarrative = (
 };
 
 export function scoreAssessmentRows(
-  assessmentRows: MaturityAssessmentRow[],
-  config: MaturityConfig,
-): ScoredMaturityRow[] {
-  const groupedRows = new Map<string, MaturityAssessmentRow[]>();
+  assessmentRows: Co2AssessmentRow[],
+  config: Co2Config,
+): ScoredCo2Row[] {
+  const groupedRows = new Map<string, Co2AssessmentRow[]>();
 
   assessmentRows.forEach((row) => {
     if (!row.isApplicable) return;
     if (row.errors.length > 0) return;
-    if (row.maturityScore === null) return;
+    if (row.co2Emission === null) return;
     const cohortKey = cohortKeyForRow(row, config);
     const group = groupedRows.get(cohortKey) ?? [];
     group.push(row);
     groupedRows.set(cohortKey, group);
   });
 
-  const rankLookup = new Map<string, MaturityPercentileRank>();
+  const rankLookup = new Map<string, Co2PercentileRank>();
   groupedRows.forEach((group) => {
     const ranks = calculatePercentileRanks(
-      group.map((row) => ({ id: row.id, value: row.maturityScore ?? 0 })),
+      group.map((row) => ({ id: row.id, value: row.co2Emission ?? 0 })),
       config.target,
     );
     ranks.forEach((rank, id) => rankLookup.set(id, rank));
@@ -297,12 +327,12 @@ export function scoreAssessmentRows(
         cohortKey,
       );
     }
-    if (row.maturityScore === null) {
+    if (row.co2Emission === null) {
       return invalidBaseScore(
         row,
         config,
-        "Missing Score",
-        "Missing Score: applicable supplier with no usable maturity score.",
+        "Missing Value",
+        "Missing Value: applicable supplier with no usable CO2 data.",
         cohortKey,
       );
     }
@@ -310,14 +340,14 @@ export function scoreAssessmentRows(
     const rank = rankLookup.get(row.id);
     const percentile = rank?.percentile ?? null;
     const attainmentFactor = calculateAttainmentFactor(
-      row.maturityScore,
+      row.co2Emission,
       config.criticalFloor,
       config.target,
     );
     const earnedScore =
       percentile === null
         ? null
-        : calculateMaturityEarnedScore(
+        : calculateCo2EarnedScore(
             config.maxScore,
             percentile,
             attainmentFactor,
@@ -326,14 +356,14 @@ export function scoreAssessmentRows(
     const narrative =
       rank && earnedScore !== null
         ? scoreNarrative(
-            row.maturityScore,
+            row.co2Emission,
             rank,
             attainmentFactor,
             earnedScore,
             config,
           )
         : {
-            status: "Missing Score" as MaturityScoreStatus,
+            status: "Missing Value" as Co2ScoreStatus,
             explanation: "Unable to calculate percentile for this row.",
           };
 
@@ -359,49 +389,44 @@ export function scoreAssessmentRows(
 // ─── Public API — supplier-level + rollups ─────────────────────────────────
 
 export function calculateSupplierScores(
-  rows: SupplierMaturityInputRow[],
-  config: MaturityConfig,
-): ScoredMaturityRow[] {
+  rows: Co2EmissionInputRow[],
+  config: Co2Config,
+): ScoredCo2Row[] {
   const assessments = rows.map((r, i) => toAssessmentRow(r, i));
   return scoreAssessmentRows(assessments, config);
 }
 
 /**
- * Rollup: group supplier-level scored rows, then AVERAGE the maturity score.
- * Flagged as "Proxy Calculation" per the sibling KPI spec.
+ * Rollup: group supplier-level scored rows, then AVERAGE the CO2 value.
+ * Marked as "Proxy Calculation" per the scoring spec.
  */
 const rollupRows = (
-  supplierRows: ScoredMaturityRow[],
-  level: MaturityRollupLevel,
-  config: MaturityConfig,
-): RollupMaturityRow[] => {
-  const groups = new Map<string, ScoredMaturityRow[]>();
+  supplierRows: ScoredCo2Row[],
+  level: Co2RollupLevel,
+  config: Co2Config,
+): RollupCo2Row[] => {
+  const groups = new Map<string, ScoredCo2Row[]>();
   supplierRows.forEach((row) => {
-    const key =
-      level === "Parent"
-        ? row.parentSupplier
-        : level === "Zone"
-          ? row.zone
-          : row.category;
+    const key = level === "Parent" ? row.parentSupplier : row.zone;
     const group = groups.get(key) ?? [];
     group.push(row);
     groups.set(key, group);
   });
 
-  const rollupAssessments: MaturityAssessmentRow[] = Array.from(
+  const rollupAssessments: Co2AssessmentRow[] = Array.from(
     groups.entries(),
   ).map(([label, groupRows], index) => {
     const contributing = groupRows.filter(
       (r) =>
         r.scoreStatus !== "Not Applicable" &&
         r.scoreStatus !== "Invalid Data" &&
-        r.scoreStatus !== "Missing Score" &&
-        r.maturityScore !== null,
+        r.scoreStatus !== "Missing Value" &&
+        r.co2Emission !== null,
     );
     const avg =
       contributing.length === 0
         ? null
-        : contributing.reduce((sum, r) => sum + (r.maturityScore ?? 0), 0) /
+        : contributing.reduce((sum, r) => sum + (r.co2Emission ?? 0), 0) /
           contributing.length;
 
     return {
@@ -409,9 +434,9 @@ const rollupRows = (
       supplier: "All suppliers",
       parentSupplier: level === "Parent" ? label : "All parents",
       zone: level === "Zone" ? label : "All zones",
-      category: level === "Category" ? label : "All categories",
+      category: "All categories",
       isApplicable: contributing.length > 0,
-      maturityScore: avg,
+      co2Emission: avg,
       errors: [],
     };
   });
@@ -420,20 +445,15 @@ const rollupRows = (
     ...config,
     cohortLevel: "Supplier",
   }).map((row) => {
-    const label =
-      level === "Parent"
-        ? row.parentSupplier
-        : level === "Zone"
-          ? row.zone
-          : row.category;
+    const label = level === "Parent" ? row.parentSupplier : row.zone;
     const isValid = row.scoreStatus === "Valid";
     return {
       ...row,
       scoreStatus: isValid
-        ? ("Proxy Calculation" as MaturityScoreStatus)
+        ? ("Proxy Calculation" as Co2ScoreStatus)
         : row.scoreStatus,
       explanation: isValid
-        ? `${row.explanation} Proxy Calculation: rollup maturity score is the simple average of contributing suppliers.`
+        ? `${row.explanation} Proxy Calculation: rollup CO2 value is the simple average of contributing suppliers.`
         : row.explanation,
       level,
       label,
@@ -444,27 +464,20 @@ const rollupRows = (
 };
 
 export function calculateParentRollup(
-  rows: SupplierMaturityInputRow[],
-  config: MaturityConfig,
-): RollupMaturityRow[] {
+  rows: Co2EmissionInputRow[],
+  config: Co2Config,
+): RollupCo2Row[] {
   return rollupRows(calculateSupplierScores(rows, config), "Parent", config);
 }
 
 export function calculateZoneRollup(
-  rows: SupplierMaturityInputRow[],
-  config: MaturityConfig,
-): RollupMaturityRow[] {
+  rows: Co2EmissionInputRow[],
+  config: Co2Config,
+): RollupCo2Row[] {
   return rollupRows(calculateSupplierScores(rows, config), "Zone", config);
 }
 
-export function calculateCategoryRollup(
-  rows: SupplierMaturityInputRow[],
-  config: MaturityConfig,
-): RollupMaturityRow[] {
-  return rollupRows(calculateSupplierScores(rows, config), "Category", config);
-}
-
-export const formulaModeLabel = (mode: MaturityConfig["formulaMode"]) =>
+export const formulaModeLabel = (mode: Co2Config["formulaMode"]) =>
   mode === "softStretch"
     ? "Softer Percentile Stretch"
     : "Strict Percentile x Attainment";

@@ -1,31 +1,37 @@
+// ---------------------------------------------------------------------------
+// Eclipse Score KPI Page
+// Same layout / formulas as IOT / Supplier Maturity, but:
+//   - Value is Eclipse Score (0-100 combined pillar score)
+//   - Defaults: Max Score = 5, Floor = 50%, Target = 80%
+//   - No month filter (year is constant "2025")
+//   - Rollups: Supplier + Zone + Parent + Category
+// ---------------------------------------------------------------------------
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   calculateAttainmentFactor,
   calculateEarnedScore,
   calculatePercentileRanks,
   validateConfig,
-} from "./scoring";
-import { toCsv } from "./csv";
-import type { KpiConfig } from "./types";
+} from "../shared/scoring";
+import { toCsv } from "../shared/csv";
+import type { KpiConfig } from "../shared/types";
 
-// ─── IOT Types ──────────────────────────────────────────────────────────────
+// ─── Eclipse Types ──────────────────────────────────────────────────────────
 
-interface IotInputRow {
+interface EclipseInputRow {
   id: string;
   supplier: string;
   parentSupplier: string;
   zone: string;
-  country: string;
   category: string;
   kpiApplicability: string;
-  invoiceOnTimeCount: string;
-  totalPoLines: string;
+  eclipseScore: string;
   year: string;
-  month: string;
 }
 
-interface IotScoredRow extends IotInputRow {
-  iotPercent: number | null;
+interface EclipseScoredRow extends EclipseInputRow {
+  eclipseNorm: number | null;
   rank: number | null;
   percentile: number | null;
   attainment: number | null;
@@ -33,6 +39,20 @@ interface IotScoredRow extends IotInputRow {
   scorePercent: number | null;
   status: string;
   explanation: string;
+}
+
+interface EclipseRollupRow {
+  id: string;
+  label: string;
+  eclipseNorm: number | null;
+  rank: number | null;
+  percentile: number | null;
+  attainment: number | null;
+  earnedScore: number | null;
+  scorePercent: number | null;
+  status: string;
+  explanation: string;
+  contributingRows: number;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -45,8 +65,6 @@ const numeric = (v: number | null, d = 2) =>
 
 const formatRank = (v: number | null) =>
   v === null || !Number.isFinite(v) ? "-" : Number.isInteger(v) ? String(v) : v.toFixed(1);
-
-const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 
 // ─── Multi-select dropdown ──────────────────────────────────────────────────
 
@@ -97,36 +115,21 @@ function MultiSelectDropdown({
   );
 }
 
-// ─── IOT Scoring ────────────────────────────────────────────────────────────
+// ─── Eclipse Scoring ────────────────────────────────────────────────────────
 
-interface IotRollupRow {
-  id: string;
-  label: string;
-  iotPercent: number | null;
-  rank: number | null;
-  percentile: number | null;
-  attainment: number | null;
-  earnedScore: number | null;
-  scorePercent: number | null;
-  status: string;
-  explanation: string;
-  contributingRows: number;
-}
-
-function scoreIotRows(rows: IotInputRow[], config: KpiConfig): IotScoredRow[] {
-  // Calculate IOT% for each applicable row
+function scoreEclipseRows(rows: EclipseInputRow[], config: KpiConfig): EclipseScoredRow[] {
+  // eclipseScore is already normalized to 0-1 from backend
   const assessed = rows.map((row) => {
-    const onTime = Number(row.invoiceOnTimeCount) || 0;
-    const total = Number(row.totalPoLines) || 0;
     const isApplicable = row.kpiApplicability !== "Not Applicable";
-    const iotPercent = isApplicable && total > 0 ? onTime / total : null;
-    return { ...row, iotPercent, isApplicable };
+    const raw = parseFloat(row.eclipseScore);
+    const eclipseNorm = isApplicable && Number.isFinite(raw) ? raw : null;
+    return { ...row, eclipseNorm, isApplicable };
   });
 
   // Get valid rows for ranking
   const validRows = assessed
-    .filter((r) => r.isApplicable && r.iotPercent !== null)
-    .map((r) => ({ id: r.id, dot: r.iotPercent as number }));
+    .filter((r) => r.isApplicable && r.eclipseNorm !== null)
+    .map((r) => ({ id: r.id, dot: r.eclipseNorm as number }));
 
   const ranks = calculatePercentileRanks(validRows, config.target);
 
@@ -134,26 +137,26 @@ function scoreIotRows(rows: IotInputRow[], config: KpiConfig): IotScoredRow[] {
     if (!row.isApplicable) {
       return { ...row, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Not Applicable", explanation: "Not applicable: excluded from ranking and scoring." };
     }
-    if (row.iotPercent === null) {
-      return { ...row, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Missing Data", explanation: "Missing data: no valid PO lines available." };
+    if (row.eclipseNorm === null) {
+      return { ...row, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Missing Data", explanation: "Missing data: no valid Eclipse Score available." };
     }
 
     const rankInfo = ranks.get(row.id);
     const percentile = rankInfo?.percentile ?? null;
-    const attainment = calculateAttainmentFactor(row.iotPercent, config.criticalFloor, config.target);
+    const attainment = calculateAttainmentFactor(row.eclipseNorm, config.criticalFloor, config.target);
     const earnedScore = percentile !== null
       ? calculateEarnedScore(config.maxScore, percentile, attainment, config.formulaMode)
       : null;
 
     let status = "Valid score";
-    if (row.iotPercent <= config.criticalFloor) status = "Below critical floor";
-    else if (row.iotPercent === 0) status = "Zero IOT";
+    if (row.eclipseNorm <= config.criticalFloor) status = "Below critical floor";
+    else if (row.eclipseNorm === 0) status = "Zero Eclipse";
 
     const explanation = status === "Below critical floor"
-      ? `Below critical floor: IOT ${(row.iotPercent * 100).toFixed(2)}% ≤ floor ${(config.criticalFloor * 100).toFixed(2)}%. Attainment = 0, earned score = 0.`
+      ? `Below critical floor: Eclipse ${(row.eclipseNorm * 100).toFixed(2)}% ≤ floor ${(config.criticalFloor * 100).toFixed(2)}%. Attainment = 0, earned score = 0.`
       : config.formulaMode === "softStretch"
-        ? `Valid score: IOT ${(row.iotPercent * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned Score = ${config.maxScore} × ${attainment.toFixed(4)} × (70% + 30% × ${percentile !== null ? (percentile * 100).toFixed(2) : 0}%) = ${earnedScore?.toFixed(2) ?? 0}.`
-        : `Valid score: IOT ${(row.iotPercent * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned Score = ${config.maxScore} × ${percentile !== null ? (percentile * 100).toFixed(2) : 0}% × ${attainment.toFixed(4)} = ${earnedScore?.toFixed(2) ?? 0}.`;
+        ? `Valid score: Eclipse ${(row.eclipseNorm * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned Score = ${config.maxScore} × ${attainment.toFixed(4)} × (70% + 30% × ${percentile !== null ? (percentile * 100).toFixed(2) : 0}%) = ${earnedScore?.toFixed(2) ?? 0}.`
+        : `Valid score: Eclipse ${(row.eclipseNorm * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned Score = ${config.maxScore} × ${percentile !== null ? (percentile * 100).toFixed(2) : 0}% × ${attainment.toFixed(4)} = ${earnedScore?.toFixed(2) ?? 0}.`;
 
     return {
       ...row,
@@ -168,54 +171,55 @@ function scoreIotRows(rows: IotInputRow[], config: KpiConfig): IotScoredRow[] {
   });
 }
 
-function calculateIotRollup(
-  rows: IotInputRow[],
+function calculateEclipseRollup(
+  rows: EclipseInputRow[],
   config: KpiConfig,
-  groupBy: "zone" | "parentSupplier" | "category",
-): IotRollupRow[] {
-  // Group and sum
-  const groups = new Map<string, { onTime: number; total: number; count: number }>();
+  groupBy: "supplier" | "zone" | "parentSupplier" | "category",
+): EclipseRollupRow[] {
+  // Group and average
+  const groups = new Map<string, { sum: number; count: number }>();
   rows.forEach((row) => {
     if (row.kpiApplicability === "Not Applicable") return;
+    const raw = parseFloat(row.eclipseScore);
+    if (!Number.isFinite(raw)) return;
     const key = row[groupBy]?.trim() || "Unassigned";
-    const existing = groups.get(key) || { onTime: 0, total: 0, count: 0 };
-    existing.onTime += Number(row.invoiceOnTimeCount) || 0;
-    existing.total += Number(row.totalPoLines) || 0;
+    const existing = groups.get(key) || { sum: 0, count: 0 };
+    existing.sum += raw;
     existing.count += 1;
     groups.set(key, existing);
   });
 
-  // Calculate IOT% per group
+  // Calculate average Eclipse score per group
   const seeds = Array.from(groups.entries()).map(([label, g], i) => ({
     id: `rollup-${groupBy}-${i}`,
     label,
-    iotPercent: g.total > 0 ? g.onTime / g.total : null,
+    eclipseNorm: g.count > 0 ? g.sum / g.count : null,
     contributingRows: g.count,
   }));
 
   // Rank
-  const validSeeds = seeds.filter((s) => s.iotPercent !== null);
+  const validSeeds = seeds.filter((s) => s.eclipseNorm !== null);
   const ranks = calculatePercentileRanks(
-    validSeeds.map((s) => ({ id: s.id, dot: s.iotPercent as number })),
+    validSeeds.map((s) => ({ id: s.id, dot: s.eclipseNorm as number })),
     config.target,
   );
 
   return seeds.map((seed) => {
-    if (seed.iotPercent === null) {
+    if (seed.eclipseNorm === null) {
       return { ...seed, rank: null, percentile: null, attainment: null, earnedScore: null, scorePercent: null, status: "Missing Data", explanation: "No valid data for this group." };
     }
     const rankInfo = ranks.get(seed.id);
     const percentile = rankInfo?.percentile ?? null;
-    const attainment = calculateAttainmentFactor(seed.iotPercent, config.criticalFloor, config.target);
+    const attainment = calculateAttainmentFactor(seed.eclipseNorm, config.criticalFloor, config.target);
     const earnedScore = percentile !== null
       ? calculateEarnedScore(config.maxScore, percentile, attainment, config.formulaMode)
       : null;
     let status = "Valid score";
-    if (seed.iotPercent <= config.criticalFloor) status = "Below critical floor";
+    if (seed.eclipseNorm <= config.criticalFloor) status = "Below critical floor";
 
     const explanation = status === "Below critical floor"
-      ? `Below critical floor: IOT ${(seed.iotPercent * 100).toFixed(2)}% ≤ floor ${(config.criticalFloor * 100).toFixed(2)}%. Earned score = 0.`
-      : `Valid score: IOT ${(seed.iotPercent * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned = ${earnedScore?.toFixed(2) ?? 0}. Rollup of ${seed.contributingRows} rows.`;
+      ? `Below critical floor: Eclipse ${(seed.eclipseNorm * 100).toFixed(2)}% ≤ floor ${(config.criticalFloor * 100).toFixed(2)}%. Earned score = 0.`
+      : `Valid score: Eclipse ${(seed.eclipseNorm * 100).toFixed(2)}%. Attainment = ${attainment.toFixed(4)}. Earned = ${earnedScore?.toFixed(2) ?? 0}. Rollup of ${seed.contributingRows} rows.`;
 
     return {
       ...seed,
@@ -232,23 +236,21 @@ function calculateIotRollup(
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function IotKpiPage() {
-  const [rows, setRows] = useState<IotInputRow[]>([]);
+function EclipsePage() {
+  const [rows, setRows] = useState<EclipseInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
   const [config, setConfig] = useState<KpiConfig>({
-    maxScore: 15,
-    criticalFloor: 0.7,
-    target: 0.85,
+    maxScore: 5,
+    criticalFloor: 0.5,
+    target: 0.8,
     cohortLevel: "Supplier",
     formulaMode: "softStretch",
   });
 
   const [selCategory, setSelCategory] = useState<string[]>([]);
-  const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selMonth, setSelMonth] = useState<string[]>([]);
+  const [selYear, setSelYear] = useState<string[]>(["2025"]);
   const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
-  const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -257,42 +259,41 @@ function IotKpiPage() {
   const API_BASE = "http://127.0.0.1:8000";
 
   const loadFromApi = () => {
-    fetch(`${API_BASE}/api/iot-kpi`)
+    fetch(`${API_BASE}/api/eclipse`)
       .then((res) => res.json())
       .then((json) => {
         if (json.data && json.data.length > 0) {
-          const parsed: IotInputRow[] = json.data.map(
+          const parsed: EclipseInputRow[] = json.data.map(
             (row: Record<string, string>, i: number) => ({
-              id: row.id || `api-${i}`,
+              id: row.id || `ecl-${i}`,
               supplier: row.supplier || "",
               parentSupplier: row.parentSupplier || "",
               zone: row.zone || "",
-              country: row.country || "",
               category: row.category || "",
               kpiApplicability: row.kpiApplicability || "Applicable",
-              invoiceOnTimeCount: row.invoiceOnTimeCount || "0",
-              totalPoLines: row.totalPoLines || "0",
+              eclipseScore: row.eclipseScore || "",
               year: row.year || "",
-              month: row.month || "",
             }),
           );
           setRows(parsed);
           setUploadMessage(`${parsed.length} rows loaded.`);
+        } else {
+          setUploadMessage("No cached Eclipse data. Click Refresh Data to fetch from Databricks.");
         }
       })
-      .catch(() => setUploadMessage("Backend not running."));
+      .catch(() => setUploadMessage("Backend not running. Start it with run.bat."));
   };
 
   useEffect(() => { loadFromApi(); }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setUploadMessage("Refreshing IOT from Databricks...");
-    fetch(`${API_BASE}/api/iot-kpi/refresh`, { method: "POST" })
+    setUploadMessage("Refreshing Eclipse from Databricks...");
+    fetch(`${API_BASE}/api/eclipse/refresh`, { method: "POST" })
       .then(() => {
         const poll = setInterval(() => {
           fetch(`${API_BASE}/api/status`).then((r) => r.json()).then((j) => {
-            if (j.status !== "refreshing") { clearInterval(poll); setRefreshing(false); loadFromApi(); }
+            if (j.eclipse_status !== "refreshing") { clearInterval(poll); setRefreshing(false); loadFromApi(); }
           });
         }, 2000);
       })
@@ -303,10 +304,8 @@ function IotKpiPage() {
   const opts = useMemo(() => ({
     categories: Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort(),
     years: Array.from(new Set(rows.map((r) => r.year).filter(Boolean))).sort(),
-    months: Array.from(new Set(rows.map((r) => r.month).filter(Boolean))).sort((a, b) => Number(a) - Number(b)),
     parentSuppliers: Array.from(new Set(rows.map((r) => r.parentSupplier).filter(Boolean))).sort(),
     suppliers: Array.from(new Set(rows.map((r) => r.supplier).filter(Boolean))).sort(),
-    countries: Array.from(new Set(rows.map((r) => r.country).filter(Boolean))).sort(),
     zones: Array.from(new Set(rows.map((r) => r.zone).filter(Boolean))).sort(),
   }), [rows]);
 
@@ -315,34 +314,36 @@ function IotKpiPage() {
     return rows.filter((row) => {
       if (selCategory.length > 0 && !selCategory.includes(row.category)) return false;
       if (selYear.length > 0 && !selYear.includes(row.year)) return false;
-      if (selMonth.length > 0 && !selMonth.some((m) => normalizeMonth(m) === normalizeMonth(row.month))) return false;
       if (selParentSupplier.length > 0 && !selParentSupplier.includes(row.parentSupplier)) return false;
       if (selSupplier.length > 0 && !selSupplier.includes(row.supplier)) return false;
-      if (selCountry.length > 0 && !selCountry.includes(row.country)) return false;
       if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
       return true;
     });
-  }, [rows, selCategory, selYear, selMonth, selParentSupplier, selSupplier, selCountry, selZone]);
+  }, [rows, selCategory, selYear, selParentSupplier, selSupplier, selZone]);
 
   // Scoring
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
 
   const scoredRows = useMemo(
-    () => (configIsValid ? scoreIotRows(filteredRows, config) : []),
+    () => (configIsValid ? scoreEclipseRows(filteredRows, config) : []),
     [filteredRows, config, configIsValid],
   );
 
+  const supplierRollup = useMemo(
+    () => (configIsValid ? calculateEclipseRollup(filteredRows, config, "supplier") : []),
+    [filteredRows, config, configIsValid],
+  );
   const zoneRollup = useMemo(
-    () => (configIsValid ? calculateIotRollup(filteredRows, config, "zone") : []),
+    () => (configIsValid ? calculateEclipseRollup(filteredRows, config, "zone") : []),
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateIotRollup(filteredRows, config, "parentSupplier") : []),
+    () => (configIsValid ? calculateEclipseRollup(filteredRows, config, "parentSupplier") : []),
     [filteredRows, config, configIsValid],
   );
   const categoryRollup = useMemo(
-    () => (configIsValid ? calculateIotRollup(filteredRows, config, "category") : []),
+    () => (configIsValid ? calculateEclipseRollup(filteredRows, config, "category") : []),
     [filteredRows, config, configIsValid],
   );
 
@@ -352,16 +353,16 @@ function IotKpiPage() {
 
   const exportResults = () => {
     const csv = toCsv([
-      ["IOT KPI Config"], ["Max Score", config.maxScore], ["Floor %", percent(config.criticalFloor, 2)], ["Target %", percent(config.target, 2)], ["Rows", filteredRows.length], [],
+      ["Eclipse Score Config"], ["Max Score", config.maxScore], ["Floor %", percent(config.criticalFloor, 2)], ["Target %", percent(config.target, 2)], ["Rows", filteredRows.length], [],
       ["Supplier Level"],
-      ["Supplier", "Parent", "Zone", "Country", "Category", "IOT %", "Rank", "Percentile", "Attainment", "Max", "Earned", "Score %", "Status"],
-      ...scoredRows.map((r) => [r.supplier, r.parentSupplier, r.zone, r.country, r.category, percent(r.iotPercent, 2), formatRank(r.rank), percent(r.percentile, 2), numeric(r.attainment, 4), numeric(config.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.status]),
+      ["Supplier", "Parent", "Zone", "Category", "Eclipse %", "Rank", "Percentile", "Attainment", "Max", "Earned", "Score %", "Status"],
+      ...scoredRows.map((r) => [r.supplier, r.parentSupplier, r.zone, r.category, percent(r.eclipseNorm, 2), formatRank(r.rank), percent(r.percentile, 2), numeric(r.attainment, 4), numeric(config.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.status]),
     ]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "iot-kpi-results.csv";
+    link.download = "eclipse-score-results.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -370,10 +371,10 @@ function IotKpiPage() {
     <>
       <section className="top-bar kpi-page-heading">
         <div>
-          <p className="eyebrow">Invoice KPI</p>
-          <h1>IOT Percentile Scoring</h1>
+          <p className="eyebrow">Sustainability KPI</p>
+          <h1>Eclipse Score</h1>
           <p className="kpi-value-note">
-            Value = Invoice On-Time Count / Total PO Lines &times; 100
+            Value = Eclipse Score (0-100 combined pillar score: Climate Action + Engagement + Reporting)
           </p>
           {uploadMessage && <p className="supporting">{uploadMessage}</p>}
         </div>
@@ -393,11 +394,9 @@ function IotKpiPage() {
       <section className="config-bar">
         <MultiSelectDropdown label="Category" options={opts.categories} selected={selCategory} onChange={setSelCategory} />
         <MultiSelectDropdown label="Year" options={opts.years} selected={selYear} onChange={setSelYear} />
-        <MultiSelectDropdown label="Month" options={opts.months} selected={selMonth} onChange={setSelMonth} />
         <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} />
         <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} />
         <MultiSelectDropdown label="Zone" options={opts.zones} selected={selZone} onChange={setSelZone} />
-        <MultiSelectDropdown label="Country" options={opts.countries} selected={selCountry} onChange={setSelCountry} />
         <div className="filter-summary"><strong>{filteredRows.length}</strong> / {rows.length} rows</div>
       </section>
 
@@ -427,10 +426,10 @@ function IotKpiPage() {
 
       {/* Formula */}
       <details className="formula-panel collapsible-section" open>
-        <summary>How IOT Earned Score Is Calculated</summary>
+        <summary>How Eclipse Earned Score Is Calculated</summary>
         <div className="formula-ribbon">
-          <div><span>1. IOT %</span><strong>Invoice On-Time Count / Total PO Lines</strong></div>
-          <div><span>2. Attainment</span><strong>(IOT% &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong></div>
+          <div><span>1. Eclipse Score</span><strong>Pre-normalised 0&ndash;1 from backend (original 0-100 scale)</strong></div>
+          <div><span>2. Attainment</span><strong>(Eclipse Score &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong></div>
           <div><span>3. Percentile</span><strong>(N &minus; Rank) / (N &minus; 1)</strong></div>
         </div>
         <div className="formula-callout">
@@ -459,8 +458,8 @@ function IotKpiPage() {
                 <div className="table-frame">
                   <table className="data-table results-table">
                     <thead><tr>
-                      <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
-                      <th>IOT %</th><th>Rank</th><th>Percentile</th><th>Attainment</th>
+                      <th>Supplier</th><th>Parent</th><th>Zone</th><th>Category</th>
+                      <th>Eclipse %</th><th>Rank</th><th>Percentile</th><th>Attainment</th>
                       <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Explanation</th>
                     </tr></thead>
                     <tbody>
@@ -469,9 +468,8 @@ function IotKpiPage() {
                           <td>{row.supplier}</td>
                           <td>{row.parentSupplier}</td>
                           <td>{row.zone}</td>
-                          <td>{row.country}</td>
                           <td>{row.category}</td>
-                          <td>{percent(row.iotPercent, 2)}</td>
+                          <td>{percent(row.eclipseNorm, 2)}</td>
                           <td>{formatRank(row.rank)}</td>
                           <td>{percent(row.percentile, 2)}</td>
                           <td>{numeric(row.attainment, 4)}</td>
@@ -489,15 +487,15 @@ function IotKpiPage() {
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">2</span><h3>Zone Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={zoneRollup} label="Zone" /></div>
+              <div className="rollup-scroll"><RollupTable rows={zoneRollup} label="Zone" maxScore={config.maxScore} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Supplier Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={parentRollup} label="Parent Supplier" /></div>
+              <div className="rollup-scroll"><RollupTable rows={parentRollup} label="Parent Supplier" maxScore={config.maxScore} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={categoryRollup} label="Category" /></div>
+              <div className="rollup-scroll"><RollupTable rows={categoryRollup} label="Category" maxScore={config.maxScore} /></div>
             </details>
           </div>
         )}
@@ -506,12 +504,12 @@ function IotKpiPage() {
   );
 }
 
-function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
+function RollupTable({ rows, label, maxScore }: { rows: EclipseRollupRow[]; label: string; maxScore: number }) {
   return (
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>{label}</th><th>IOT %</th><th>Rank</th><th>Percentile</th>
+          <th>{label}</th><th>Eclipse %</th><th>Rank</th><th>Percentile</th>
           <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
           <th>Status</th><th>Rows</th><th>Explanation</th>
         </tr></thead>
@@ -519,11 +517,11 @@ function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
           {rows.map((row) => (
             <tr key={row.id} className={row.status === "Below critical floor" ? "invalid-row" : ""}>
               <td>{row.label}</td>
-              <td>{percent(row.iotPercent, 2)}</td>
+              <td>{percent(row.eclipseNorm, 2)}</td>
               <td>{formatRank(row.rank)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainment, 4)}</td>
-              <td>{numeric(15, 2)}</td>
+              <td>{numeric(maxScore, 2)}</td>
               <td>{numeric(row.earnedScore, 2)}</td>
               <td>{percent(row.scorePercent, 2)}</td>
               <td><span className={`status-pill ${row.status === "Valid score" ? "status-valid" : row.status === "Below critical floor" ? "status-floor" : "status-na"}`}>{row.status}</span></td>
@@ -537,4 +535,4 @@ function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
   );
 }
 
-export default IotKpiPage;
+export default EclipsePage;

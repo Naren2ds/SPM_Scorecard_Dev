@@ -77,11 +77,33 @@ export default function SummaryPage() {
         <p className="summary-lead">
           This page explains why each step exists, what would go wrong without it, and how the numbers are produced.
         </p>
+        <nav className="guide-actions" aria-label="Guide shortcuts">
+          <a href="#scorecard-budget">Explore the scorecard</a>
+          <a href="#scoring-method">See how scoring works</a>
+          <a href="#formula-reference">Formula reference</a>
+        </nav>
+        <div className="guide-overview" aria-label="Scoring overview">
+          <article>
+            <span>01</span>
+            <strong>Measure attainment</strong>
+            <p>Compare actual supplier performance against the critical floor and business target.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <strong>Benchmark peers</strong>
+            <p>Rank suppliers fairly within their applicable category, market, and reporting cohort.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <strong>Calculate score</strong>
+            <p>Combine absolute delivery with relative performance into a transparent earned score.</p>
+          </article>
+        </div>
       </section>
 
       {/* ── Score Budget ─────────────────────────────────── */}
       <details className="summary-section" open>
-        <summary className="summary-section-summary">1 — Scorecard Budget</summary>
+        <summary id="scorecard-budget" className="summary-section-summary">1 — Scorecard Budget</summary>
         <p className="summary-body">
           Each KPI is assigned a maximum score that reflects its strategic weight in the
           overall supplier evaluation. Operational delivery (DOT) carries the highest weight,
@@ -122,7 +144,7 @@ export default function SummaryPage() {
 
       {/* ── Universal Formula ────────────────────────────── */}
       <details className="summary-section" open>
-        <summary className="summary-section-summary">2 — The Universal Earned Score Formula</summary>
+        <summary id="scoring-method" className="summary-section-summary">2 — The Universal Earned Score Formula</summary>
         <p className="summary-body">
           All six KPIs use the same formula structure. Only the input value and
           the max score differ between them.
@@ -482,7 +504,7 @@ export default function SummaryPage() {
 
       {/* ── Quick Reference ──────────────────────────────── */}
       <details className="summary-section" open>
-        <summary className="summary-section-summary">7 — Quick Formula Reference</summary>
+        <summary id="formula-reference" className="summary-section-summary">7 — Quick Formula Reference</summary>
         <div className="summary-ref-grid">
           <div className="summary-ref-card">
             <span className="summary-ref-label">Percentile</span>

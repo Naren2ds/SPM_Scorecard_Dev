@@ -1,29 +1,28 @@
 // ---------------------------------------------------------------------------
-// Supplier Compliance % KPI Page
-// Mirrors the DOT + Supplier Assessment layout exactly: API-backed data +
-// refresh button, multi-select filter bar, configuration bar, hierarchical
-// rollup tables.
-// Scoring math per docs/Support_Docs/supplier-compliance-scoring.md.
+// Supplier Maturity Score KPI Page
+// Same layout / formulas as Supplier Compliance, but:
+//   - Value is Maturity Score (%) with fixed defaults Floor=60%, Target=80%
+//   - No country, no approval status
+//   - Rollups: Zone + Parent + Category (no Country)
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   calculateCategoryRollup,
-  calculateCountryRollup,
   calculateParentRollup,
   calculateSupplierScores,
   calculateZoneRollup,
   formulaModeLabel,
   toCsv,
   validateConfig,
-} from "./supplierComplianceScoring";
+} from "../features/supplier-maturity/scoring";
 import type {
-  ComplianceConfig,
-  ComplianceFormulaMode,
-  RollupComplianceRow,
-  ScoredComplianceRow,
-  SupplierComplianceInputRow,
-} from "./supplierComplianceTypes";
+  MaturityConfig,
+  MaturityFormulaMode,
+  RollupMaturityRow,
+  ScoredMaturityRow,
+  SupplierMaturityInputRow,
+} from "../features/supplier-maturity/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -45,7 +44,7 @@ const formatRank = (value: number | null) =>
 const displayText = (value: string, fallback: string) =>
   (value ?? "").trim() || fallback;
 
-// ─── Multi-select dropdown (matches DOT/SA UX) ─────────────────────────────
+// ─── Multi-select dropdown (matches DOT/SA/SC/CO2 UX) ──────────────────────
 
 function MultiSelectDropdown({
   label,
@@ -117,47 +116,44 @@ function MultiSelectDropdown({
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function SupplierCompliancePage() {
-  const [rows, setRows] = useState<SupplierComplianceInputRow[]>([]);
+function SupplierMaturityPage() {
+  const [rows, setRows] = useState<SupplierMaturityInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<ComplianceConfig>({
+  const [config, setConfig] = useState<MaturityConfig>({
     maxScore: 10,
     criticalFloor: 0.6,
-    target: 0.9,
+    target: 0.8,
     cohortLevel: "Supplier",
     formulaMode: "softStretch",
   });
 
-  // Multi-select filter states (empty = All). Year defaults to "2026".
+  // Multi-select filter states (empty = All). Year defaults to 2025 & 2026.
   const [selCategory, setSelCategory] = useState<string[]>([]);
-  const [selYear, setSelYear] = useState<string[]>(["2026"]);
+  const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
   const [selParent, setSelParent] = useState<string[]>([]);
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
-  const [selCountry, setSelCountry] = useState<string[]>([]);
 
   // ─── Load cached data from API on mount ─────────────────────────────────
   const loadFromApi = () => {
-    fetch(`${API_BASE}/api/supplier-compliance`)
+    fetch(`${API_BASE}/api/supplier-maturity`)
       .then((res) => res.json())
       .then((json) => {
         if (json.data && json.data.length > 0) {
-          const parsed: SupplierComplianceInputRow[] = json.data.map(
+          const parsed: SupplierMaturityInputRow[] = json.data.map(
             (row: Record<string, string>, i: number) => ({
               id: row.id || `api-${i}`,
               supplier: row.supplier || "",
               parentSupplier: row.parentSupplier || "",
               zone: row.zone || "",
-              country: row.country || "",
               category: row.category || "",
               kpiApplicability:
                 row.kpiApplicability === "Not Applicable"
                   ? ("Not Applicable" as const)
                   : ("Applicable" as const),
-              supplierApprovalStatus: row.supplierApprovalStatus || "",
-              compliancePct: row.compliancePct || "",
+              maturityScore: row.maturityScore || "",
               year: row.year || "",
             }),
           );
@@ -165,7 +161,7 @@ function SupplierCompliancePage() {
           setStatusMessage(`${parsed.length} rows loaded.`);
         } else {
           setStatusMessage(
-            "No cached Supplier Compliance data. Click Refresh Data to fetch from Databricks.",
+            "No cached Supplier Maturity data. Click Refresh Data to fetch from Databricks.",
           );
         }
       })
@@ -181,13 +177,13 @@ function SupplierCompliancePage() {
   const handleRefresh = () => {
     setRefreshing(true);
     setStatusMessage("Refreshing from Databricks...");
-    fetch(`${API_BASE}/api/supplier-compliance/refresh`, { method: "POST" })
+    fetch(`${API_BASE}/api/supplier-maturity/refresh`, { method: "POST" })
       .then(() => {
         const poll = setInterval(() => {
           fetch(`${API_BASE}/api/status`)
             .then((res) => res.json())
             .then((json) => {
-              if (json.sc_status !== "refreshing") {
+              if (json.sm_status !== "refreshing") {
                 clearInterval(poll);
                 setRefreshing(false);
                 loadFromApi();
@@ -217,9 +213,6 @@ function SupplierCompliancePage() {
         new Set(rows.map((r) => r.supplier).filter(Boolean)),
       ).sort(),
       zones: Array.from(new Set(rows.map((r) => r.zone).filter(Boolean))).sort(),
-      countries: Array.from(
-        new Set(rows.map((r) => r.country).filter(Boolean)),
-      ).sort(),
     }),
     [rows],
   );
@@ -236,11 +229,9 @@ function SupplierCompliancePage() {
         if (selSupplier.length > 0 && !selSupplier.includes(row.supplier))
           return false;
         if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
-        if (selCountry.length > 0 && !selCountry.includes(row.country))
-          return false;
         return true;
       }),
-    [rows, selCategory, selYear, selParent, selSupplier, selZone, selCountry],
+    [rows, selCategory, selYear, selParent, selSupplier, selZone],
   );
 
   // ─── Scoring ────────────────────────────────────────────────────────────
@@ -263,10 +254,6 @@ function SupplierCompliancePage() {
     () => (configIsValid ? calculateCategoryRollup(filteredRows, config) : []),
     [filteredRows, config, configIsValid],
   );
-  const countryRollup = useMemo(
-    () => (configIsValid ? calculateCountryRollup(filteredRows, config) : []),
-    [filteredRows, config, configIsValid],
-  );
 
   // ─── Config helpers ─────────────────────────────────────────────────────
   const updateNumericConfig = (
@@ -283,7 +270,7 @@ function SupplierCompliancePage() {
   // ─── Export ─────────────────────────────────────────────────────────────
   const exportResults = () => {
     const csv = toCsv([
-      ["Supplier Compliance Config"],
+      ["Supplier Maturity Score Config"],
       ["Max Score", config.maxScore],
       ["Critical Floor %", percent(config.criticalFloor, 2)],
       ["Target %", percent(config.target, 2)],
@@ -291,8 +278,8 @@ function SupplierCompliancePage() {
       ["Rows (after filters)", filteredRows.length],
       [],
       ["Supplier Level"],
-      ["Supplier", "Parent", "Zone", "Country", "Category", "Approval Status", "Compliance %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Status"],
-      ...supplierScores.map((r) => [r.supplier, r.parentSupplier, r.zone, r.country, r.category, r.supplierApprovalStatus, percent(r.compliancePct, 2), formatRank(r.rankDescending), percent(r.percentile, 2), numeric(r.attainmentFactor, 4), numeric(r.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.scoreStatus]),
+      ["Supplier", "Parent", "Zone", "Category", "Maturity Score %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Status"],
+      ...supplierScores.map((r) => [r.supplier, r.parentSupplier, r.zone, r.category, percent(r.maturityScore, 2), formatRank(r.rankDescending), percent(r.percentile, 2), numeric(r.attainmentFactor, 4), numeric(r.maxScore, 2), numeric(r.earnedScore, 2), percent(r.scorePercent, 2), r.scoreStatus]),
       [],
       ["Zone Rollup"],
       ...rollupExportRows(zoneRollup, "Zone"),
@@ -302,15 +289,12 @@ function SupplierCompliancePage() {
       [],
       ["Category Rollup"],
       ...rollupExportRows(categoryRollup, "Category"),
-      [],
-      ["Country Rollup"],
-      ...rollupExportRows(countryRollup, "Country"),
     ]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "supplier-compliance-results.csv";
+    link.download = "supplier-maturity-results.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -321,10 +305,10 @@ function SupplierCompliancePage() {
       {/* Header */}
       <section className="top-bar kpi-page-heading">
         <div>
-          <p className="eyebrow">Quality KPI</p>
-          <h1>Supplier Compliance — Percentile Scoring</h1>
+          <p className="eyebrow">Sustainability KPI</p>
+          <h1>Supplier Maturity Score — Percentile Scoring</h1>
           <p className="kpi-value-note">
-            Compliance % is sourced pre-computed per supplier. Rollups use the simple average of contributing suppliers (proxy).
+            Maturity Score is sourced pre-computed per supplier (0-100 scale, normalised to 0-100%). Higher = better. Rollups use the simple average of contributing suppliers (proxy).
           </p>
           {statusMessage && <p className="supporting">{statusMessage}</p>}
         </div>
@@ -349,7 +333,6 @@ function SupplierCompliancePage() {
         <MultiSelectDropdown label="Parent Supplier" options={opts.parents} selected={selParent} onChange={setSelParent} />
         <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} />
         <MultiSelectDropdown label="Zone" options={opts.zones} selected={selZone} onChange={setSelZone} />
-        <MultiSelectDropdown label="Country" options={opts.countries} selected={selCountry} onChange={setSelCountry} />
         <div className="filter-summary">
           <strong>{filteredRows.length}</strong> / {rows.length} rows
         </div>
@@ -371,7 +354,7 @@ function SupplierCompliancePage() {
         </label>
         <label>
           <span>Formula Mode</span>
-          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as ComplianceFormulaMode }))}>
+          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as MaturityFormulaMode }))}>
             <option value="softStretch">Softer Percentile Stretch</option>
             <option value="strict">Strict Percentile &times; Attainment</option>
           </select>
@@ -397,10 +380,10 @@ function SupplierCompliancePage() {
         </div>
       </section>
 
-      {/* How Supplier Compliance Earned Score is Calculated */}
+      {/* How Supplier Maturity Earned Score is Calculated */}
       <details className="formula-panel collapsible-section" open>
-        <summary>How Supplier Compliance Earned Score Is Calculated</summary>
-        <div className="formula-ribbon" aria-label="Supplier Compliance formula summary">
+        <summary>How Supplier Maturity Earned Score Is Calculated</summary>
+        <div className="formula-ribbon" aria-label="Supplier Maturity formula summary">
           <div>
             <span>1. Earned Score</span>
             <strong>
@@ -411,11 +394,11 @@ function SupplierCompliancePage() {
           </div>
           <div>
             <span>2. Attainment</span>
-            <strong>(Compliance &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong>
+            <strong>(Score &minus; Floor) / (Target &minus; Floor), clamped 0&ndash;1</strong>
           </div>
           <div>
             <span>3. Percentile</span>
-            <strong>(N &minus; Rank) / (N &minus; 1). Rank 1 = best = 100th percentile.</strong>
+            <strong>(N &minus; Rank) / (N &minus; 1). Rank 1 = highest score = 100th percentile.</strong>
           </div>
         </div>
         <div className="formula-callout">
@@ -427,11 +410,11 @@ function SupplierCompliancePage() {
         <details className="formula-details">
           <summary>Show short explanation</summary>
           <ul>
-            <li><strong>Compliance % arrives pre-computed</strong> from the source system. Values in (1, 100] are normalised to [0, 1].</li>
-            <li><strong>Rank valid suppliers within the selected cohort.</strong> Highest compliance = Rank 1 = strongest percentile.</li>
-            <li><strong>Floor and Target apply to compliance directly.</strong> Below floor → Attainment = 0. Above target → Attainment = 1.</li>
+            <li><strong>Maturity Score arrives pre-computed</strong> from the source system (0-100). Values are normalised to 0-100% internally.</li>
+            <li><strong>Rank valid suppliers within the selected cohort.</strong> Highest score = Rank 1 = strongest percentile.</li>
+            <li><strong>Floor and Target apply to the score directly.</strong> Below floor → Attainment = 0. Above target → Attainment = 1.</li>
             <li><strong>Softer formula protects 70% of the attainment-adjusted score</strong> even at 0th percentile — 30% is stretched by rank.</li>
-            <li><strong>Rollups use simple average</strong> because the source has no completed / required document counts — flagged as <em>Proxy Calculation</em>.</li>
+            <li><strong>Rollups (Zone, Parent, Category) use simple average</strong> — flagged as <em>Proxy Calculation</em>.</li>
           </ul>
         </details>
       </details>
@@ -464,10 +447,6 @@ function SupplierCompliancePage() {
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup ({categoryRollup.length})</h3></summary>
               <div className="rollup-scroll"><RollupResults rows={categoryRollup} label="Category" /></div>
             </details>
-            <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary"><span className="level-badge">5</span><h3>Country Rollup ({countryRollup.length})</h3></summary>
-              <div className="rollup-scroll"><RollupResults rows={countryRollup} label="Country" /></div>
-            </details>
           </div>
         )}
       </section>
@@ -477,14 +456,13 @@ function SupplierCompliancePage() {
 
 // ─── Result Tables ─────────────────────────────────────────────────────────
 
-function SupplierResults({ rows }: { rows: ScoredComplianceRow[] }) {
+function SupplierResults({ rows }: { rows: ScoredMaturityRow[] }) {
   return (
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
-          <th>Approval Status</th>
-          <th>Compliance %</th>
+          <th>Supplier</th><th>Parent</th><th>Zone</th><th>Category</th>
+          <th>Maturity %</th>
           <th>Rank</th><th>Percentile</th><th>Attainment</th>
           <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th>
         </tr></thead>
@@ -494,10 +472,8 @@ function SupplierResults({ rows }: { rows: ScoredComplianceRow[] }) {
               <td>{displayText(row.supplier, "Unassigned")}</td>
               <td>{displayText(row.parentSupplier, "")}</td>
               <td>{displayText(row.zone, "")}</td>
-              <td>{displayText(row.country, "")}</td>
               <td>{displayText(row.category, "")}</td>
-              <td>{displayText(row.supplierApprovalStatus, "-")}</td>
-              <td>{percent(row.compliancePct, 2)}</td>
+              <td>{percent(row.maturityScore, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainmentFactor, 4)}</td>
@@ -517,7 +493,7 @@ function RollupResults({
   rows,
   label,
 }: {
-  rows: RollupComplianceRow[];
+  rows: RollupMaturityRow[];
   label: string;
 }) {
   return (
@@ -525,7 +501,7 @@ function RollupResults({
       <table className="data-table results-table">
         <thead><tr>
           <th>{label}</th>
-          <th>Compliance %</th>
+          <th>Maturity %</th>
           <th>Rank</th><th>Percentile</th><th>Attainment</th>
           <th>Max</th><th>Earned</th><th>Score %</th>
           <th>Contributing</th><th>Aggregation</th><th>Status</th>
@@ -534,7 +510,7 @@ function RollupResults({
           {rows.map((row) => (
             <tr key={row.id} className={rowClass(row.scoreStatus)}>
               <td>{row.label}</td>
-              <td>{percent(row.compliancePct, 2)}</td>
+              <td>{percent(row.maturityScore, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainmentFactor, 4)}</td>
@@ -554,11 +530,11 @@ function RollupResults({
 
 // ─── Export helper ─────────────────────────────────────────────────────────
 
-const rollupExportRows = (rows: RollupComplianceRow[], label: string) => [
-  [label, "Compliance %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Contributing", "Aggregation", "Status"],
+const rollupExportRows = (rows: RollupMaturityRow[], label: string) => [
+  [label, "Maturity %", "Rank", "Percentile %", "Attainment", "Max", "Earned", "Score %", "Contributing", "Aggregation", "Status"],
   ...rows.map((r) => [
     r.label,
-    percent(r.compliancePct, 2),
+    percent(r.maturityScore, 2),
     formatRank(r.rankDescending),
     percent(r.percentile, 2),
     numeric(r.attainmentFactor, 4),
@@ -575,7 +551,7 @@ const rollupExportRows = (rows: RollupComplianceRow[], label: string) => [
 
 const rowClass = (status: string) => {
   if (status === "Invalid Data") return "invalid-row";
-  if (status === "Not Applicable" || status === "Missing Compliance") {
+  if (status === "Not Applicable" || status === "Missing Score") {
     return "not-applicable-row";
   }
   return "";
@@ -583,7 +559,7 @@ const rowClass = (status: string) => {
 
 const statusClass = (status: string) => {
   if (status === "Invalid Data") return "status-invalid";
-  if (status === "Not Applicable" || status === "Missing Compliance") {
+  if (status === "Not Applicable" || status === "Missing Score") {
     return "status-na";
   }
   if (status === "Zero Score") return "status-floor";
@@ -597,4 +573,4 @@ const statusClass = (status: string) => {
   return "status-valid";
 };
 
-export default SupplierCompliancePage;
+export default SupplierMaturityPage;

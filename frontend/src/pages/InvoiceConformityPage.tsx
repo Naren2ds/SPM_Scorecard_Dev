@@ -4,9 +4,9 @@ import {
   calculateEarnedScore,
   calculatePercentileRanks,
   validateConfig,
-} from "./scoring";
-import { toCsv } from "./csv";
-import type { KpiConfig } from "./types";
+} from "../shared/scoring";
+import { toCsv } from "../shared/csv";
+import type { KpiConfig } from "../shared/types";
 
 // ─── Invoice Conformity Types ───────────────────────────────────────────────
 

@@ -1,26 +1,24 @@
 // ---------------------------------------------------------------------------
-// Supplier Compliance % — scoring engine
-// Implements the flow described in
-// docs/Support_Docs/supplier-compliance-scoring.md:
-//   1) Parse and validate the direct compliance % per supplier
-//   2) Rank within cohort → percentile
-//   3) Apply attainment factor against floor / target
-//   4) Combine into Earned Score (Strict or Soft Stretch)
-//   5) Roll up by Parent / Zone / Category / Country using SIMPLE AVERAGE
-//      (backend only supplies direct %, no counts) — flagged as
-//      "Proxy Calculation" per the scoring spec.
+// Supplier Maturity Score — scoring engine
+// Same math as Supplier Compliance:
+//   1) Parse the maturity score (stored in [0, 1] by backend)
+//   2) Rank within cohort → percentile (Rank 1 = highest score = best)
+//   3) Attainment: (score - floor) / (target - floor), clamped 0..1
+//   4) Earned Score (Strict or Soft Stretch)
+//   5) Rollups by Parent / Zone / Category using SIMPLE AVERAGE → Proxy
 // ---------------------------------------------------------------------------
 
 import type {
-  ComplianceAssessmentRow,
-  ComplianceConfig,
-  CompliancePercentileRank,
-  ComplianceRollupLevel,
-  ComplianceScoreStatus,
-  RollupComplianceRow,
-  ScoredComplianceRow,
-  SupplierComplianceInputRow,
-} from "./supplierComplianceTypes";
+  MaturityAssessmentRow,
+  MaturityConfig,
+  MaturityFormulaMode,
+  MaturityPercentileRank,
+  MaturityRollupLevel,
+  MaturityScoreStatus,
+  RollupMaturityRow,
+  ScoredMaturityRow,
+  SupplierMaturityInputRow,
+} from "./types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -30,10 +28,7 @@ const clamp = (value: number, min: number, max: number) =>
 const dim = (value: string, fallback: string) =>
   (value ?? "").trim() || fallback;
 
-const firstText = (values: string[], fallback: string) =>
-  values.map((v) => v.trim()).find(Boolean) ?? fallback;
-
-const parseCompliance = (
+const parseMaturity = (
   value: string,
 ): { value: number | null; error: string | null } => {
   const raw = String(value ?? "").trim();
@@ -41,20 +36,20 @@ const parseCompliance = (
   const cleaned = raw.replace(/,/g, "").replace("%", "").trim();
   const parsed = Number(cleaned);
   if (!Number.isFinite(parsed)) {
-    return { value: null, error: `Compliance value "${raw}" is not numeric.` };
+    return { value: null, error: `Maturity score "${raw}" is not numeric.` };
   }
   if (parsed < 0) {
-    return { value: null, error: "Compliance % is below 0." };
+    return { value: null, error: "Maturity score is below 0." };
   }
   // Values in [0, 1] pass through, values in (1, 100] treated as %.
   if (parsed <= 1) return { value: parsed, error: null };
   if (parsed <= 100) return { value: parsed / 100, error: null };
-  return { value: null, error: "Compliance % is above 100." };
+  return { value: null, error: "Maturity score is above 100." };
 };
 
 // ─── Config validation ─────────────────────────────────────────────────────
 
-export function validateConfig(config: ComplianceConfig): string[] {
+export function validateConfig(config: MaturityConfig): string[] {
   const errors: string[] = [];
 
   if (!Number.isFinite(config.maxScore) || config.maxScore <= 0) {
@@ -87,21 +82,19 @@ export function validateConfig(config: ComplianceConfig): string[] {
 // ─── Convert input rows → typed assessment rows ────────────────────────────
 
 const toAssessmentRow = (
-  row: SupplierComplianceInputRow,
+  row: SupplierMaturityInputRow,
   index: number,
-): ComplianceAssessmentRow => {
-  const parsed = parseCompliance(row.compliancePct);
+): MaturityAssessmentRow => {
+  const parsed = parseMaturity(row.maturityScore);
   const errors = parsed.error ? [parsed.error] : [];
   return {
     id: row.id || `supplier-${index}`,
     supplier: dim(row.supplier, `Supplier ${index + 1}`),
     parentSupplier: dim(row.parentSupplier, "Unassigned parent"),
     zone: dim(row.zone, "Unassigned zone"),
-    country: dim(row.country, "Unassigned country"),
     category: dim(row.category, "Unassigned category"),
-    supplierApprovalStatus: (row.supplierApprovalStatus ?? "").trim(),
     isApplicable: row.kpiApplicability !== "Not Applicable",
-    compliancePct: parsed.value,
+    maturityScore: parsed.value,
     errors,
   };
 };
@@ -111,8 +104,8 @@ const toAssessmentRow = (
 export function calculatePercentileRanks(
   rows: Array<{ id: string; value: number }>,
   target: number,
-): Map<string, CompliancePercentileRank> {
-  const result = new Map<string, CompliancePercentileRank>();
+): Map<string, MaturityPercentileRank> {
+  const result = new Map<string, MaturityPercentileRank>();
   const validRows = rows.filter((r) => Number.isFinite(r.value));
   const count = validRows.length;
 
@@ -151,52 +144,43 @@ export function calculatePercentileRanks(
 }
 
 export function calculateAttainmentFactor(
-  compliance: number,
+  score: number,
   criticalFloor: number,
   target: number,
 ): number {
-  if (compliance < criticalFloor) return 0;
-  if (compliance >= target) return 1;
-  return clamp(
-    (compliance - criticalFloor) / (target - criticalFloor),
-    0,
-    1,
-  );
+  if (score < criticalFloor) return 0;
+  if (score >= target) return 1;
+  if (target === criticalFloor) return 0;
+  return clamp((score - criticalFloor) / (target - criticalFloor), 0, 1);
 }
 
-export function calculateComplianceEarnedScore(
+export function calculateMaturityEarnedScore(
   maxScore: number,
   percentile: number,
   attainmentFactor: number,
-  formulaMode: ComplianceFormulaMode,
+  formulaMode: MaturityFormulaMode,
 ): number {
   return formulaMode === "softStretch"
     ? maxScore * attainmentFactor * (0.7 + 0.3 * percentile)
     : maxScore * percentile * attainmentFactor;
 }
 
-type ComplianceFormulaMode = ComplianceConfig["formulaMode"];
-
 // ─── Row scoring orchestration ─────────────────────────────────────────────
 
-const cohortKeyForRow = (
-  row: ComplianceAssessmentRow,
-  config: ComplianceConfig,
-) => {
+const cohortKeyForRow = (row: MaturityAssessmentRow, config: MaturityConfig) => {
   if (config.cohortLevel === "Parent") return row.parentSupplier;
   if (config.cohortLevel === "Zone") return row.zone;
   if (config.cohortLevel === "Category") return row.category;
-  if (config.cohortLevel === "Country") return row.country;
   return "All suppliers";
 };
 
 const invalidBaseScore = (
-  row: ComplianceAssessmentRow,
-  config: ComplianceConfig,
-  status: ComplianceScoreStatus,
+  row: MaturityAssessmentRow,
+  config: MaturityConfig,
+  status: MaturityScoreStatus,
   explanation: string,
   cohortKey = "Excluded",
-): ScoredComplianceRow => ({
+): ScoredMaturityRow => ({
   ...row,
   cohortKey,
   rankDescending: null,
@@ -213,12 +197,12 @@ const invalidBaseScore = (
 });
 
 const scoreNarrative = (
-  compliance: number,
-  rank: CompliancePercentileRank,
+  score: number,
+  rank: MaturityPercentileRank,
   attainmentFactor: number,
   earnedScore: number,
-  config: ComplianceConfig,
-): { status: ComplianceScoreStatus; explanation: string } => {
+  config: MaturityConfig,
+): { status: MaturityScoreStatus; explanation: string } => {
   const messages: string[] = [];
   const percentile = rank.percentile;
   const formulaMessage =
@@ -229,24 +213,24 @@ const scoreNarrative = (
       : `Earned Score = ${config.maxScore.toFixed(2)} x ${(percentile * 100).toFixed(
           2,
         )}% x ${attainmentFactor.toFixed(4)} = ${earnedScore.toFixed(2)}.`;
-  const belowFloor = compliance < config.criticalFloor || attainmentFactor === 0;
+  const belowFloor = score < config.criticalFloor || attainmentFactor === 0;
   const formulaZero = earnedScore === 0;
 
   if (rank.note === "single") {
     messages.push("Single observation: percentile set to 100% by rule.");
   }
   if (rank.note === "noVariance") {
-    messages.push("No variance: all suppliers have identical compliance.");
+    messages.push("No variance: all suppliers have identical maturity scores.");
   }
 
   if (belowFloor) {
-    messages.push("Below critical floor: compliance too low, earned score set to 0.");
+    messages.push("Below critical floor: maturity score too low, earned score set to 0.");
   } else if (formulaZero) {
     messages.push("Zero score: strict formula produces 0 because percentile component is 0.");
-  } else if (compliance >= config.target) {
-    messages.push("Valid: compliance is above target and percentile-adjusted.");
+  } else if (score >= config.target) {
+    messages.push("Valid: maturity score is at or above target and percentile-adjusted.");
   } else {
-    messages.push("Valid: compliance between floor and target — attainment is proportional.");
+    messages.push("Valid: maturity score between floor and target — attainment is proportional.");
   }
 
   if (config.formulaMode === "softStretch" && !belowFloor) {
@@ -269,25 +253,25 @@ const scoreNarrative = (
 };
 
 export function scoreAssessmentRows(
-  assessmentRows: ComplianceAssessmentRow[],
-  config: ComplianceConfig,
-): ScoredComplianceRow[] {
-  const groupedRows = new Map<string, ComplianceAssessmentRow[]>();
+  assessmentRows: MaturityAssessmentRow[],
+  config: MaturityConfig,
+): ScoredMaturityRow[] {
+  const groupedRows = new Map<string, MaturityAssessmentRow[]>();
 
   assessmentRows.forEach((row) => {
     if (!row.isApplicable) return;
     if (row.errors.length > 0) return;
-    if (row.compliancePct === null) return;
+    if (row.maturityScore === null) return;
     const cohortKey = cohortKeyForRow(row, config);
     const group = groupedRows.get(cohortKey) ?? [];
     group.push(row);
     groupedRows.set(cohortKey, group);
   });
 
-  const rankLookup = new Map<string, CompliancePercentileRank>();
+  const rankLookup = new Map<string, MaturityPercentileRank>();
   groupedRows.forEach((group) => {
     const ranks = calculatePercentileRanks(
-      group.map((row) => ({ id: row.id, value: row.compliancePct ?? 0 })),
+      group.map((row) => ({ id: row.id, value: row.maturityScore ?? 0 })),
       config.target,
     );
     ranks.forEach((rank, id) => rankLookup.set(id, rank));
@@ -313,12 +297,12 @@ export function scoreAssessmentRows(
         cohortKey,
       );
     }
-    if (row.compliancePct === null) {
+    if (row.maturityScore === null) {
       return invalidBaseScore(
         row,
         config,
-        "Missing Compliance",
-        "Missing Compliance: applicable supplier with no usable compliance data.",
+        "Missing Score",
+        "Missing Score: applicable supplier with no usable maturity score.",
         cohortKey,
       );
     }
@@ -326,14 +310,14 @@ export function scoreAssessmentRows(
     const rank = rankLookup.get(row.id);
     const percentile = rank?.percentile ?? null;
     const attainmentFactor = calculateAttainmentFactor(
-      row.compliancePct,
+      row.maturityScore,
       config.criticalFloor,
       config.target,
     );
     const earnedScore =
       percentile === null
         ? null
-        : calculateComplianceEarnedScore(
+        : calculateMaturityEarnedScore(
             config.maxScore,
             percentile,
             attainmentFactor,
@@ -342,14 +326,14 @@ export function scoreAssessmentRows(
     const narrative =
       rank && earnedScore !== null
         ? scoreNarrative(
-            row.compliancePct,
+            row.maturityScore,
             rank,
             attainmentFactor,
             earnedScore,
             config,
           )
         : {
-            status: "Missing Compliance" as ComplianceScoreStatus,
+            status: "Missing Score" as MaturityScoreStatus,
             explanation: "Unable to calculate percentile for this row.",
           };
 
@@ -375,51 +359,49 @@ export function scoreAssessmentRows(
 // ─── Public API — supplier-level + rollups ─────────────────────────────────
 
 export function calculateSupplierScores(
-  rows: SupplierComplianceInputRow[],
-  config: ComplianceConfig,
-): ScoredComplianceRow[] {
+  rows: SupplierMaturityInputRow[],
+  config: MaturityConfig,
+): ScoredMaturityRow[] {
   const assessments = rows.map((r, i) => toAssessmentRow(r, i));
   return scoreAssessmentRows(assessments, config);
 }
 
 /**
- * Rollup: group supplier-level scored rows, then AVERAGE the compliance %.
- * The scoring doc calls this a "Proxy Calculation" — we flag it accordingly.
+ * Rollup: group supplier-level scored rows, then AVERAGE the maturity score.
+ * Flagged as "Proxy Calculation" per the sibling KPI spec.
  */
 const rollupRows = (
-  supplierRows: ScoredComplianceRow[],
-  level: ComplianceRollupLevel,
-  config: ComplianceConfig,
-): RollupComplianceRow[] => {
-  const groups = new Map<string, ScoredComplianceRow[]>();
+  supplierRows: ScoredMaturityRow[],
+  level: MaturityRollupLevel,
+  config: MaturityConfig,
+): RollupMaturityRow[] => {
+  const groups = new Map<string, ScoredMaturityRow[]>();
   supplierRows.forEach((row) => {
     const key =
       level === "Parent"
         ? row.parentSupplier
         : level === "Zone"
           ? row.zone
-          : level === "Category"
-            ? row.category
-            : row.country;
+          : row.category;
     const group = groups.get(key) ?? [];
     group.push(row);
     groups.set(key, group);
   });
 
-  const rollupAssessments: ComplianceAssessmentRow[] = Array.from(
+  const rollupAssessments: MaturityAssessmentRow[] = Array.from(
     groups.entries(),
   ).map(([label, groupRows], index) => {
     const contributing = groupRows.filter(
       (r) =>
         r.scoreStatus !== "Not Applicable" &&
         r.scoreStatus !== "Invalid Data" &&
-        r.scoreStatus !== "Missing Compliance" &&
-        r.compliancePct !== null,
+        r.scoreStatus !== "Missing Score" &&
+        r.maturityScore !== null,
     );
     const avg =
       contributing.length === 0
         ? null
-        : contributing.reduce((sum, r) => sum + (r.compliancePct ?? 0), 0) /
+        : contributing.reduce((sum, r) => sum + (r.maturityScore ?? 0), 0) /
           contributing.length;
 
     return {
@@ -427,14 +409,9 @@ const rollupRows = (
       supplier: "All suppliers",
       parentSupplier: level === "Parent" ? label : "All parents",
       zone: level === "Zone" ? label : "All zones",
-      country: level === "Country" ? label : "All countries",
       category: level === "Category" ? label : "All categories",
-      supplierApprovalStatus: firstText(
-        groupRows.map((r) => r.supplierApprovalStatus),
-        "",
-      ),
       isApplicable: contributing.length > 0,
-      compliancePct: avg,
+      maturityScore: avg,
       errors: [],
     };
   });
@@ -448,19 +425,15 @@ const rollupRows = (
         ? row.parentSupplier
         : level === "Zone"
           ? row.zone
-          : level === "Category"
-            ? row.category
-            : row.country;
-    // Doc: rollups that use simple average → mark status Proxy Calculation
-    // (unless the row is a "Zero Score" / "Not Applicable" / etc.).
+          : row.category;
     const isValid = row.scoreStatus === "Valid";
     return {
       ...row,
       scoreStatus: isValid
-        ? ("Proxy Calculation" as ComplianceScoreStatus)
+        ? ("Proxy Calculation" as MaturityScoreStatus)
         : row.scoreStatus,
       explanation: isValid
-        ? `${row.explanation} Proxy Calculation: rollup compliance is the simple average of contributing suppliers.`
+        ? `${row.explanation} Proxy Calculation: rollup maturity score is the simple average of contributing suppliers.`
         : row.explanation,
       level,
       label,
@@ -471,34 +444,27 @@ const rollupRows = (
 };
 
 export function calculateParentRollup(
-  rows: SupplierComplianceInputRow[],
-  config: ComplianceConfig,
-): RollupComplianceRow[] {
+  rows: SupplierMaturityInputRow[],
+  config: MaturityConfig,
+): RollupMaturityRow[] {
   return rollupRows(calculateSupplierScores(rows, config), "Parent", config);
 }
 
 export function calculateZoneRollup(
-  rows: SupplierComplianceInputRow[],
-  config: ComplianceConfig,
-): RollupComplianceRow[] {
+  rows: SupplierMaturityInputRow[],
+  config: MaturityConfig,
+): RollupMaturityRow[] {
   return rollupRows(calculateSupplierScores(rows, config), "Zone", config);
 }
 
 export function calculateCategoryRollup(
-  rows: SupplierComplianceInputRow[],
-  config: ComplianceConfig,
-): RollupComplianceRow[] {
+  rows: SupplierMaturityInputRow[],
+  config: MaturityConfig,
+): RollupMaturityRow[] {
   return rollupRows(calculateSupplierScores(rows, config), "Category", config);
 }
 
-export function calculateCountryRollup(
-  rows: SupplierComplianceInputRow[],
-  config: ComplianceConfig,
-): RollupComplianceRow[] {
-  return rollupRows(calculateSupplierScores(rows, config), "Country", config);
-}
-
-export const formulaModeLabel = (mode: ComplianceConfig["formulaMode"]) =>
+export const formulaModeLabel = (mode: MaturityConfig["formulaMode"]) =>
   mode === "softStretch"
     ? "Softer Percentile Stretch"
     : "Strict Percentile x Attainment";

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
 import {
   calculatePercentileRanks,
   calculateEarnedScore,
-  validateConfig,
 } from "../shared/scoring";
 import { toCsv } from "../shared/csv";
 import type { KpiConfig } from "../shared/types";
@@ -44,64 +44,51 @@ const numeric = (v: number | null, d = 2) =>
   v === null || !Number.isFinite(v) ? "-" : v.toFixed(d);
 
 const formatRank = (v: number | null) =>
-  v === null || !Number.isFinite(v) ? "-" : Number.isInteger(v) ? String(v) : v.toFixed(1);
+  v === null || !Number.isFinite(v) ? "-" : String(Math.floor(v));
 
 // ─── Inverted attainment (lower divergence = better) ────────────────────────
 
 function invertedAttainment(divergence: number, floor: number, target: number): number {
+  // Inverted KPI: floor must be greater than target.
+  if (!Number.isFinite(floor) || !Number.isFinite(target) || floor <= target) return 0;
   if (divergence >= floor) return 0;
   if (divergence <= target) return 1;
   return (floor - divergence) / (floor - target);
 }
 
-// ─── Multi-select dropdown ──────────────────────────────────────────────────
+function validatePdConfig(config: KpiConfig): string[] {
+  const errors: string[] = [];
 
-function MultiSelectDropdown({
-  label, options, selected, onChange,
-}: {
-  label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  if (!Number.isFinite(config.maxScore) || config.maxScore <= 0) {
+    errors.push("Max Score must be greater than 0.");
+  }
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  if (
+    !Number.isFinite(config.criticalFloor) ||
+    config.criticalFloor < 0 ||
+    config.criticalFloor > 1
+  ) {
+    errors.push("Critical Floor must be between 0% and 100%.");
+  }
 
-  const toggleValue = (val: string) => {
-    if (selected.includes(val)) onChange(selected.filter((v) => v !== val));
-    else onChange([...selected, val]);
-  };
+  if (!Number.isFinite(config.target) || config.target < 0 || config.target > 1) {
+    errors.push("Target must be between 0% and 100%.");
+  }
 
-  const displayLabel = selected.length === 0 ? "All" : selected.length === 1 ? selected[0] : `${selected.length} selected`;
+  if (
+    Number.isFinite(config.criticalFloor) &&
+    Number.isFinite(config.target) &&
+    config.criticalFloor <= config.target
+  ) {
+    errors.push(
+      "For Price Divergence, Critical Floor must be greater than Target (lower divergence is better).",
+    );
+  }
 
-  return (
-    <div className="ms-dropdown" ref={ref}>
-      <span className="ms-label">{label}</span>
-      <button type="button" className="ms-trigger" onClick={() => setOpen(!open)}>
-        {displayLabel} <span className="ms-arrow">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div className="ms-panel">
-          <label className="ms-item">
-            <input type="checkbox" checked={selected.length === 0} onChange={() => onChange([])} />
-            All
-          </label>
-          {options.map((opt) => (
-            <label key={opt} className="ms-item">
-              <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggleValue(opt)} />
-              {opt}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return errors;
 }
+
+// ─── Multi-select dropdown ──────────────────────────────────────────────────
 
 // ─── Price Divergence Scoring ───────────────────────────────────────────────
 
@@ -307,7 +294,7 @@ function PriceDivergencePage() {
   // Dynamic filter options
   const opts = useMemo(() => ({
     categories: Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort(),
-    years: Array.from(new Set(rows.map((r) => r.year).filter(Boolean))).sort(),
+    years: ["2025", "2026"],
     months: Array.from(new Set(rows.map((r) => r.month).filter(Boolean))).sort(),
     parentSuppliers: Array.from(new Set(rows.map((r) => r.parentSupplier).filter(Boolean))).sort(),
     suppliers: Array.from(new Set(rows.map((r) => r.supplier).filter(Boolean))).sort(),
@@ -330,7 +317,7 @@ function PriceDivergencePage() {
   }, [rows, selCategory, selYear, selMonth, selParentSupplier, selSupplier, selCountry, selZone]);
 
   // Scoring
-  const configErrors = useMemo(() => validateConfig(config), [config]);
+  const configErrors = useMemo(() => validatePdConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
 
   const scoredRows = useMemo(
@@ -399,8 +386,8 @@ function PriceDivergencePage() {
         <MultiSelectDropdown label="Category" options={opts.categories} selected={selCategory} onChange={setSelCategory} />
         <MultiSelectDropdown label="Year" options={opts.years} selected={selYear} onChange={setSelYear} />
         <MultiSelectDropdown label="Month" options={opts.months} selected={selMonth} onChange={setSelMonth} />
-        <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} />
-        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} />
+        <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} searchable />
+        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} searchable />
         <MultiSelectDropdown label="Zone" options={opts.zones} selected={selZone} onChange={setSelZone} />
         <MultiSelectDropdown label="Country" options={opts.countries} selected={selCountry} onChange={setSelCountry} />
         <div className="filter-summary"><strong>{filteredRows.length}</strong> / {rows.length} rows</div>

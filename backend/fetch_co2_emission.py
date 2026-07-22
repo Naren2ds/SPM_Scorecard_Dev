@@ -10,17 +10,16 @@ Column mapping (raw -> frontend):
   zone                  -> zone
   supplier_category     -> category
   KPI_applicable        -> kpiApplicability   (forced "Applicable" for now)
-  emissions_tco2e_2024  -> co2Emission        (absolute tonnes CO2 equivalent,
-                                                interpreted as "CO2 Reduction
-                                                Potential" -- higher is better)
+    emissions_tco2e_2025  -> co2Emission (year = "2025")
+    emissions_tco2e_2026  -> co2Emission (year = "2026")
+
+Both emission columns are interpreted as absolute tonnes CO2 equivalent
+("CO2 Reduction Potential" in current scoring, where higher is better).
 
 Aggregation:
   Groups by (supplier, parentSupplier, zone, category, kpiApplicability, year)
   and takes the MEAN of co2Emission across duplicate rows (constant per
   supplier under normal circumstances).
-
-year:
-  Constant "2024" (source column is emissions_tco2e_2024 -- year is baked in).
 """
 
 import os
@@ -44,9 +43,10 @@ FROM brewdat_uc_supchn_dev.gld_ghq_procurement_spm.supplier_sustainability_perfo
 
 OUTPUT_PATH = Path(__file__).resolve().parent / "data" / "co2_emission.csv"
 
-# Constant year applied to every processed row (source column is
-# emissions_tco2e_2024, so all rows are inherently year 2024).
-CONSTANT_YEAR = "2024"
+YEAR_TO_SOURCE_COLS = {
+    "2025": ["emissions_tco2e_2025"],
+    "2026": ["emissions_tco2e_2026"],
+}
 
 
 def fetch_raw() -> pd.DataFrame:
@@ -65,7 +65,7 @@ def fetch_raw() -> pd.DataFrame:
 
 
 def process(df: pd.DataFrame) -> pd.DataFrame:
-    """Map columns and aggregate per supplier."""
+    """Map columns and aggregate per supplier and year (2025/2026)."""
 
     # Case-insensitive column lookup so schema variations survive.
     lower_cols = {c.lower(): c for c in df.columns}
@@ -82,19 +82,45 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
             return pd.Series([pd.NA] * len(df), index=df.index, dtype="Float64")
         return pd.to_numeric(df[actual], errors="coerce")
 
-    mapped = pd.DataFrame({
+    base = pd.DataFrame({
         "supplier": col_text("supplier_name"),
         "parentSupplier": col_text("parent_name"),
         "zone": col_text("zone"),
         "category": col_text("supplier_category"),
-        "co2Emission": col_numeric("emissions_tco2e_2024"),
     })
 
-    # Constants per business rule
-    mapped["kpiApplicability"] = "Applicable"
-    mapped["year"] = CONSTANT_YEAR
+    year_frames: list[pd.DataFrame] = []
+    for year, candidates in YEAR_TO_SOURCE_COLS.items():
+        actual = None
+        for candidate in candidates:
+            actual = lower_cols.get(candidate.lower())
+            if actual is not None:
+                break
+        if actual is None:
+            continue
 
-    # Aggregate to one row per unique supplier/dimension combo.
+        year_df = base.copy()
+        year_df["co2Emission"] = col_numeric(actual)
+        year_df["year"] = year
+        year_frames.append(year_df)
+
+    if not year_frames:
+        available = ", ".join(sorted(df.columns))
+        expected = ", ".join(
+            col for candidates in YEAR_TO_SOURCE_COLS.values() for col in candidates
+        )
+        raise ValueError(
+            "Could not find CO2 year columns for 2025/2026. "
+            f"Expected one of: {expected}. Available columns: {available}"
+        )
+
+    mapped = pd.concat(year_frames, ignore_index=True)
+    mapped["kpiApplicability"] = "Applicable"
+
+    # Keep only rows that actually have an emission value for that year.
+    mapped = mapped[mapped["co2Emission"].notna()].copy()
+
+    # Aggregate to one row per unique supplier/dimension/year combo.
     group_cols = [
         "year", "supplier", "parentSupplier", "zone", "category",
         "kpiApplicability",

@@ -1,0 +1,292 @@
+id,supplier,parentSupplier,zone,category,kpiApplicability,eclipseScore,year
+ecl-0,A to Z Logistics,ATOZ LOGISTICS LIMITED,APAC,Logistics,Applicable,0.200000,2025
+ecl-1,ACCORD CARTON CO,ACCOR,NAZ,Packaging,Applicable,0.666000,2025
+ecl-2,ACCREDO PACKAGING INC,,NAZ,Packaging,Applicable,0.141000,2025
+ecl-3,AGI Glaspac/HSIL,,APAC,Packaging,Applicable,0.373000,2025
+ecl-4,AKZO,,NAZ,RAU,Applicable,0.800000,2025
+ecl-5,AMCOR,AMCOR,MAZ,Packaging,Applicable,0.882000,2025
+ecl-6,AMCOR,AMCOR,SAZ,Packaging,Applicable,0.882000,2025
+ecl-7,AMERICAN COMMODITY COMPANY,,NAZ,RAU,Applicable,0.109000,2025
+ecl-8,ARAMARK,ARAMARK,NAZ,Indirects,Applicable,0.160000,2025
+ecl-9,ARCONIC CORPORATION,,NAZ,Packaging,Applicable,0.681000,2025
+ecl-10,ATLANTIC PACKAGING,Atlantic Packaging Products Ltd,NAZ,Packaging,Applicable,0.718000,2025
+ecl-11,Adecoagro,Kadesh Hispania S.L.,SAZ,RAU,Applicable,0.841000,2025
+ecl-12,Agraria,,SAZ,RAU,Applicable,0.865000,2025
+ecl-13,Alilang,,APAC,Packaging,Applicable,0.254000,2025
+ecl-14,Apong,APONG NANJING PACKAGING & PRINTING,APAC,Packaging,Applicable,0.266000,2025
+ecl-15,Ardagh Glass Packaging,ARDAGH GROUP,AFR,Packaging,Applicable,0.716000,2025
+ecl-16,Ardagh Glass Packaging,ARDAGH GROUP,EUR,Packaging,Applicable,0.716000,2025
+ecl-17,Ardagh Glass Packaging,ARDAGH GROUP,NAZ,Packaging,Applicable,0.716000,2025
+ecl-18,Ardagh Metal Packaging,ARDAGH GROUP,EUR,Packaging,Applicable,0.882000,2025
+ecl-19,Arglass,,NAZ,Packaging,Applicable,0.217000,2025
+ecl-20,Arrozeira Pelotas,ARROZEIRA PELOTAS,SAZ,RAU,Applicable,0.210000,2025
+ecl-21,Ashwini Logistics Solutions,,APAC,Logistics,Applicable,0.365000,2025
+ecl-22,Avangard,,GPO,RAU,Applicable,0.212000,2025
+ecl-23,Avient,Avient Corporation,MAZ,Packaging,Applicable,0.224000,2025
+ecl-24,Azucarera del Norte,AZUCARERA,MAZ,RAU,Applicable,0.222000,2025
+ecl-25,BERRY GLOBAL INC,,NAZ,Packaging,Applicable,0.726000,2025
+ecl-26,BN Pack,BN PACK CORRUGATED PRIVATE LIMITED,APAC,Packaging,Applicable,0.211000,2025
+ecl-27,Ball,Ball,EUR,Packaging,Applicable,0.880000,2025
+ecl-28,Ball,Ball,MAZ,Packaging,Applicable,0.880000,2025
+ecl-29,Ball,Ball,NAZ,Packaging,Applicable,0.880000,2025
+ecl-30,Ball,Ball,SAZ,Packaging,Applicable,0.880000,2025
+ecl-31,Baosteel,,APAC,Packaging,Applicable,0.672000,2025
+ecl-32,Barmalt,PURE FEEDS AND FOODS PRIVATE LIMITED,APAC,RAU,Applicable,0.370000,2025
+ecl-33,Barth-Haas,JOH BARTH & SOHN,APAC,RAU,Applicable,0.829000,2025
+ecl-34,Barth-Haas,JOH BARTH & SOHN,NAZ,RAU,Applicable,0.829000,2025
+ecl-35,Benepack,HUARUIFENGQUAN Packaging Holdings Limited,EUR,Packaging,Applicable,0.239000,2025
+ecl-36,Bevcan,NAMPAK BEVCAN,AFR,Packaging,Applicable,0.807000,2025
+ecl-37,Biagi,,NAZ,Logistics,Applicable,0.128000,2025
+ecl-38,Bing Xin,,APAC,Packaging,Applicable,0.354000,2025
+ecl-39,Bode / Protec-Pacific,,APAC,Packaging,Applicable,0.254000,2025
+ecl-40,Bohemia Hop,,GPO,RAU,Applicable,0.813000,2025
+ecl-41,Boortmalt,BOORTMALT,EUR,RAU,Applicable,0.716000,2025
+ecl-42,Boortmalt,BOORTMALT,MAZ,RAU,Applicable,0.716000,2025
+ecl-43,Boortmalt,BOORTMALT,NAZ,RAU,Applicable,0.716000,2025
+ecl-44,CAEI,,MAZ,RAU,Applicable,0.681000,2025
+ecl-45,CARIBBEAN GLASS INDUSTRY S.A.,CARIBBEAN PALLET,MAZ,Packaging,Applicable,0.565000,2025
+ecl-46,CCL,CCL LABEL,APAC,Packaging,Applicable,0.254000,2025
+ecl-47,CCL LABEL,,NAZ,Packaging,Applicable,0.244000,2025
+ecl-48,CMA,,Global,Logistics,Applicable,0.293000,2025
+ecl-49,COFCO - Malt,COFCO,APAC,RAU,Applicable,0.377000,2025
+ecl-50,CR ENGLAND,,NAZ,Logistics,Applicable,0.264000,2025
+ecl-51,CROWN CORK & SEAL USA INC,,NAZ,Packaging,Applicable,0.892000,2025
+ecl-52,CROWN CORK & SEAL USA INC,,SAZ,Packaging,Applicable,0.892000,2025
+ecl-53,Cai Fu,,APAC,Packaging,Applicable,0.676000,2025
+ecl-54,Canada Malting,GRAINCORP,NAZ,RAU,Applicable,0.200000,2025
+ecl-55,Canpack,CAN PACK,EUR,Packaging,Applicable,0.704000,2025
+ecl-56,Canpack,CAN PACK,MAZ,Packaging,Applicable,0.704000,2025
+ecl-57,Cargill,,GPO,RAU,Applicable,0.100000,2025
+ecl-58,Cattorini Hnos,CATTORINI HNOS. S.A.I.C.F. e I.,SAZ,Packaging,Applicable,0.524000,2025
+ecl-59,Chang Yu,,APAC,Packaging,Applicable,0.668000,2025
+ecl-60,Changfeng,,APAC,RAU,Applicable,0.363000,2025
+ecl-61,Changlee,,APAC,Packaging,Applicable,0.100000,2025
+ecl-62,Changxin,,APAC,Packaging,Applicable,0.100000,2025
+ecl-63,Cofco,COFCO,APAC,Packaging,Applicable,0.716000,2025
+ecl-64,Coleus,COLEUS PACKAGING PTY,AFR,Packaging,Applicable,0.726000,2025
+ecl-65,Comercializadora ledesma,Ledesma,MAZ,RAU,Applicable,0.204000,2025
+ecl-66,Cooperativa PINDO S.A.,COOPERATIVA AGROINDUSTRIAL,SAZ,RAU,Applicable,0.216000,2025
+ecl-67,Costeño Alimentos SAC,,MAZ,RAU,Applicable,0.208000,2025
+ecl-68,Crisp,"James Richardson & Sons, Limited",EUR,RAU,Applicable,0.707000,2025
+ecl-69,Cristalerias Chile S.A.,Cristalerias,SAZ,Packaging,Applicable,0.691000,2025
+ecl-70,Cristalpet,CRISTALPET,SAZ,Packaging,Applicable,0.209000,2025
+ecl-71,DIDION MILLING,,NAZ,RAU,Applicable,0.351000,2025
+ecl-72,"DOMINION PACKAGING, INC.",,NAZ,Packaging,Applicable,0.679000,2025
+ecl-73,DS Smith,DS SMITH,EUR,Packaging,Applicable,0.886000,2025
+ecl-74,DSV,,Global,Logistics,Applicable,0.438000,2025
+ecl-75,Daesang,,APAC,RAU,Applicable,0.691000,2025
+ecl-76,Diana,DIANA LOERA,MAZ,RAU,Applicable,0.216000,2025
+ecl-77,Diversey-Solenis,,GPO,RAU,Applicable,0.746000,2025
+ecl-78,Doehler,,GPO,RAU,Applicable,0.671000,2025
+ecl-79,Dong-A Packaging,,APAC,Packaging,Applicable,0.654000,2025
+ecl-80,Donggae,,APAC,RAU,Applicable,0.574000,2025
+ecl-81,Dongwon,,APAC,Packaging,Applicable,0.668000,2025
+ecl-82,Dongwon CAN,,APAC,Packaging,Applicable,0.720000,2025
+ecl-83,ELEMENT FINANCIAL,,NAZ,Indirects,Applicable,0.131000,2025
+ecl-84,Engepack,ENGEPACK EMBALAGENS SAO PAULO SA,SAZ,Packaging,Applicable,0.838000,2025
+ecl-85,Envases Universales México,Envases,MAZ,Packaging,Applicable,0.832000,2025
+ecl-86,Envases Universales México,Envases,NAZ,Packaging,Applicable,0.832000,2025
+ecl-87,Erfurter,Getreide-Aktiengesellschaft vorm. P. Kruse - Chr. Sieck,EUR,RAU,Applicable,0.372000,2025
+ecl-88,Everest,,APAC,Indirects,Applicable,0.381000,2025
+ecl-89,FASTENAL,FASTENAL,NAZ,Indirects,Applicable,0.136000,2025
+ecl-90,FERYARROZ CIA LTDA,,MAZ,RAU,Applicable,0.665000,2025
+ecl-91,Farmers Rice Cooperative,,NAZ,RAU,Applicable,0.112000,2025
+ecl-92,Fevisa,,MAZ,Packaging,Applicable,0.690000,2025
+ecl-93,Fevisa,,NAZ,Packaging,Applicable,0.690000,2025
+ecl-94,Firmenich,,GPO,RAU,Applicable,0.750000,2025
+ecl-95,Fogel,FOGEL GROUP,MAZ,Indirects,Applicable,0.408000,2025
+ecl-96,Frigoglass COOLING,FRIGOGLASS,AFR,Indirects,Applicable,0.882000,2025
+ecl-97,Frigoglass GLASS,FRIGOGLASS,AFR,Packaging,Applicable,0.882000,2025
+ecl-98,Fuli,,APAC,Packaging,Applicable,0.264000,2025
+ecl-99,GDI SERVICES (CANADA) LP,GDI SERVICES CANADA,NAZ,Indirects,Applicable,0.122000,2025
+ecl-100,GROUP DAMEX,,NAZ,Indirects,Applicable,0.100000,2025
+ecl-101,GRUPO VIDRIERO CENTROAMERICANO VICAL,GRUPO IMMO,MAZ,Packaging,Applicable,0.576000,2025
+ecl-102,GZI,GZ Industries Limited,AFR,Packaging,Applicable,0.858000,2025
+ecl-103,Gaosen,,APAC,Packaging,Applicable,0.654000,2025
+ecl-104,Grain Craft LLC,,NAZ,RAU,Applicable,0.673000,2025
+ecl-105,Graphic Packaging International,GPI Holding,EUR,Packaging,Applicable,0.742000,2025
+ecl-106,Graphic Packaging International,GPI Holding,MAZ,Packaging,Applicable,0.742000,2025
+ecl-107,Graphic Packaging International,GPI Holding,NAZ,Packaging,Applicable,0.742000,2025
+ecl-108,Green System,,EUR,Indirects,Applicable,0.833000,2025
+ecl-109,Guang Yuan,,APAC,Packaging,Applicable,0.376000,2025
+ecl-110,Guangquan,,APAC,Packaging,Applicable,0.200000,2025
+ecl-111,Guohui,,APAC,Packaging,Applicable,0.276000,2025
+ecl-112,HANIL CANS,,APAC,Packaging,Applicable,0.704000,2025
+ecl-113,HANIL PET,,APAC,Packaging,Applicable,0.668000,2025
+ecl-114,HFZC (Hefei ZhongCheng),,GPO,Indirects,Applicable,0.372000,2025
+ecl-115,HH GLOBAL,HH GLOBAL ENTERPRISE NETWORK LTD,NAZ,Commercial,Applicable,0.192000,2025
+ecl-116,HNG / Hindustan National Glass,,APAC,Packaging,Applicable,0.200000,2025
+ecl-117,Hai yue,,APAC,RAU,Applicable,0.410000,2025
+ecl-118,Haier,,APAC,Indirects,Applicable,0.422000,2025
+ecl-119,Hansung P&I,,APAC,Packaging,Applicable,0.579000,2025
+ecl-120,Hao Neng,"HAONENG INDUSTRIES CORP.,LTD",APAC,Packaging,Applicable,0.371000,2025
+ecl-121,He Xing,,APAC,Packaging,Applicable,0.366000,2025
+ecl-122,Henan Zhongfu Gongyi,,APAC,Packaging,Applicable,0.742000,2025
+ecl-123,Hexin,,APAC,Packaging,Applicable,0.254000,2025
+ecl-124,Hexin Color,,APAC,Packaging,Applicable,0.100000,2025
+ecl-125,Hillebrand,,Global,Logistics,Applicable,0.880000,2025
+ecl-126,Hongqiao,,APAC,Packaging,Applicable,0.260000,2025
+ecl-127,Hongrui,,APAC,Packaging,Applicable,0.254000,2025
+ecl-128,Hongsen,,APAC,Packaging,Applicable,0.568000,2025
+ecl-129,Hongwei,,APAC,Packaging,Applicable,0.100000,2025
+ecl-130,Hongye,,APAC,Packaging,Applicable,0.100000,2025
+ecl-131,Hopsteiner,,APAC,RAU,Applicable,0.681000,2025
+ecl-132,Hopsteiner,,NAZ,RAU,Applicable,0.681000,2025
+ecl-133,Hua Xia,,APAC,Packaging,Applicable,0.668000,2025
+ecl-134,Hua Xing,,APAC,Packaging,Applicable,0.676000,2025
+ecl-135,Huaihai,,APAC,Packaging,Applicable,0.258000,2025
+ecl-136,Huayang,,APAC,Packaging,Applicable,0.264000,2025
+ecl-137,IFF,,Global,RAU,Applicable,0.744000,2025
+ecl-138,ILLINOIS TOOL WORKS INC,ILLINOIS TOOL WORKS,NAZ,Packaging,Applicable,0.819000,2025
+ecl-139,INDUSTRIA Y SELECCION DE GRANOS Y CEREALES S.A.S.,INDUSTRIAS H D,MAZ,RAU,Applicable,0.655000,2025
+ecl-140,INTERNATIONAL PAPER,INTERNATIONAL PAPER,NAZ,Packaging,Applicable,0.688000,2025
+ecl-141,INX,,NAZ,RAU,Applicable,0.144000,2025
+ecl-142,IOWA CORN PROCESSORS,,NAZ,RAU,Applicable,0.654000,2025
+ecl-143,Imbera,IMBERA,EUR,Indirects,Applicable,0.888000,2025
+ecl-144,Imbera,IMBERA,MAZ,Indirects,Applicable,0.888000,2025
+ecl-145,Imbera,IMBERA,SAZ,Indirects,Applicable,0.888000,2025
+ecl-146,Impackta Group,,SAZ,Packaging,Applicable,0.262000,2025
+ecl-147,Ingrain,INGRAIN,AFR,RAU,Applicable,0.705000,2025
+ecl-148,Ingredion,INGREDION,APAC,RAU,Applicable,0.864000,2025
+ecl-149,Ingredion,INGREDION,MAZ,RAU,Applicable,0.864000,2025
+ecl-150,Ingredion,INGREDION,NAZ,RAU,Applicable,0.864000,2025
+ecl-151,Ingredion,INGREDION,SAZ,RAU,Applicable,0.864000,2025
+ecl-152,Isanti Glass,Isanti Glass,AFR,Packaging,Applicable,0.694000,2025
+ecl-153,JYL,,APAC,RAU,Applicable,0.358000,2025
+ecl-154,Janus International,JANUS INTERNATIONAL PRIVATE LIMITED,APAC,Packaging,Applicable,0.211000,2025
+ecl-155,Jiangsu,"Jiangsu Kolod Food Ingredients Co., Ltd.",APAC,RAU,Applicable,0.354000,2025
+ecl-156,Jinbaili,,APAC,Packaging,Applicable,0.364000,2025
+ecl-157,Jinfuxing,,APAC,Packaging,Applicable,0.254000,2025
+ecl-158,Jing Yao,,APAC,Packaging,Applicable,0.676000,2025
+ecl-159,Jing yu,,APAC,Packaging,Applicable,0.668000,2025
+ecl-160,Jinxian,,APAC,RAU,Applicable,0.358000,2025
+ecl-161,K.K. Industries,,APAC,RAU,Applicable,0.673000,2025
+ecl-162,KAISER ALUMINUM WARRICK LLC,,NAZ,Packaging,Applicable,0.827000,2025
+ecl-163,Kalsec,,GPO,RAU,Applicable,0.704000,2025
+ecl-164,Karnataka RoadlinesPvt. Ltd.,KARNATAKA ROADLINES PRIVATE LIMITED,APAC,Logistics,Applicable,0.355000,2025
+ecl-165,Kennedy rice mills,,NAZ,RAU,Applicable,0.520000,2025
+ecl-166,Kerry,,GPO,RAU,Applicable,0.894000,2025
+ecl-167,Kersia-Sopura,,GPO,RAU,Applicable,0.854000,2025
+ecl-168,Kioo Limited,,AFR,Packaging,Applicable,0.686000,2025
+ecl-169,Korea Export,,APAC,Packaging,Applicable,0.654000,2025
+ecl-170,Kumbi,,APAC,Packaging,Applicable,0.701000,2025
+ecl-171,Kyungwon,,APAC,Packaging,Applicable,0.672000,2025
+ecl-172,LOGIXX SECURITY,DALTON FIRST FINANCIAL,NAZ,Indirects,Applicable,0.117000,2025
+ecl-173,Lianyi,,APAC,Packaging,Applicable,0.276000,2025
+ecl-174,Liyuan,,APAC,RAU,Applicable,0.363000,2025
+ecl-175,Logoplaste,LOGOPLASTE DO BRASIL,SAZ,Packaging,Applicable,0.261000,2025
+ecl-176,Longxing,,APAC,Packaging,Applicable,0.266000,2025
+ecl-177,LuZhong,,APAC,Packaging,Applicable,0.676000,2025
+ecl-178,MSC,,Global,Logistics,Applicable,0.861000,2025
+ecl-179,MULTI-COLOR CORPORATION,MULTI COLOR CORPORATION,NAZ,Packaging,Applicable,0.712000,2025
+ecl-180,Malteurop,MALTEUROP,EUR,RAU,Applicable,0.696000,2025
+ecl-181,Malteurop,MALTEUROP,MAZ,RAU,Applicable,0.696000,2025
+ecl-182,Malteurop,MALTEUROP,NAZ,RAU,Applicable,0.696000,2025
+ecl-183,Maselis,,GPO,RAU,Applicable,0.254000,2025
+ecl-184,Mei An Da,,APAC,Packaging,Applicable,0.376000,2025
+ecl-185,Meiyi,,APAC,Packaging,Applicable,0.254000,2025
+ecl-186,Metalfrio,METALFRIO SOLUTIONS,EUR,Indirects,Applicable,0.842000,2025
+ecl-187,Metalfrio,METALFRIO SOLUTIONS,MAZ,Indirects,Applicable,0.842000,2025
+ecl-188,Metalfrio,METALFRIO SOLUTIONS,SAZ,Indirects,Applicable,0.842000,2025
+ecl-189,Muntons,MUNTONS (HOLDINGS) PLC,EUR,RAU,Applicable,0.892000,2025
+ecl-190,NANSHAN AMERICA CO LTD,,APAC,Packaging,Applicable,0.675000,2025
+ecl-191,NANSHAN AMERICA CO LTD,,NAZ,Packaging,Applicable,0.675000,2025
+ecl-192,NFI,"NFI Industries, Inc.",NAZ,Logistics,Applicable,0.743000,2025
+ecl-193,Nanfang,,APAC,Packaging,Applicable,0.264000,2025
+ecl-194,Novelis,NOVELIS,SAZ,Packaging,Applicable,0.835000,2025
+ecl-195,OI Owens Illinois,,EUR,Packaging,Applicable,0.832000,2025
+ecl-196,OI Owens Illinois,,MAZ,Packaging,Applicable,0.832000,2025
+ecl-197,OI Owens Illinois,,NAZ,Packaging,Applicable,0.832000,2025
+ecl-198,OI Owens Illinois,,SAZ,Packaging,Applicable,0.832000,2025
+ecl-199,ONE,,Global,Logistics,Applicable,0.424000,2025
+ecl-200,ORG,,APAC,Packaging,Applicable,0.692000,2025
+ecl-201,Organizacion ROA FLORHUILA SA,ORF S A,MAZ,RAU,Applicable,0.660000,2025
+ecl-202,Ou Lian,,APAC,Packaging,Applicable,0.668000,2025
+ecl-203,PLÁSTICOS INDUSTRIALES HONDUREÑOS S.A.,,MAZ,Packaging,Applicable,0.561000,2025
+ecl-204,PMV,,APAC,RAU,Applicable,0.831000,2025
+ecl-205,PREFORSA,,SAZ,Packaging,Applicable,0.356000,2025
+ecl-206,Plastilene,PLASTILENE SAS,MAZ,Packaging,Applicable,0.200000,2025
+ecl-207,Pride Milling,Pride Milling Company,AFR,RAU,Applicable,0.680000,2025
+ecl-208,Primient,,NAZ,RAU,Applicable,0.698000,2025
+ecl-209,Producers Rice Mill,"Producers Rice Mill, Inc.",NAZ,RAU,Applicable,0.804000,2025
+ecl-210,Quanyi,,APAC,Packaging,Applicable,0.264000,2025
+ecl-211,RCL Foods,RCL FOODS,AFR,RAU,Applicable,0.657000,2025
+ecl-212,Rahr,Rahr Corporation,NAZ,RAU,Applicable,0.684000,2025
+ecl-213,Raizen,RAIZEN ENERGIA,SAZ,RAU,Applicable,0.200000,2025
+ecl-214,Raner,,APAC,Packaging,Applicable,0.568000,2025
+ecl-215,Rentokil,RENTOKIL INITIAL,NAZ,Indirects,Applicable,0.153000,2025
+ecl-216,Ri Jing,,APAC,Packaging,Applicable,0.676000,2025
+ecl-217,Rigolleau,INDUSTRIAS INTEGRALES DEL VIDRIO,SAZ,Packaging,Applicable,0.835000,2025
+ecl-218,Riviana Foods,,NAZ,RAU,Applicable,0.100000,2025
+ecl-219,Rong Tai,,APAC,Packaging,Applicable,0.668000,2025
+ecl-220,SANTELLI SAS,,MAZ,Packaging,Applicable,0.586000,2025
+ecl-221,SGC,,APAC,Packaging,Applicable,0.661000,2025
+ecl-222,SKW,,APAC,Packaging,Applicable,0.100000,2025
+ecl-223,SLY,,APAC,Packaging,Applicable,0.676000,2025
+ecl-224,SMI,SMIGROUP,MAZ,Packaging,Applicable,0.237000,2025
+ecl-225,Sajo CPK,,APAC,RAU,Applicable,0.691000,2025
+ecl-226,Sambo,,APAC,Packaging,Applicable,0.661000,2025
+ecl-227,Samhwa Crown,,APAC,Packaging,Applicable,0.654000,2025
+ecl-228,Sanhui,,APAC,Packaging,Applicable,0.576000,2025
+ecl-229,Schettino Hermanos S de RL de CV,,MAZ,RAU,Applicable,0.665000,2025
+ecl-230,Seaboard,SEABOARD,MAZ,RAU,Applicable,0.660000,2025
+ecl-231,Sheng Xing,,APAC,Packaging,Applicable,0.697000,2025
+ecl-232,Shenma,,APAC,Packaging,Applicable,0.358000,2025
+ecl-233,Shifang Community / Lan Jian,,APAC,Packaging,Applicable,0.254000,2025
+ecl-234,Smurfit Kappa,SMURFIT KAPPA GROUP,EUR,Packaging,Applicable,0.862000,2025
+ecl-235,Staples,SYCAMORE PARTNERS MANAGEMENT,NAZ,Commercial,Applicable,0.100000,2025
+ecl-236,Staycold,STAYCOLD INTERNATIONAL,AFR,Indirects,Applicable,0.213000,2025
+ecl-237,Stora Enso,,Global,Packaging,Applicable,0.868000,2025
+ecl-238,Sunshine Tianze,,APAC,Packaging,Applicable,0.376000,2025
+ecl-239,Suo Kun,,APAC,Packaging,Applicable,0.676000,2025
+ecl-240,Supreme Rice,,NAZ,RAU,Applicable,0.350000,2025
+ecl-241,TRI-ARROWS,,NAZ,Packaging,Applicable,0.663000,2025
+ecl-242,Taifeng,,APAC,Packaging,Applicable,0.254000,2025
+ecl-243,Taifeng Glass,,APAC,Packaging,Applicable,0.568000,2025
+ecl-244,Tangshi,,APAC,Logistics,Applicable,0.266000,2025
+ecl-245,Tereos,TEREOS,SAZ,RAU,Applicable,0.231000,2025
+ecl-246,Tian Ma,,APAC,Packaging,Applicable,0.676000,2025
+ecl-247,Tiande,,APAC,Packaging,Applicable,0.100000,2025
+ecl-248,Tingzheng,,APAC,Packaging,Applicable,0.100000,2025
+ecl-249,Tirupati Balaji,TIRUPATI BALAJI FOODS PRIVATE LIMITED,APAC,RAU,Applicable,0.223000,2025
+ecl-250,Toll India Logistics Pvt. Lts.,TOLL HOLDINGS PTY LIMITED,APAC,Logistics,Applicable,0.266000,2025
+ecl-251,TongChan,,APAC,Packaging,Applicable,0.668000,2025
+ecl-252,Tongli,,APAC,Packaging,Applicable,0.100000,2025
+ecl-253,UATH,,NAZ,Packaging,Applicable,0.853000,2025
+ecl-254,UNIVAR,"Windsor Parent, L.P.",NAZ,RAU,Applicable,0.865000,2025
+ecl-255,Valgroup (Lorenpet),VALGROUP,SAZ,Packaging,Applicable,0.886000,2025
+ecl-256,Varun Beverages,VARUN BEVERAGES LIMITED,APAC,Packaging,Applicable,0.213000,2025
+ecl-257,Verallia,Verallia,EUR,Packaging,Applicable,0.892000,2025
+ecl-258,Verallia,Verallia,MAZ,Packaging,Applicable,0.892000,2025
+ecl-259,Verallia,Verallia,SAZ,Packaging,Applicable,0.892000,2025
+ecl-260,Vidroporto,VIDROPORTO,SAZ,Packaging,Applicable,0.841000,2025
+ecl-261,WERNER ENTERPRISES,"Werner Enterprises, Inc.",NAZ,Logistics,Applicable,0.100000,2025
+ecl-262,WESTROCK COMPANY,WESTROCK,EUR,Packaging,Applicable,0.874000,2025
+ecl-263,WESTROCK COMPANY,WESTROCK,NAZ,Packaging,Applicable,0.874000,2025
+ecl-264,WILLOWTREE INC,,NAZ,Indirects,Applicable,0.104000,2025
+ecl-265,WISE ALLOYS LLC,,NAZ,Packaging,Applicable,0.842000,2025
+ecl-266,Wanchang,,APAC,Packaging,Applicable,0.354000,2025
+ecl-267,Wanlong,,APAC,Packaging,Applicable,0.254000,2025
+ecl-268,Weida,,APAC,Packaging,Applicable,0.254000,2025
+ecl-269,Western Chillers,,APAC,Indirects,Applicable,0.721000,2025
+ecl-270,Wyckoff Farms,,APAC,RAU,Applicable,0.693000,2025
+ecl-271,Wyckoff Farms,,NAZ,RAU,Applicable,0.693000,2025
+ecl-272,Xiangheng,,APAC,Packaging,Applicable,0.366000,2025
+ecl-273,Xincheng,,APAC,Packaging,Applicable,0.254000,2025
+ecl-274,Xingze,,APAC,RAU,Applicable,0.354000,2025
+ecl-275,Xinmeng,,APAC,Packaging,Applicable,0.264000,2025
+ecl-276,Xinye,,APAC,Packaging,Applicable,0.254000,2025
+ecl-277,YAKIMA CHIEF HOPUNION LLC,,NAZ,RAU,Applicable,0.839000,2025
+ecl-278,Yadu,,APAC,Packaging,Applicable,0.254000,2025
+ecl-279,Yamei,,APAC,Packaging,Applicable,0.254000,2025
+ecl-280,Yanjing,,APAC,Packaging,Applicable,0.568000,2025
+ecl-281,Yihua,,APAC,Packaging,Applicable,0.100000,2025
+ecl-282,Yiyu,,APAC,Packaging,Applicable,0.364000,2025
+ecl-283,Yong Yao,,APAC,Packaging,Applicable,0.668000,2025
+ecl-284,Yongan,,APAC,Packaging,Applicable,0.100000,2025
+ecl-285,Youyi,,APAC,Packaging,Applicable,0.264000,2025
+ecl-286,Yuebo,,APAC,Packaging,Applicable,0.676000,2025
+ecl-287,Zhengxin,,APAC,Packaging,Applicable,0.358000,2025
+ecl-288,Zhongshi (Shi Da),,APAC,Packaging,Applicable,0.254000,2025
+ecl-289,Ziquan,,APAC,Packaging,Applicable,0.354000,2025
+ecl-290,Ziquan Label,,APAC,Packaging,Applicable,0.254000,2025

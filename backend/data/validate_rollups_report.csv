@@ -1,0 +1,28 @@
+KPI,Rollup Dimension,Status,Detail
+DOT,zone,SKIP,Column 'zone' missing or has <2 distinct values
+DOT,parentSupplier,PASS,Weighted avg computed for 2655 groups. Max deviation vs direct avg = nan (0/2655 groups differ). Correct formula: sum(onTimePoLines)/sum(totalDeliveredPoLines)
+DOT,category,PASS,Weighted avg computed for 48 groups. Max deviation vs direct avg = nan (0/48 groups differ). Correct formula: sum(onTimePoLines)/sum(totalDeliveredPoLines)
+IOT,zone,SKIP,Column 'zone' missing or has <2 distinct values
+IOT,parentSupplier,PASS,Weighted avg computed for 2523 groups. Max deviation vs direct avg = 0.697598 (1201/2523 groups differ). Correct formula: sum(invoiceOnTimeCount)/sum(totalPoLines)
+IOT,category,PASS,Weighted avg computed for 48 groups. Max deviation vs direct avg = 0.139694 (46/48 groups differ). Correct formula: sum(invoiceOnTimeCount)/sum(totalPoLines)
+Invoice Conformity,zone,SKIP,Column 'zone' missing or has <2 distinct values
+Invoice Conformity,parentSupplier,PASS,Weighted avg computed for 2193 groups. Max deviation vs direct avg = 32.500000 (149/2193 groups differ). Correct formula: sum(_non_mismatch)/sum(totalInvoices)
+Invoice Conformity,category,PASS,Weighted avg computed for 45 groups. Max deviation vs direct avg = 0.626333 (41/45 groups differ). Correct formula: sum(_non_mismatch)/sum(totalInvoices)
+Price Divergence,zone,SKIP,Column 'zone' missing or <2 values
+Price Divergence,parentSupplier,PASS,Weighted avg: |sum(inv)-sum(po)|/sum(po) for 2221 groups. Max deviation vs direct avg = 45.923743 (914/2221 groups differ). Correct formula: |sum(invoiceValue)-sum(poValue)|/sum(poValue)
+Price Divergence,category,PASS,Weighted avg: |sum(inv)-sum(po)|/sum(po) for 48 groups. Max deviation vs direct avg = 15.386941 (46/48 groups differ). Correct formula: |sum(invoiceValue)-sum(poValue)|/sum(poValue)
+Eclipse Score,zone,PASS,Direct avg computed for 8 groups. Formula: mean(eclipseScore)
+Eclipse Score,parentSupplier,PASS,Direct avg computed for 87 groups. Formula: mean(eclipseScore)
+Eclipse Score,category,PASS,Direct avg computed for 5 groups. Formula: mean(eclipseScore)
+Supplier Maturity,zone,PASS,Direct avg computed for 8 groups. Formula: mean(maturityScore)
+Supplier Maturity,parentSupplier,PASS,Direct avg computed for 81 groups. Formula: mean(maturityScore)
+Supplier Maturity,category,PASS,Direct avg computed for 5 groups. Formula: mean(maturityScore)
+Supplier Compliance (SC),zone,PASS,Direct avg computed for 8 groups. Formula: mean(compliancePct)
+Supplier Compliance (SC),parentSupplier,PASS,Direct avg computed for 625 groups. Formula: mean(compliancePct)
+Supplier Compliance (SC),category,PASS,Direct avg computed for 7 groups. Formula: mean(compliancePct)
+Supplier Assessment (SA),zone,PASS,Weighted avg computed for 8 groups. Max deviation vs direct avg = 0.000671 (2/8 groups differ). Correct formula: sum(greenCount)/sum(_totalValid)
+Supplier Assessment (SA),parentSupplier,PASS,Weighted avg computed for 634 groups. Max deviation vs direct avg = 0.001279 (1/634 groups differ). Correct formula: sum(greenCount)/sum(_totalValid)
+Supplier Assessment (SA),category,PASS,Weighted avg computed for 7 groups. Max deviation vs direct avg = 0.011295 (2/7 groups differ). Correct formula: sum(greenCount)/sum(_totalValid)
+CO2 Emission,zone,PASS,Direct avg computed for 24 groups. Formula: mean(co2Emission)
+CO2 Emission,parentSupplier,PASS,Direct avg computed for 120 groups. Formula: mean(co2Emission)
+CO2 Emission,category,SKIP,Column 'category' missing or has <2 distinct values

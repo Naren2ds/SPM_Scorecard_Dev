@@ -23,10 +23,14 @@ No vendor filter — fetches ALL suppliers.
 | zone | → | zone |
 | supplier_category | → | category |
 | KPI_applicable | → | kpiApplicability (forced `"Applicable"` for all rows in the current phase) |
-| emissions_tco2e_2024 | → | co2Emission (absolute tonnes CO₂e; higher = better, treated as CO₂ Reduction Potential) |
+| emissions_tco2e_2025 | → | co2Emission (year = `"2025"`) |
+| emissions_tco2e_2026 | → | co2Emission (year = `"2026"`) |
+
+Note: backend targets 2025/2026 columns and emits rows for whichever of these
+columns are present in the source schema.
 
 ### Step 2 — Constants
-- `year` = `"2024"` for every row (source column is `emissions_tco2e_2024` — year is baked in).
+- `year` comes from source emission year columns (`emissions_tco2e_2025`, `emissions_tco2e_2026`).
 - `kpiApplicability` = `"Applicable"` (forced; source `KPI_applicable` is currently blank).
 - No `country` column.
 
@@ -46,7 +50,7 @@ No vendor filter — fetches ALL suppliers.
 | Filter | Default | Behavior |
 |---|---|---|
 | Category | All | Multi-select |
-| Year | 2024 (pre-selected) | Multi-select |
+| Year | 2025 + 2026 (pre-selected) | Multi-select |
 | Parent Supplier | All | Multi-select |
 | Supplier | All | Multi-select |
 | Zone | All | Multi-select |
@@ -146,7 +150,7 @@ frontend/src/Co2EmissionPage.tsx (React, loads from API on mount)
 - `use_cloud_fetch=False` in Databricks connector (corporate SSL proxy blocks cloud fetch)
 - Data lives in `backend/data/` only (not in frontend)
 - Supplier-level table capped at 200 rows in UI (full data in Export CSV)
-- Year filter defaults to `["2024"]` because the source column is `emissions_tco2e_2024`
+- Year filter defaults to `["2025", "2026"]` and backend emits only these years
 - `KPI_applicable` currently forced to `"Applicable"` for all rows — update when source column is populated
 - `country` column is not present in the source table for this KPI
 - Backend cache and refresh thread are isolated (separate lock for CO₂)

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
 import {
   calculateAttainmentFactor,
   calculateEarnedScore,
@@ -44,58 +45,11 @@ const numeric = (v: number | null, d = 2) =>
   v === null || !Number.isFinite(v) ? "-" : v.toFixed(d);
 
 const formatRank = (v: number | null) =>
-  v === null || !Number.isFinite(v) ? "-" : Number.isInteger(v) ? String(v) : v.toFixed(1);
+  v === null || !Number.isFinite(v) ? "-" : String(Math.floor(v));
 
 const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 
 // ─── Multi-select dropdown ──────────────────────────────────────────────────
-
-function MultiSelectDropdown({
-  label, options, selected, onChange,
-}: {
-  label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const toggleValue = (val: string) => {
-    if (selected.includes(val)) onChange(selected.filter((v) => v !== val));
-    else onChange([...selected, val]);
-  };
-
-  const displayLabel = selected.length === 0 ? "All" : selected.length === 1 ? selected[0] : `${selected.length} selected`;
-
-  return (
-    <div className="ms-dropdown" ref={ref}>
-      <span className="ms-label">{label}</span>
-      <button type="button" className="ms-trigger" onClick={() => setOpen(!open)}>
-        {displayLabel} <span className="ms-arrow">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div className="ms-panel">
-          <label className="ms-item">
-            <input type="checkbox" checked={selected.length === 0} onChange={() => onChange([])} />
-            All
-          </label>
-          {options.map((opt) => (
-            <label key={opt} className="ms-item">
-              <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggleValue(opt)} />
-              {opt}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── IOT Scoring ────────────────────────────────────────────────────────────
 
@@ -302,7 +256,7 @@ function IotKpiPage() {
   // Dynamic filter options
   const opts = useMemo(() => ({
     categories: Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort(),
-    years: Array.from(new Set(rows.map((r) => r.year).filter(Boolean))).sort(),
+    years: ["2025", "2026"],
     months: Array.from(new Set(rows.map((r) => r.month).filter(Boolean))).sort((a, b) => Number(a) - Number(b)),
     parentSuppliers: Array.from(new Set(rows.map((r) => r.parentSupplier).filter(Boolean))).sort(),
     suppliers: Array.from(new Set(rows.map((r) => r.supplier).filter(Boolean))).sort(),
@@ -394,8 +348,8 @@ function IotKpiPage() {
         <MultiSelectDropdown label="Category" options={opts.categories} selected={selCategory} onChange={setSelCategory} />
         <MultiSelectDropdown label="Year" options={opts.years} selected={selYear} onChange={setSelYear} />
         <MultiSelectDropdown label="Month" options={opts.months} selected={selMonth} onChange={setSelMonth} />
-        <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} />
-        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} />
+        <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} searchable />
+        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} searchable />
         <MultiSelectDropdown label="Zone" options={opts.zones} selected={selZone} onChange={setSelZone} />
         <MultiSelectDropdown label="Country" options={opts.countries} selected={selCountry} onChange={setSelCountry} />
         <div className="filter-summary"><strong>{filteredRows.length}</strong> / {rows.length} rows</div>

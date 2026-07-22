@@ -1260,6 +1260,39 @@ details.summary-section:not([open]) > .summary-section-summary {
   padding: 0;
 }
 
+/* Search input inside dropdown panel */
+.ms-search-wrap {
+  padding: 6px 8px 4px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.ms-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  outline: none;
+  min-height: auto;
+}
+
+.ms-search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 199, 0, 0.25);
+}
+
+.ms-no-results {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .filter-summary {
   align-self: center;
   font-size: 0.84rem;

@@ -7,7 +7,8 @@
 //   - Rollups: Zone + Parent only.
 // ---------------------------------------------------------------------------
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
 import {
   calculateParentRollup,
   calculateSupplierScores,
@@ -44,82 +45,10 @@ const tonnes = (value: number | null, digits = 2) =>
       });
 
 const formatRank = (value: number | null) =>
-  value === null || !Number.isFinite(value)
-    ? "-"
-    : Number.isInteger(value)
-      ? String(value)
-      : value.toFixed(1);
+  value === null || !Number.isFinite(value) ? "-" : String(Math.floor(value));
 
 const displayText = (value: string, fallback: string) =>
   (value ?? "").trim() || fallback;
-
-// ─── Multi-select dropdown (matches DOT/SA/SC UX) ──────────────────────────
-
-function MultiSelectDropdown({
-  label,
-  options,
-  selected,
-  onChange,
-}: {
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (values: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const toggleValue = (val: string) => {
-    if (selected.includes(val)) onChange(selected.filter((v) => v !== val));
-    else onChange([...selected, val]);
-  };
-
-  const displayLabel =
-    selected.length === 0
-      ? "All"
-      : selected.length === 1
-        ? selected[0]
-        : `${selected.length} selected`;
-
-  return (
-    <div className="ms-dropdown" ref={ref}>
-      <span className="ms-label">{label}</span>
-      <button type="button" className="ms-trigger" onClick={() => setOpen(!open)}>
-        {displayLabel} <span className="ms-arrow">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div className="ms-panel">
-          <label className="ms-item">
-            <input
-              type="checkbox"
-              checked={selected.length === 0}
-              onChange={() => onChange([])}
-            />
-            All
-          </label>
-          {options.map((opt) => (
-            <label key={opt} className="ms-item">
-              <input
-                type="checkbox"
-                checked={selected.includes(opt)}
-                onChange={() => toggleValue(opt)}
-              />
-              {opt}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
@@ -144,7 +73,7 @@ function Co2EmissionPage() {
   // Multi-select filter states (empty = All). Year defaults to "2024" to
   // match the source column `emissions_tco2e_2024`.
   const [selCategory, setSelCategory] = useState<string[]>([]);
-  const [selYear, setSelYear] = useState<string[]>(["2024"]);
+  const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
   const [selParent, setSelParent] = useState<string[]>([]);
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
@@ -216,9 +145,7 @@ function Co2EmissionPage() {
       categories: Array.from(
         new Set(rows.map((r) => r.category).filter(Boolean)),
       ).sort(),
-      years: Array.from(
-        new Set(rows.map((r) => r.year).filter(Boolean)),
-      ).sort(),
+      years: ["2025", "2026"],
       parents: Array.from(
         new Set(rows.map((r) => r.parentSupplier).filter(Boolean)),
       ).sort(),
@@ -363,8 +290,8 @@ function Co2EmissionPage() {
       <section className="config-bar">
         <MultiSelectDropdown label="Category" options={opts.categories} selected={selCategory} onChange={setSelCategory} />
         <MultiSelectDropdown label="Year" options={opts.years} selected={selYear} onChange={setSelYear} />
-        <MultiSelectDropdown label="Parent Supplier" options={opts.parents} selected={selParent} onChange={setSelParent} />
-        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} />
+        <MultiSelectDropdown label="Parent Supplier" options={opts.parents} selected={selParent} onChange={setSelParent} searchable />
+        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} searchable />
         <MultiSelectDropdown label="Zone" options={opts.zones} selected={selZone} onChange={setSelZone} />
         <div className="filter-summary">
           <strong>{filteredRows.length}</strong> / {rows.length} rows

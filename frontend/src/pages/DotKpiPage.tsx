@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
 import {
   calculateCategoryRollup,
   calculateParentRollup,
@@ -66,70 +67,11 @@ const numeric = (value: number | null, digits = 2) =>
   value === null || !Number.isFinite(value) ? "-" : value.toFixed(digits);
 
 const formatRank = (value: number | null) =>
-  value === null || !Number.isFinite(value)
-    ? "-"
-    : Number.isInteger(value)
-      ? String(value)
-      : value.toFixed(1);
+  value === null || !Number.isFinite(value) ? "-" : String(Math.floor(value));
 
 const displayText = (value: string, fallback: string) => value.trim() || fallback;
 
 const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
-
-// ─── Multi-select dropdown component ────────────────────────────────────────
-
-function MultiSelectDropdown({
-  label,
-  options,
-  selected,
-  onChange,
-}: {
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (values: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const toggleValue = (val: string) => {
-    if (selected.includes(val)) onChange(selected.filter((v) => v !== val));
-    else onChange([...selected, val]);
-  };
-
-  const displayLabel = selected.length === 0 ? "All" : selected.length === 1 ? selected[0] : `${selected.length} selected`;
-
-  return (
-    <div className="ms-dropdown" ref={ref}>
-      <span className="ms-label">{label}</span>
-      <button type="button" className="ms-trigger" onClick={() => setOpen(!open)}>
-        {displayLabel} <span className="ms-arrow">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div className="ms-panel">
-          <label className="ms-item">
-            <input type="checkbox" checked={selected.length === 0} onChange={() => onChange([])} />
-            All
-          </label>
-          {options.map((opt) => (
-            <label key={opt} className="ms-item">
-              <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggleValue(opt)} />
-              {opt}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
@@ -230,7 +172,7 @@ function DotKpiPage() {
   // ─── Dynamic filter options ─────────────────────────────────────────────
   const opts = useMemo(() => ({
     categories: Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort(),
-    years: Array.from(new Set(rows.map((r) => r.year).filter(Boolean))).sort(),
+    years: ["2025", "2026"],
     months: Array.from(new Set(rows.map((r) => r.month).filter(Boolean))).sort((a, b) => Number(a) - Number(b)),
     parentSuppliers: Array.from(new Set(rows.map((r) => r.parentSupplier).filter(Boolean))).sort(),
     suppliers: Array.from(new Set(rows.map((r) => r.supplier).filter(Boolean))).sort(),
@@ -335,8 +277,8 @@ function DotKpiPage() {
         <MultiSelectDropdown label="Category" options={opts.categories} selected={selCategory} onChange={setSelCategory} />
         <MultiSelectDropdown label="Year" options={opts.years} selected={selYear} onChange={setSelYear} />
         <MultiSelectDropdown label="Month" options={opts.months} selected={selMonth} onChange={setSelMonth} />
-        <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} />
-        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} />
+        <MultiSelectDropdown label="Parent Supplier" options={opts.parentSuppliers} selected={selParentSupplier} onChange={setSelParentSupplier} searchable />
+        <MultiSelectDropdown label="Supplier" options={opts.suppliers} selected={selSupplier} onChange={setSelSupplier} searchable />
         <MultiSelectDropdown label="Zone" options={opts.zones} selected={selZone} onChange={setSelZone} />
         <MultiSelectDropdown label="Country" options={opts.countries} selected={selCountry} onChange={setSelCountry} />
         <div className="filter-summary">

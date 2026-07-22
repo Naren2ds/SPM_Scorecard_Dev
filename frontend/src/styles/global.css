@@ -177,13 +177,17 @@ button:focus {
 }
 
 .kpi-value-note {
-  margin: 6px 0 0;
+  display: inline-block;
+  margin: 12px 0 0;
+  padding: 8px 14px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(194, 174, 0, 0.4);
+  border-radius: 6px;
   font-family: var(--mono);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--muted);
-  line-height: 1.5;
-  max-width: 72ch;
+  color: var(--ink);
+  line-height: 1.7;
 }
 
 h1,
@@ -1539,6 +1543,15 @@ input:hover,select:hover,.ms-trigger:hover{border-color:var(--line-strong)}input
 @media(max-width:640px){.brand-header-inner{min-height:58px}.brand-wordmark{height:28px}.brand-copy strong{font-size:.9rem}.brand-header .kpi-tabs{display:none}.mobile-kpi-navigation{width:calc(100% - 40px);margin:0 auto;padding:10px 0 12px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px}.mobile-kpi-navigation span{color:var(--muted);font-family:var(--mono);font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.mobile-kpi-navigation select{min-height:38px}.app-shell{width:calc(100% - 24px);padding:14px 0 28px}.kpi-page-heading{padding:18px}.site-footer-inner{min-height:72px;padding:12px 0;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px}.footer-wordmark{height:26px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition-duration:.01ms!important}}
 
+
+/* kpi-page-heading overrides top-bar's column direction */
+.kpi-page-heading {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
 
 /* Full-width tables across every scorecard tab */
 .input-panel,

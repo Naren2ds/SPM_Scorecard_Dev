@@ -511,9 +511,10 @@ function ScorecardPage() {
           <p className="eyebrow">Q3 Normalized Framework</p>
           <h1>Normalized Supplier Scorecard</h1>
           <p className="kpi-value-note">
-            Score&nbsp;=&nbsp;Σ(Pillar&nbsp;%&nbsp;×&nbsp;Pillar&nbsp;Weight)&nbsp;/&nbsp;Σ(Applicable&nbsp;Pillar&nbsp;Weight)&nbsp;×&nbsp;100
-            &nbsp;·&nbsp;
-            Pillar&nbsp;%&nbsp;=&nbsp;Σ(Earned&nbsp;KPI&nbsp;Points)&nbsp;/&nbsp;Σ(Applicable&nbsp;Max&nbsp;Points)
+            Score = Σ(Pillar&nbsp;%&nbsp;×&nbsp;Pillar&nbsp;Weight)&nbsp;/&nbsp;Σ(Applicable&nbsp;Pillar&nbsp;Weight)&nbsp;×&nbsp;100
+          </p>
+          <p className="kpi-value-note">
+            Pillar&nbsp;% = Σ(Earned&nbsp;KPI&nbsp;Points)&nbsp;/&nbsp;Σ(Applicable&nbsp;Max&nbsp;Points)
           </p>
           {error && <p className="supporting">Error loading scorecard: {error}</p>}
           {loading && !scorecard && <p className="supporting">Loading scorecard…</p>}

@@ -14,17 +14,17 @@ import SupplierMaturityPage from "../pages/SupplierMaturityPage";
 type KpiTab = "summary" | "scorecard" | "dot" | "iot" | "supplierAssessment" | "supplierCompliance" | "supplierMaturity" | "co2Emission" | "eclipse" | "invoiceConformity" | "priceDivergence";
 
 const KPI_TABS: Array<{ id: KpiTab; label: string; shortLabel: string }> = [
-  { id: "summary", label: "Scoring Guide", shortLabel: "Guide" },
-  { id: "scorecard", label: "Normalized Scorecard", shortLabel: "Scorecard" },
-  { id: "dot", label: "DOT KPI", shortLabel: "DOT" },
-  { id: "iot", label: "IOT KPI", shortLabel: "IOT" },
-  { id: "supplierAssessment", label: "Supplier Assessment", shortLabel: "Assessment" },
-  { id: "supplierCompliance", label: "Supplier Compliance", shortLabel: "Compliance" },
-  { id: "supplierMaturity", label: "Supplier Maturity", shortLabel: "Maturity" },
-  { id: "co2Emission", label: "CO₂ Emission", shortLabel: "CO₂" },
-  { id: "eclipse", label: "Eclipse Score", shortLabel: "Eclipse" },
-  { id: "invoiceConformity", label: "Invoice Conformity", shortLabel: "Invoice" },
-  { id: "priceDivergence", label: "Price Divergence", shortLabel: "Price" },
+  { id: "summary",            label: "Scoring Guide",         shortLabel: "Guide"    },
+  { id: "scorecard",          label: "Normalized Scorecard",  shortLabel: "Scorecard"},
+  { id: "dot",                label: "DOT KPI",               shortLabel: "SL-DOT"  },
+  { id: "supplierAssessment", label: "Supplier Assessment",   shortLabel: "SL-SA"   },
+  { id: "supplierCompliance", label: "Supplier Compliance",   shortLabel: "SL-SC"   },
+  { id: "iot",                label: "IOT KPI",               shortLabel: "OP-IOT"  },
+  { id: "invoiceConformity",  label: "Invoice Conformity",    shortLabel: "OP-IC"   },
+  { id: "priceDivergence",    label: "Price Divergence",      shortLabel: "OP-PDIV" },
+  { id: "supplierMaturity",   label: "Supplier Maturity",     shortLabel: "SUS-SM"  },
+  { id: "eclipse",            label: "Eclipse Score",         shortLabel: "SUS-ECL" },
+  { id: "co2Emission",        label: "CO₂ Emission",          shortLabel: "SUS-CO2" },
 ];
 
 function App() {

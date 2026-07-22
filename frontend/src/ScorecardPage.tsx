@@ -508,7 +508,7 @@ function ScorecardPage() {
       <header className="sc-header">
         <div>
           <p className="eyebrow">
-            Q3 Normalized Framework · Top {TOP_N} by Invoice Value
+            Q3 Normalized Framework
           </p>
           <h1>Normalized Supplier Scorecard</h1>
           <p className="kpi-definition">
@@ -611,85 +611,8 @@ function ScorecardPage() {
         </div>
       </div>
 
-      {/* ─── Main split: leaderboard + drill-down ────────────────────────── */}
+      {/* ─── Drill-down ─────────────────────────────────────────────────── */}
       <div className="sc-body">
-        {/* Leaderboard */}
-        <div className="sc-leaderboard">
-          <div className="sc-leaderboard-head">
-            <div>
-              <h2>Top {TOP_N} by Invoice Value</h2>
-              <p className="sc-leaderboard-sub">
-                Ranked by aggregated invoice value (price_divergence). Filters
-                narrow the ranking universe before Top&nbsp;{TOP_N} is taken.
-              </p>
-            </div>
-            <span className="sc-count">
-              {filteredScorecards.length.toLocaleString()} shown
-            </span>
-          </div>
-          <div className="sc-leaderboard-scroll">
-            <table className="sc-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 44 }}>#</th>
-                  <th>Parent Supplier</th>
-                  <th className="num">Invoice&nbsp;Val</th>
-                  <th className="num">Norm</th>
-                  <th className="num">Cov&nbsp;%</th>
-                  <th className="num">Adj</th>
-                  <th style={{ width: 70 }}>Band</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredScorecards.map((row, idx) => {
-                  const active = row.parentSupplier === selectedParent;
-                  return (
-                    <tr
-                      key={row.parentSupplier}
-                      className={active ? "sc-row active" : "sc-row"}
-                      onClick={() => setSelectedParent(row.parentSupplier)}
-                    >
-                      <td className="num">{idx + 1}</td>
-                      <td className="name" title={row.parentSupplier}>
-                        {row.parentSupplier}
-                      </td>
-                      <td className="num" title={row.invoice_value.toLocaleString()}>
-                        {fmtCurrencyShort(row.invoice_value)}
-                      </td>
-                      <td className="num strong">
-                        {row.normalized_score.toFixed(1)}
-                      </td>
-                      <td className="num">{fmtPct(row.coverage_pct, 0)}</td>
-                      <td className="num">
-                        {row.coverage_adjusted_score.toFixed(1)}
-                      </td>
-                      <td>
-                        <span
-                          className="sc-band"
-                          style={{
-                            background: bandStyles[row.band].bg,
-                            color: bandStyles[row.band].fg,
-                          }}
-                        >
-                          {row.band}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!filteredScorecards.length && !loading && (
-                  <tr>
-                    <td colSpan={7} className="sc-empty">
-                      No parent suppliers match the current filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Drill-down */}
         <div className="sc-detail">
           {selected && computed ? (
             <>
@@ -698,8 +621,18 @@ function ScorecardPage() {
                 style={{ borderTopColor: bandStyles[computed.band].fg }}
               >
                 <div>
-                  <p className="eyebrow">Selected Parent Supplier</p>
-                  <h2 className="sc-detail-name">{computed.parentSupplier}</h2>
+                  <p className="eyebrow">Parent Supplier</p>
+                  <select
+                    className="sc-supplier-select"
+                    value={selectedParent ?? ""}
+                    onChange={(e) => setSelectedParent(e.target.value)}
+                  >
+                    {filteredScorecards.map((s) => (
+                      <option key={s.parentSupplier} value={s.parentSupplier}>
+                        {s.parentSupplier}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div
                   className="sc-detail-score"
@@ -1015,8 +948,7 @@ function ScorecardPage() {
             </>
           ) : (
             <div className="sc-detail-empty">
-              <p>Select a parent supplier from the leaderboard to see the
-                pillar-by-pillar breakdown.</p>
+              <p>Use the filters above to select a parent supplier and see the pillar-by-pillar breakdown.</p>
             </div>
           )}
         </div>

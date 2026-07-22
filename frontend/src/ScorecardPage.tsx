@@ -8,6 +8,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import "./styles.css";
 import type {
   ParentScorecard,
   ScorecardFilterOptions,
@@ -503,39 +504,33 @@ function ScorecardPage() {
   };
 
   return (
-    <section className="scorecard-page">
+    <>
       {/* ─── Header ────────────────────────────────────────────────────── */}
-      <header className="sc-header">
+      <section className="top-bar kpi-page-heading">
         <div>
-          <p className="eyebrow">
-            Q3 Normalized Framework
-          </p>
+          <p className="eyebrow">Q3 Normalized Framework</p>
           <h1>Normalized Supplier Scorecard</h1>
-          <p className="kpi-definition">
-            Rolls each supplier&apos;s applicable KPI earned points into pillar
-            scores, then into a single 0–100 normalized score. Non-applicable
-            KPIs are excluded from the denominator; missing coverage is surfaced
-            separately so it never silently rewards incomplete suppliers. To
-            keep the view responsive we currently rank on aggregated invoice
-            value (from Price Divergence) and show the top&nbsp;{TOP_N}.
+          <p className="kpi-value-note">
+            Score&nbsp;=&nbsp;Σ(Pillar&nbsp;%&nbsp;×&nbsp;Pillar&nbsp;Weight)&nbsp;/&nbsp;Σ(Applicable&nbsp;Pillar&nbsp;Weight)&nbsp;×&nbsp;100
+            &nbsp;·&nbsp;
+            Pillar&nbsp;%&nbsp;=&nbsp;Σ(Earned&nbsp;KPI&nbsp;Points)&nbsp;/&nbsp;Σ(Applicable&nbsp;Max&nbsp;Points)
           </p>
+          {error && <p className="supporting">Error loading scorecard: {error}</p>}
+          {loading && !scorecard && <p className="supporting">Loading scorecard…</p>}
         </div>
-        <div className="sc-formula-card">
-          <div className="sc-formula-title">Core Formula</div>
-          <div className="sc-formula">
-            Normalized Score =<br />
-            <span className="mono">
-              Σ(Pillar % × Pillar Weight) / Σ(Applicable Pillar Weight) × 100
-            </span>
-          </div>
-          <div className="sc-formula-sub">
-            Pillar % = Σ(Earned KPI Points) / Σ(Applicable Max Points)
-          </div>
+        <div className="header-actions">
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={!filteredScorecards.length}
+          >
+            Export CSV
+          </button>
         </div>
-      </header>
+      </section>
 
-      {/* ─── Filters strip ───────────────────────────────────────────────── */}
-      <div className="sc-filter-strip">
+      {/* ─── Filters & summary ──────────────────────────────────────────── */}
+      <section className="config-bar">
         <MultiSelectDropdown
           label="Zone"
           options={filters.zones}
@@ -556,60 +551,29 @@ function ScorecardPage() {
           onChange={setSelParents}
           searchable
         />
-        <div className="sc-filter-search">
+        <label>
+          <span>Search</span>
           <input
             type="search"
-            className="sc-search"
-            placeholder="Search leaderboard…"
+            placeholder="Search suppliers…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </label>
+        <button type="button" onClick={clearFilters}>Clear filters</button>
+        <div className="filter-summary">
+          <strong>{summary.count}</strong> suppliers
+          {summary.count > 0 && (
+            <>
+              &nbsp;·&nbsp;Avg&nbsp;<strong>{summary.avgNorm.toFixed(1)}</strong>
+              &nbsp;·&nbsp;
+              <span className="sc-band-chip green">{summary.greens}&thinsp;G</span>{" "}
+              <span className="sc-band-chip amber">{summary.ambers}&thinsp;A</span>{" "}
+              <span className="sc-band-chip red">{summary.reds}&thinsp;R</span>
+            </>
+          )}
         </div>
-        <div className="sc-filter-actions">
-          <button type="button" className="sc-btn ghost" onClick={clearFilters}>
-            Clear filters
-          </button>
-          <button
-            type="button"
-            className="sc-btn primary"
-            onClick={exportCsv}
-            disabled={!filteredScorecards.length}
-          >
-            Export CSV
-          </button>
-        </div>
-      </div>
-
-      {error && <p className="sc-error">Error loading scorecard: {error}</p>}
-      {loading && !scorecard && <p className="sc-loading">Loading scorecard…</p>}
-
-      {/* ─── Summary strip ───────────────────────────────────────────────── */}
-      <div className="sc-summary-strip">
-        <div className="sc-summary-tile">
-          <div className="sc-summary-label">Parents in view</div>
-          <div className="sc-summary-value">{summary.count.toLocaleString()}</div>
-        </div>
-        <div className="sc-summary-tile">
-          <div className="sc-summary-label">Avg normalized</div>
-          <div className="sc-summary-value">
-            {summary.count ? summary.avgNorm.toFixed(1) : "—"}
-          </div>
-        </div>
-        <div className="sc-summary-tile">
-          <div className="sc-summary-label">Avg coverage</div>
-          <div className="sc-summary-value">
-            {summary.count ? fmtPct(summary.avgCov, 1) : "—"}
-          </div>
-        </div>
-        <div className="sc-summary-tile">
-          <div className="sc-summary-label">Band distribution</div>
-          <div className="sc-summary-value sc-band-line">
-            <span className="sc-band-chip green">{summary.greens} G</span>
-            <span className="sc-band-chip amber">{summary.ambers} A</span>
-            <span className="sc-band-chip red">{summary.reds} R</span>
-          </div>
-        </div>
-      </div>
+      </section>
 
       {/* ─── Drill-down ─────────────────────────────────────────────────── */}
       <div className="sc-body">
@@ -955,22 +919,21 @@ function ScorecardPage() {
       </div>
 
       {/* ─── Framework footer ────────────────────────────────────────────── */}
-      <footer className="sc-footer">
-        <div>
-          <strong>Pillar Weights (Excel Mapping):</strong>{" "}
+      <section className="config-bar">
+        <div className="filter-summary">
+          <strong>Pillar Weights:</strong>{" "}
           {scorecard
             ? Object.entries(scorecard.pillar_weights)
                 .map(([p, w]) => `${p} ${w}`)
                 .join(" · ")
             : "—"}
+          &nbsp;·&nbsp;
+          <strong>Coverage %</strong> = Available KPI Weight / Total Expected KPI Weight ({scorecard ? scorecard.total_expected_kpi_weight : 0})
+          &nbsp;·&nbsp;
+          <strong>Coverage-Adjusted</strong> = Normalized × Coverage %
         </div>
-        <div>
-          <strong>Coverage %</strong> = Available KPI Weight / Total Expected KPI
-          Weight ({scorecard ? scorecard.total_expected_kpi_weight : 0}).{" "}
-          <strong>Coverage-Adjusted</strong> = Normalized × Coverage %.
-        </div>
-      </footer>
-    </section>
+      </section>
+    </>
   );
 }
 

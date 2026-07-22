@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Co2EmissionPage from "../pages/Co2EmissionPage";
 import DotKpiPage from "../pages/DotKpiPage";
+import ScorecardPage from "../ScorecardPage";
 import EclipsePage from "../pages/EclipsePage";
 import InvoiceConformityPage from "../pages/InvoiceConformityPage";
 import IotKpiPage from "../pages/IotKpiPage";
@@ -10,10 +11,11 @@ import SupplierAssessmentPage from "../pages/SupplierAssessmentPage";
 import SupplierCompliancePage from "../pages/SupplierCompliancePage";
 import SupplierMaturityPage from "../pages/SupplierMaturityPage";
 
-type KpiTab = "summary" | "dot" | "iot" | "supplierAssessment" | "supplierCompliance" | "supplierMaturity" | "co2Emission" | "eclipse" | "invoiceConformity" | "priceDivergence";
+type KpiTab = "summary" | "scorecard" | "dot" | "iot" | "supplierAssessment" | "supplierCompliance" | "supplierMaturity" | "co2Emission" | "eclipse" | "invoiceConformity" | "priceDivergence";
 
 const KPI_TABS: Array<{ id: KpiTab; label: string; shortLabel: string }> = [
   { id: "summary", label: "Scoring Guide", shortLabel: "Guide" },
+  { id: "scorecard", label: "Normalized Scorecard", shortLabel: "Scorecard" },
   { id: "dot", label: "DOT KPI", shortLabel: "DOT" },
   { id: "iot", label: "IOT KPI", shortLabel: "IOT" },
   { id: "supplierAssessment", label: "Supplier Assessment", shortLabel: "Assessment" },
@@ -58,6 +60,7 @@ function App() {
       <div className="page-background">
         <main className="app-shell" aria-label={activeLabel}>
           {activeKpi === "summary" && <SummaryPage />}
+          {activeKpi === "scorecard" && <ScorecardPage />}
           {activeKpi === "dot" && <DotKpiPage />}
           {activeKpi === "iot" && <IotKpiPage />}
           {activeKpi === "supplierAssessment" && <SupplierAssessmentPage />}

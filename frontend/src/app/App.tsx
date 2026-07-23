@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FeedbackPanel } from "../components/FeedbackPanel";
 import Co2EmissionPage from "../pages/Co2EmissionPage";
 import DotKpiPage from "../pages/DotKpiPage";
 import ScorecardPage from "../ScorecardPage";
@@ -29,6 +30,8 @@ const KPI_TABS: Array<{ id: KpiTab; label: string; shortLabel: string }> = [
 
 function App() {
   const [activeKpi, setActiveKpi] = useState<KpiTab>("summary");
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const feedbackEnabled = activeKpi !== "summary";
   const activeLabel = KPI_TABS.find((tab) => tab.id === activeKpi)?.label ?? "Scoring Guide";
   return (
     <div className="site-shell">
@@ -58,7 +61,10 @@ function App() {
         </div>
       </header>
       <div className="page-background">
-        <main className="app-shell" aria-label={activeLabel}>
+        <main
+          className={`app-shell ${feedbackEnabled && feedbackVisible ? "with-feedback-panel" : ""}`.trim()}
+          aria-label={activeLabel}
+        >
           {activeKpi === "summary" && <SummaryPage />}
           {activeKpi === "scorecard" && <ScorecardPage />}
           {activeKpi === "dot" && <DotKpiPage />}
@@ -70,6 +76,13 @@ function App() {
           {activeKpi === "eclipse" && <EclipsePage />}
           {activeKpi === "invoiceConformity" && <InvoiceConformityPage />}
           {activeKpi === "priceDivergence" && <PriceDivergencePage />}
+          <FeedbackPanel
+            enabled={feedbackEnabled}
+            visible={feedbackVisible}
+            pageKey={activeKpi}
+            pageLabel={activeLabel}
+            onToggleVisible={() => setFeedbackVisible((prev) => !prev)}
+          />
         </main>
       </div>
       <footer className="site-footer">

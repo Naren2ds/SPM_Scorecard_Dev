@@ -6,12 +6,15 @@ FastAPI server for SPM Scorecard.
 
 import threading
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from fetch_dot_kpi import fetch_raw as dot_fetch_raw, process as dot_process, OUTPUT_PATH as DOT_OUTPUT_PATH
 from fetch_iot_kpi import fetch_raw as iot_fetch_raw, process as iot_process, OUTPUT_PATH as IOT_OUTPUT_PATH
@@ -53,6 +56,10 @@ from fetch_price_divergence import (
 from scorecard import compute_scorecard, list_filter_options
 
 
+FEEDBACK_OUTPUT_PATH = Path(__file__).resolve().parent / "feedback" / "uat_feedback.xlsx"
+FEEDBACK_STATUSES = {"New", "In Progress", "Completed"}
+
+
 # In-memory cache
 _cache: dict = {
     "dot_kpi": [],
@@ -64,6 +71,7 @@ _cache: dict = {
     "eclipse": [],
     "invoice_conformity": [],
     "price_divergence": [],
+    "feedback": [],
     "status": "idle",
     "last_refresh": None,
     "sa_status": "idle",
@@ -80,6 +88,61 @@ _sa_lock = threading.Lock()
 _sc_lock = threading.Lock()
 _sm_lock = threading.Lock()
 _co2_lock = threading.Lock()
+_feedback_lock = threading.Lock()
+
+
+class FeedbackCreateRequest(BaseModel):
+    page: str
+    username: str
+    comment: str
+
+
+class FeedbackUpdateRequest(BaseModel):
+    status: str | None = None
+    comment: str | None = None
+
+
+def _normalize_feedback_rows(rows: list[dict]) -> list[dict]:
+    normalized: list[dict] = []
+    for item in rows:
+        status = item.get("status", "New")
+        status = status if status in FEEDBACK_STATUSES else "New"
+
+        username = str(item.get("username", "")).strip()
+        comment = str(item.get("comment", "")).strip()
+        if not username or not comment:
+            continue
+
+        normalized.append({
+            "id": str(item.get("id") or uuid4()),
+            "page": str(item.get("page", "")).strip(),
+            "username": username,
+            "comment": comment,
+            "status": status,
+            "createdAt": str(item.get("createdAt") or datetime.now().isoformat()),
+        })
+    return normalized
+
+
+def _load_feedback_from_disk():
+    import pandas as pd
+
+    if FEEDBACK_OUTPUT_PATH.exists():
+        df = pd.read_excel(FEEDBACK_OUTPUT_PATH, dtype=str).fillna("")
+        rows = _normalize_feedback_rows(df.to_dict(orient="records"))
+        _cache["feedback"] = rows
+    else:
+        _cache["feedback"] = []
+        _persist_feedback_to_disk()
+
+
+def _persist_feedback_to_disk():
+    import pandas as pd
+
+    FEEDBACK_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    rows = _normalize_feedback_rows(_cache.get("feedback", []))
+    df = pd.DataFrame(rows, columns=["id", "page", "username", "comment", "status", "createdAt"])
+    df.to_excel(FEEDBACK_OUTPUT_PATH, index=False)
 
 
 def _load_cache_from_disk():
@@ -141,6 +204,8 @@ def _load_cache_from_disk():
         _cache["price_divergence"] = df.to_dict(orient="records")
     else:
         _cache["price_divergence"] = []
+
+    _load_feedback_from_disk()
 
 
 def _background_refresh_dot():
@@ -544,6 +609,90 @@ def refresh_price_divergence():
     thread = threading.Thread(target=_background_refresh_pdiv, daemon=True)
     thread.start()
     return JSONResponse({"message": "Price Divergence refresh started."})
+
+
+# ─── Feedback endpoints (temporary UAT panel) ───────────────────────────────
+
+@app.get("/api/feedback")
+def get_feedback_comments(page: str | None = None):
+    filtered = _cache["feedback"]
+    if page:
+        filtered = [item for item in filtered if str(item.get("page", "")).strip() == page]
+
+    comments = sorted(
+        filtered,
+        key=lambda x: str(x.get("createdAt", "")),
+        reverse=True,
+    )
+    return JSONResponse({
+        "data": comments,
+        "count": len(comments),
+    })
+
+
+@app.post("/api/feedback")
+def create_feedback_comment(payload: FeedbackCreateRequest):
+    page = payload.page.strip()
+    username = payload.username.strip()
+    comment = payload.comment.strip()
+    if not page:
+        raise HTTPException(status_code=400, detail="Page is required.")
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required.")
+    if not comment:
+        raise HTTPException(status_code=400, detail="Comment is required.")
+
+    with _feedback_lock:
+        record = {
+            "id": str(uuid4()),
+            "page": page,
+            "username": username,
+            "comment": comment,
+            "status": "New",
+            "createdAt": datetime.now().isoformat(),
+        }
+        _cache["feedback"] = [record, *_cache["feedback"]]
+        _persist_feedback_to_disk()
+
+    return JSONResponse({"comment": record})
+
+
+@app.patch("/api/feedback/{comment_id}")
+def update_feedback_comment(comment_id: str, payload: FeedbackUpdateRequest):
+    with _feedback_lock:
+        idx = next((i for i, item in enumerate(_cache["feedback"]) if item.get("id") == comment_id), None)
+        if idx is None:
+            raise HTTPException(status_code=404, detail="Comment not found.")
+
+        record = dict(_cache["feedback"][idx])
+
+        if payload.status is not None:
+            if payload.status not in FEEDBACK_STATUSES:
+                raise HTTPException(status_code=400, detail="Invalid status.")
+            record["status"] = payload.status
+
+        if payload.comment is not None:
+            next_comment = payload.comment.strip()
+            if not next_comment:
+                raise HTTPException(status_code=400, detail="Comment is required.")
+            record["comment"] = next_comment
+
+        _cache["feedback"][idx] = record
+        _persist_feedback_to_disk()
+
+    return JSONResponse({"comment": record})
+
+
+@app.delete("/api/feedback/{comment_id}")
+def delete_feedback_comment(comment_id: str):
+    with _feedback_lock:
+        before = len(_cache["feedback"])
+        _cache["feedback"] = [item for item in _cache["feedback"] if item.get("id") != comment_id]
+        if len(_cache["feedback"]) == before:
+            raise HTTPException(status_code=404, detail="Comment not found.")
+        _persist_feedback_to_disk()
+
+    return JSONResponse({"message": "Deleted."})
 
 
 # ─── Normalized Scorecard endpoints ──────────────────────────────────────────

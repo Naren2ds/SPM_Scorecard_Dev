@@ -47,6 +47,9 @@ const numeric = (v: number | null, d = 2) =>
 const formatRank = (v: number | null) =>
   v === null || !Number.isFinite(v) ? "-" : String(Math.floor(v));
 
+const rawInt = (v: number | null | undefined) =>
+  v == null ? "-" : String(v);
+
 const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 
 // ─── Multi-select dropdown ──────────────────────────────────────────────────
@@ -57,6 +60,8 @@ interface IotRollupRow {
   id: string;
   label: string;
   iotPercent: number | null;
+  invoiceOnTimeCount: number;
+  totalPoLines: number;
   rank: number | null;
   percentile: number | null;
   attainment: number | null;
@@ -144,6 +149,8 @@ function calculateIotRollup(
     id: `rollup-${groupBy}-${i}`,
     label,
     iotPercent: g.total > 0 ? g.onTime / g.total : null,
+    invoiceOnTimeCount: g.onTime,
+    totalPoLines: g.total,
     contributingRows: g.count,
   }));
 
@@ -414,6 +421,7 @@ function IotKpiPage() {
                   <table className="data-table results-table">
                     <thead><tr>
                       <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
+                      <th>Inv. On-Time</th><th>Tot. PO Lines</th>
                       <th>IOT %</th><th>Rank</th><th>Percentile</th><th>Attainment</th>
                       <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Explanation</th>
                     </tr></thead>
@@ -425,6 +433,8 @@ function IotKpiPage() {
                           <td>{row.zone}</td>
                           <td>{row.country}</td>
                           <td>{row.category}</td>
+                          <td>{row.invoiceOnTimeCount}</td>
+                          <td>{row.totalPoLines}</td>
                           <td>{percent(row.iotPercent, 2)}</td>
                           <td>{formatRank(row.rank)}</td>
                           <td>{percent(row.percentile, 2)}</td>
@@ -465,7 +475,9 @@ function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>{label}</th><th>IOT %</th><th>Rank</th><th>Percentile</th>
+          <th>{label}</th>
+          <th>Inv. On-Time</th><th>Tot. PO Lines</th>
+          <th>IOT %</th><th>Rank</th><th>Percentile</th>
           <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
           <th>Status</th><th>Rows</th><th>Explanation</th>
         </tr></thead>
@@ -473,6 +485,8 @@ function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
           {rows.map((row) => (
             <tr key={row.id} className={row.status === "Below critical floor" ? "invalid-row" : ""}>
               <td>{row.label}</td>
+              <td>{rawInt(row.invoiceOnTimeCount)}</td>
+              <td>{rawInt(row.totalPoLines)}</td>
               <td>{percent(row.iotPercent, 2)}</td>
               <td>{formatRank(row.rank)}</td>
               <td>{percent(row.percentile, 2)}</td>

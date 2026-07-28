@@ -49,6 +49,9 @@ const numeric = (v: number | null, d = 2) =>
 const formatRank = (v: number | null) =>
   v === null || !Number.isFinite(v) ? "-" : String(Math.floor(v));
 
+const rawInt = (v: number | null | undefined) =>
+  v == null ? "-" : String(v);
+
 // ─── Multi-select dropdown ──────────────────────────────────────────────────
 
 // ─── Invoice Conformity Scoring ─────────────────────────────────────────────
@@ -57,6 +60,10 @@ interface InvoiceRollupRow {
   id: string;
   label: string;
   conformity: number | null;
+  missingPo: number;
+  wrongPo: number;
+  wrongInvoice: number;
+  totalInvoices: number;
   rank: number | null;
   percentile: number | null;
   attainment: number | null;
@@ -148,6 +155,10 @@ function calculateInvoiceRollup(
       id: `rollup-${groupBy}-${i}`,
       label,
       conformity,
+      missingPo: g.missingPo,
+      wrongPo: g.wrongPo,
+      wrongInvoice: g.wrongInvoice,
+      totalInvoices: g.totalInvoices,
       contributingRows: g.count,
     };
   });
@@ -413,6 +424,7 @@ function InvoiceConformityPage() {
                   <table className="data-table results-table">
                     <thead><tr>
                       <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
+                      <th>Missing PO</th><th>Wrong PO</th><th>Wrong Inv.</th><th>Tot. Inv.</th>
                       <th>Conformity %</th><th>Rank</th><th>Percentile</th><th>Attainment</th>
                       <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Explanation</th>
                     </tr></thead>
@@ -424,6 +436,10 @@ function InvoiceConformityPage() {
                           <td>{row.zone}</td>
                           <td>{row.country}</td>
                           <td>{row.category}</td>
+                          <td>{row.missingPo}</td>
+                          <td>{row.wrongPo}</td>
+                          <td>{row.wrongInvoice}</td>
+                          <td>{row.totalInvoices}</td>
                           <td>{percent(row.conformity, 2)}</td>
                           <td>{formatRank(row.rank)}</td>
                           <td>{percent(row.percentile, 2)}</td>
@@ -464,7 +480,9 @@ function RollupTable({ rows, label, config }: { rows: InvoiceRollupRow[]; label:
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>{label}</th><th>Conformity %</th><th>Rank</th><th>Percentile</th>
+          <th>{label}</th>
+          <th>Missing PO</th><th>Wrong PO</th><th>Wrong Inv.</th><th>Tot. Inv.</th>
+          <th>Conformity %</th><th>Rank</th><th>Percentile</th>
           <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
           <th>Status</th><th>Rows</th><th>Explanation</th>
         </tr></thead>
@@ -472,6 +490,10 @@ function RollupTable({ rows, label, config }: { rows: InvoiceRollupRow[]; label:
           {rows.map((row) => (
             <tr key={row.id} className={row.status === "Below critical floor" ? "invalid-row" : ""}>
               <td>{row.label}</td>
+              <td>{rawInt(row.missingPo)}</td>
+              <td>{rawInt(row.wrongPo)}</td>
+              <td>{rawInt(row.wrongInvoice)}</td>
+              <td>{rawInt(row.totalInvoices)}</td>
               <td>{percent(row.conformity, 2)}</td>
               <td>{formatRank(row.rank)}</td>
               <td>{percent(row.percentile, 2)}</td>

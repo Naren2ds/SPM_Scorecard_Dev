@@ -105,6 +105,26 @@ Earned Score = Max Score × Percentile × Attainment
 
 **Rollup aggregation is WEIGHTED** (not simple average): sums all missingPo + wrongPo + wrongInvoice and totalInvoices, then recalculates conformity from totals.
 
+### Columns Displayed in Results Tables
+
+**Supplier Level** — raw values read directly from data per row:
+| UI Header | Source Field | Description |
+|---|---|---|
+| Missing PO | `missingPo` | Invoices with missing PO reference |
+| Wrong PO | `wrongPo` | Invoices with wrong PO reference |
+| Wrong Inv. | `wrongInvoice` | Invoices with wrong invoice details |
+| Tot. Inv. | `totalInvoices` | Total invoices processed |
+
+**Rollup Tables (Zone / Parent Supplier / Category)** — aggregated sums across applicable rows in the group:
+| UI Header | How Aggregated |
+|---|---|
+| Missing PO | SUM of `missingPo` across applicable rows |
+| Wrong PO | SUM of `wrongPo` across applicable rows |
+| Wrong Inv. | SUM of `wrongInvoice` across applicable rows |
+| Tot. Inv. | SUM of `totalInvoices` across applicable rows |
+
+All 4 columns appear immediately before the **Conformity %** column in all four result tables. The Conformity % at rollup level is recalculated from the aggregated sums: `1 - (Missing PO + Wrong PO + Wrong Inv.) / Tot. Inv.`
+
 ### Edge Cases
 | Situation | Rule |
 |---|---|

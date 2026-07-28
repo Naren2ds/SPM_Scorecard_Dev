@@ -108,6 +108,22 @@ Earned Score = Max Score × Percentile × Attainment
 | 3. Parent Rollup | parentSupplier | Sum poValue + invoiceValue → recalculate divergencePct → score |
 | 4. Category Rollup | category | Sum poValue + invoiceValue → recalculate divergencePct → score |
 
+### Columns Displayed in Results Tables
+
+**Supplier Level** — raw values read directly from data per row (already shown in table):
+| UI Header | Source Field | Description |
+|---|---|---|
+| PO Value | `poValue` | Aggregated PO value (summed by backend) |
+| Invoice Value | `invoiceValue` | Aggregated invoice value (summed by backend) |
+
+**Rollup Tables (Zone / Parent Supplier / Category)** — aggregated sums across applicable rows in the group:
+| UI Header | How Aggregated |
+|---|---|
+| PO Value | SUM of `poValue` across applicable rows |
+| Invoice Value | SUM of `invoiceValue` across applicable rows |
+
+Both columns appear immediately before the **Divergence %** column in all rollup tables. Divergence % at rollup level is recalculated from the aggregated sums: `ABS(SUM Invoice Value - SUM PO Value) / SUM PO Value`.
+
 ### Edge Cases
 | Situation | Rule |
 |---|---|

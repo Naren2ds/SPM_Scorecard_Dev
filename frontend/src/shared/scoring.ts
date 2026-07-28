@@ -570,6 +570,7 @@ const buildRollupSeeds = (
     let dotRawInput = "";
     let sourceStatus = "";
     let isApplicable = true;
+    let rawTotals: RawDotValues | null = null;
     const errors: string[] = [];
 
     if (validRows.length === 0 && notApplicableCount === groupRows.length) {
@@ -602,6 +603,7 @@ const buildRollupSeeds = (
         },
       );
 
+      rawTotals = totals;
       const denominator =
         totals.totalDeliveredPoLines +
         0.99 * totals.x1DelayedOver30Days +
@@ -645,6 +647,10 @@ const buildRollupSeeds = (
       country: summarizeCountries(groupRows),
       dotRawInput,
       normalizedDot: errors.length > 0 ? null : normalizedDot,
+      onTimePoLines: rawTotals?.onTimePoLines ?? null,
+      totalDeliveredPoLines: rawTotals?.totalDeliveredPoLines ?? null,
+      x1DelayedOver30Days: rawTotals?.x1DelayedOver30Days ?? null,
+      x2EarlyOver30Days: rawTotals?.x2EarlyOver30Days ?? null,
       criticalFloor: 0,
       target: 0,
       maxScore: 0,

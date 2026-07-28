@@ -96,6 +96,8 @@ interface PdRollupRow {
   id: string;
   label: string;
   divergence: number | null;
+  poValue: number;
+  invoiceValue: number;
   rank: number | null;
   percentile: number | null;
   attainment: number | null;
@@ -180,6 +182,8 @@ function calculatePdRollup(
       id: `rollup-${groupBy}-${i}`,
       label,
       divergence,
+      poValue: g.poValue,
+      invoiceValue: g.invoiceValue,
       contributingRows: g.count,
     };
   });
@@ -508,7 +512,9 @@ function RollupTable({ rows, label, config }: { rows: PdRollupRow[]; label: stri
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>{label}</th><th>Divergence %</th><th>Rank</th><th>Percentile</th>
+          <th>{label}</th>
+          <th>PO Value</th><th>Invoice Value</th>
+          <th>Divergence %</th><th>Rank</th><th>Percentile</th>
           <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
           <th>Status</th><th>Rows</th><th>Explanation</th>
         </tr></thead>
@@ -516,6 +522,8 @@ function RollupTable({ rows, label, config }: { rows: PdRollupRow[]; label: stri
           {rows.map((row) => (
             <tr key={row.id} className={row.status === "Below critical floor" ? "invalid-row" : ""}>
               <td>{row.label}</td>
+              <td>{numeric(row.poValue, 2)}</td>
+              <td>{numeric(row.invoiceValue, 2)}</td>
               <td>{percent(row.divergence, 2)}</td>
               <td>{formatRank(row.rank)}</td>
               <td>{percent(row.percentile, 2)}</td>

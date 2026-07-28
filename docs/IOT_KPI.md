@@ -51,6 +51,22 @@ IOT % = invoiceOnTimeCount / totalPoLines
 ```
 (Result is 0–1 ratio, displayed as percentage)
 
+### Columns Displayed in Results Tables
+
+**Supplier Level** — raw values read directly from data per row:
+| UI Header | Source Field | Description |
+|---|---|---|
+| Inv. On-Time | `invoiceOnTimeCount` | Invoices delivered on time |
+| Tot. PO Lines | `totalPoLines` | Total PO lines delivered |
+
+**Rollup Tables (Zone / Parent Supplier / Category)** — aggregated sums across applicable rows in the group:
+| UI Header | How Aggregated |
+|---|---|
+| Inv. On-Time | SUM of `invoiceOnTimeCount` across applicable rows |
+| Tot. PO Lines | SUM of `totalPoLines` across applicable rows |
+
+Both columns appear immediately before the **IOT %** column in all four result tables.
+
 ### Scoring (same engine as DOT)
 
 **Attainment:**

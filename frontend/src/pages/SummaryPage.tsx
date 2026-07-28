@@ -4,6 +4,9 @@
 
 const KPI_BUDGET = [
   { kpi: "DOT (Delivery On Time)", pillar: "Operational", input: "On-Time PO Lines / Adjusted Denominator", floor: "70%", target: "85%", max: 15 },
+  { kpi: "IOT (Invoice On Time)", pillar: "Operational", input: "Invoice On-Time Count / Total PO Lines", floor: "70%", target: "85%", max: 15 },
+  { kpi: "Invoice Conformity", pillar: "Operational", input: "1 \u2212 (Missing PO + Wrong PO + Wrong Invoice) / Total Invoices", floor: "70%", target: "85%", max: 15 },
+  { kpi: "Price Divergence", pillar: "Operational", input: "ABS(Invoice Value \u2212 PO Value) / PO Value (lower = better)", floor: "15%", target: "5%", max: 10 },
   { kpi: "Supplier Assessment", pillar: "Quality", input: "Green / Yellow / Red rating counts \u2192 Health Index", floor: "50%", target: "80%", max: 10 },
   { kpi: "Supplier Compliance %", pillar: "Quality", input: "Completed Docs / Required Docs", floor: "60%", target: "90%", max: 10 },
   { kpi: "CO\u2082 Reduction Potential", pillar: "Sustainability", input: "Absolute tCO\u2082e value (higher = better)", floor: "Q1 / manual", target: "Q3 / manual", max: 10 },
@@ -146,8 +149,9 @@ export default function SummaryPage() {
       <details className="summary-section" open>
         <summary id="scoring-method" className="summary-section-summary">2 — The Universal Earned Score Formula</summary>
         <p className="summary-body">
-          All six KPIs use the same formula structure. Only the input value and
-          the max score differ between them.
+          All nine KPIs use the same formula structure. Only the input value and
+          the max score differ between them. Price Divergence uses an inverted attainment
+          (lower divergence = better).
         </p>
         <div className="summary-formula-steps">
           <div className="summary-step">
@@ -156,6 +160,9 @@ export default function SummaryPage() {
               <strong>Normalize Value</strong>
               <ul className="summary-step-list">
                 <li><strong>DOT</strong> — On-Time PO Lines divided by adjusted denominator → 0–1 ratio</li>
+                <li><strong>IOT</strong> — Invoice On-Time Count divided by Total PO Lines → 0–1 ratio</li>
+                <li><strong>Invoice Conformity</strong> — 1 − (Missing PO + Wrong PO + Wrong Invoice) / Total Invoices → 0–1 ratio</li>
+                <li><strong>Price Divergence</strong> — ABS(Invoice Value − PO Value) / PO Value → 0–1 ratio (inverted: lower = better)</li>
                 <li><strong>Supplier Assessment</strong> — Green / Yellow / Red ratings → Health Index (0–1)</li>
                 <li><strong>Compliance %</strong> — Completed Docs divided by Required Docs → 0–100%</li>
                 <li><strong>CO₂ Reduction Potential</strong> — Absolute tCO₂e value, used as-is (≥ 0)</li>

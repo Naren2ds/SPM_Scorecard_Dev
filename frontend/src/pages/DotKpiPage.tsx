@@ -69,6 +69,9 @@ const numeric = (value: number | null, digits = 2) =>
 const formatRank = (value: number | null) =>
   value === null || !Number.isFinite(value) ? "-" : String(Math.floor(value));
 
+const rawInt = (value: number | null | undefined) =>
+  value == null ? "-" : String(value);
+
 const displayText = (value: string, fallback: string) => value.trim() || fallback;
 
 const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
@@ -424,6 +427,7 @@ function SupplierResults({ rows }: { rows: ScoredKpiRow[] }) {
       <table className="data-table results-table">
         <thead><tr>
           <th>Supplier</th><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th>
+          <th>On-Time</th><th>Tot. Del.</th><th>X1 Late</th><th>X2 Early</th>
           <th>DOT %</th><th>Rank</th><th>Percentile</th><th>Attainment</th>
           <th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Explanation</th>
         </tr></thead>
@@ -435,6 +439,10 @@ function SupplierResults({ rows }: { rows: ScoredKpiRow[] }) {
               <td>{displayText(row.zone, "")}</td>
               <td>{displayText(row.country, "")}</td>
               <td>{displayText(row.category, "")}</td>
+              <td>{rawInt(row.rawValues?.onTimePoLines)}</td>
+              <td>{rawInt(row.rawValues?.totalDeliveredPoLines)}</td>
+              <td>{rawInt(row.rawValues?.x1DelayedOver30Days)}</td>
+              <td>{rawInt(row.rawValues?.x2EarlyOver30Days)}</td>
               <td>{percent(row.normalizedDot, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>
@@ -457,7 +465,9 @@ function RollupResults({ rows, label }: { rows: RollupRow[]; label: string }) {
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>{label}</th><th>DOT %</th><th>Rank</th><th>Percentile</th>
+          <th>{label}</th>
+          <th>On-Time</th><th>Tot. Del.</th><th>X1 Late</th><th>X2 Early</th>
+          <th>DOT %</th><th>Rank</th><th>Percentile</th>
           <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
           <th>Status</th><th>Rows</th><th>Explanation</th>
         </tr></thead>
@@ -465,6 +475,10 @@ function RollupResults({ rows, label }: { rows: RollupRow[]; label: string }) {
           {rows.map((row) => (
             <tr key={row.id} className={rowClass(row.scoreStatus)}>
               <td>{row.label}</td>
+              <td>{rawInt(row.onTimePoLines)}</td>
+              <td>{rawInt(row.totalDeliveredPoLines)}</td>
+              <td>{rawInt(row.x1DelayedOver30Days)}</td>
+              <td>{rawInt(row.x2EarlyOver30Days)}</td>
               <td>{percent(row.normalizedDot, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>

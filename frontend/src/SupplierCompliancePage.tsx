@@ -123,7 +123,7 @@ function SupplierCompliancePage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [config, setConfig] = useState<ComplianceConfig>({
-    maxScore: 10,
+    maxScore: 5,
     criticalFloor: 0.6,
     target: 0.9,
     cohortLevel: "Supplier",

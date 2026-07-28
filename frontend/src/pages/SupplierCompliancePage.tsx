@@ -52,7 +52,7 @@ function SupplierCompliancePage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [config, setConfig] = useState<ComplianceConfig>({
-    maxScore: 10,
+    maxScore: 5,
     criticalFloor: 0.6,
     target: 0.9,
     cohortLevel: "Supplier",
@@ -183,8 +183,14 @@ function SupplierCompliancePage() {
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateParentRollup(filteredRows, config) : []),
-    [filteredRows, config, configIsValid],
+    () => (configIsValid ? calculateParentRollup(contextRows, config) : []),
+    [contextRows, config, configIsValid],
+  );
+  const displayedParentRollup = useMemo(
+    () => selParent.length > 0
+      ? parentRollup.filter((r) => selParent.includes(r.parentSupplier))
+      : parentRollup,
+    [parentRollup, selParent],
   );
   const categoryRollup = useMemo(
     () => (configIsValid ? calculateCategoryRollup(filteredRows, config) : []),
@@ -225,7 +231,7 @@ function SupplierCompliancePage() {
       ...rollupExportRows(zoneRollup, "Zone"),
       [],
       ["Parent Rollup"],
-      ...rollupExportRows(parentRollup, "Parent Supplier"),
+      ...rollupExportRows(displayedParentRollup, "Parent Supplier"),
       [],
       ["Category Rollup"],
       ...rollupExportRows(categoryRollup, "Category"),
@@ -256,9 +262,7 @@ function SupplierCompliancePage() {
           {statusMessage && <p className="supporting">{statusMessage}</p>}
         </div>
         <div className="header-actions">
-          <button type="button" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing..." : "Refresh Data"}
-          </button>
+
           <button
             type="button"
             onClick={exportResults}
@@ -384,8 +388,8 @@ function SupplierCompliancePage() {
               <div className="rollup-scroll"><RollupResults rows={zoneRollup} label="Zone" /></div>
             </details>
             <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Rollup ({parentRollup.length})</h3></summary>
-              <div className="rollup-scroll"><RollupResults rows={parentRollup} label="Parent Supplier" /></div>
+              <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Rollup ({displayedParentRollup.length})</h3></summary>
+              <div className="rollup-scroll"><RollupResults rows={displayedParentRollup} label="Parent Supplier" /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup ({categoryRollup.length})</h3></summary>

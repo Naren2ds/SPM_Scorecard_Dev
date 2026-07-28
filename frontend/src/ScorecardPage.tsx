@@ -149,6 +149,44 @@ function ScorecardPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [rebuilding, setRebuilding] = useState(false);
+  const [cacheInfo, setCacheInfo] = useState<{ cached_at: string | null; parent_count: number } | null>(null);
+
+  // Load cache status once on mount
+  useEffect(() => {
+    fetch(`${API_BASE}/api/scorecard/cache-status`)
+      .then((res) => res.json())
+      .then((data) => setCacheInfo(data))
+      .catch(() => {});
+  }, []);
+
+  const handleRebuild = () => {
+    setRebuilding(true);
+    fetch(`${API_BASE}/api/scorecard/rebuild`, { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => {
+        setCacheInfo({ cached_at: data.rebuilt_at, parent_count: data.parent_count });
+        // Reload scorecard with fresh data
+        setLoading(true);
+        const params = new URLSearchParams();
+        params.set("top_n", String(TOP_N));
+        if (selZones.length) params.set("zones", selZones.join(","));
+        if (selCategories.length) params.set("categories", selCategories.join(","));
+        if (selParents.length) params.set("parents", selParents.join(","));
+        return fetch(`${API_BASE}/api/scorecard?${params.toString()}`);
+      })
+      .then((res) => (res as Response).json())
+      .then((data: ScorecardResponse) => {
+        setScorecard(data);
+        setLoading(false);
+        setRebuilding(false);
+      })
+      .catch((e) => {
+        setError(String(e));
+        setRebuilding(false);
+        setLoading(false);
+      });
+  };
 
   // Load filter options once
   useEffect(() => {
@@ -520,6 +558,21 @@ function ScorecardPage() {
           {loading && !scorecard && <p className="supporting">Loading scorecard…</p>}
         </div>
         <div className="header-actions">
+          <div style={{ textAlign: "right" }}>
+            {cacheInfo?.cached_at && (
+              <p className="supporting" style={{ marginBottom: "4px", fontSize: "0.75rem" }}>
+                Cache built: {new Date(cacheInfo.cached_at).toLocaleString()} &nbsp;|&nbsp; {cacheInfo.parent_count} parents
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleRebuild}
+              disabled={rebuilding}
+              title="Rebuilds the pre-computed scorecard cache. Run after changing KPI config or refreshing CSV data."
+            >
+              {rebuilding ? "Rebuilding Cache…" : "Rebuild Cache"}
+            </button>
+          </div>
           <button
             type="button"
             onClick={exportCsv}
@@ -575,6 +628,50 @@ function ScorecardPage() {
           )}
         </div>
       </section>
+
+      {/* ─── Score mode banner ──────────────────────────────────────────── */}
+      {(selZones.length > 0 || selCategories.length > 0) ? (
+        <div style={{
+          background: "#fff7e6",
+          border: "1px solid #f5a623",
+          borderRadius: "6px",
+          padding: "8px 16px",
+          margin: "0 0 8px 0",
+          fontSize: "0.85rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}>
+          <span style={{ fontSize: "1rem" }}>⚠️</span>
+          <span>
+            <strong>Regional view — live scores.</strong>{" "}
+            Scores are computed from{" "}
+            {selZones.length > 0 && <><strong>{selZones.join(", ")}</strong> zone{selZones.length > 1 ? "s" : ""}</>}
+            {selZones.length > 0 && selCategories.length > 0 && " · "}
+            {selCategories.length > 0 && <><strong>{selCategories.join(", ")}</strong> categor{selCategories.length > 1 ? "ies" : "y"}</>}
+            {" "}data only — not the global ranking. Remove zone/category filters to return to global scores.
+          </span>
+        </div>
+      ) : (
+        <div style={{
+          background: "#f0f9f0",
+          border: "1px solid #4caf50",
+          borderRadius: "6px",
+          padding: "8px 16px",
+          margin: "0 0 8px 0",
+          fontSize: "0.85rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}>
+          <span style={{ fontSize: "1rem" }}>✅</span>
+          <span>
+            <strong>Global view — scores from cache.</strong>{" "}
+            Percentile ranks computed across all {cacheInfo?.parent_count ?? "…"} parent suppliers.
+            {cacheInfo?.cached_at && <> Last built: {new Date(cacheInfo.cached_at).toLocaleString()}.</>}
+          </span>
+        </div>
+      )}
 
       {/* ─── Drill-down ─────────────────────────────────────────────────── */}
       <div className="sc-body">

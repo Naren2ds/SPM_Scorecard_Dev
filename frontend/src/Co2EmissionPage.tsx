@@ -131,7 +131,7 @@ function Co2EmissionPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [config, setConfig] = useState<Co2Config>({
-    maxScore: 10,
+    maxScore: 5,
     criticalFloor: 0,
     target: 1,
     cohortLevel: "Supplier",

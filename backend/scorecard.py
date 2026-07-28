@@ -378,9 +378,14 @@ def _aggregate_kpi(
             g = _to_num(r.get("greenCount")) or 0.0
             y = _to_num(r.get("yellowCount")) or 0.0
             red = _to_num(r.get("redCount")) or 0.0
-            blank = _to_num(r.get("blankCount")) or 0.0
-            bucket["num"] += g
-            bucket["den"] += g + y + red + blank
+            # Match the frontend SA page formula:
+            #   health = (green×1.0 + yellow×0.5 + red×0) / (green+yellow+red)
+            # Blank rows are excluded from the denominator (same as totalValidAssessments).
+            valid = g + y + red
+            if valid <= 0:
+                continue
+            bucket["num"] += g * 1.0 + y * 0.5
+            bucket["den"] += valid
 
         elif kid == "SC":
             v = _to_num(r.get("compliancePct"))
@@ -435,7 +440,15 @@ def _kpi_attainments(
     kpi: dict[str, Any],
     per_parent: dict[str, dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
-    """Convert raw per-parent ratios into attainment/earned for one KPI."""
+    """Convert raw per-parent ratios into attainment/percentile/earned for one KPI.
+
+    Formula matches the frontend individual KPI page default (softStretch mode):
+        earned = max_score × attainment × (0.70 + 0.30 × percentile)
+
+    Percentile is computed across the full population passed in ``per_parent``.
+    Best-performing parent = 100th percentile; worst = 1/N percentile.
+    With a single observation the parent receives the 100th percentile.
+    """
     direction = kpi["direction"]
     floor, target = kpi["floor"], kpi["target"]
 
@@ -453,13 +466,39 @@ def _kpi_attainments(
             floor, target = 0.0, 1.0
             direction = "higher"
 
+    # Step 1: compute raw attainments.
+    attainments: dict[str, float] = {
+        key: _attainment(info["ratio"], float(floor), float(target), direction)
+        for key, info in per_parent.items()
+    }
+
+    # Step 2: compute percentile ranks across the population.
+    # For "higher" direction: higher raw ratio → better → higher percentile.
+    # For "lower"  direction: lower  raw ratio → better → higher percentile.
+    reverse_sort = (direction != "lower")
+    sorted_keys = sorted(
+        per_parent.keys(),
+        key=lambda k: per_parent[k]["ratio"],
+        reverse=reverse_sort,
+    )
+    total = len(sorted_keys)
+    # Rank 0 (best) → percentile = total/total = 1.0
+    # Rank N-1 (worst) → percentile = 1/total
+    percentiles: dict[str, float] = {
+        key: (total - rank_0idx) / total
+        for rank_0idx, key in enumerate(sorted_keys)
+    }
+
+    # Step 3: apply soft-stretch formula (matches frontend default).
     result: dict[str, dict[str, Any]] = {}
-    for key, info in per_parent.items():
-        att = _attainment(info["ratio"], float(floor), float(target), direction)
-        earned = att * kpi["max_score"]
+    for key in per_parent:
+        att = attainments[key]
+        pct = percentiles[key]
+        earned = kpi["max_score"] * att * (0.70 + 0.30 * pct)
         result[key] = {
-            "raw": info["raw"],
+            "raw": per_parent[key]["raw"],
             "attainment": att,
+            "percentile": pct,
             "earned": earned,
             "max": kpi["max_score"],
             "floor_used": float(floor),
@@ -592,6 +631,7 @@ def compute_scorecard(
                         "max_score": kpi["max_score"],
                         "raw": scored["raw"],
                         "attainment": scored["attainment"],
+                        "percentile": scored.get("percentile"),
                         "earned": scored["earned"],
                         "applicable": True,
                         "floor_used": scored["floor_used"],

@@ -16,43 +16,17 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from fetch_dot_kpi import fetch_raw as dot_fetch_raw, process as dot_process, OUTPUT_PATH as DOT_OUTPUT_PATH
-from fetch_iot_kpi import fetch_raw as iot_fetch_raw, process as iot_process, OUTPUT_PATH as IOT_OUTPUT_PATH
-from fetch_supplier_assessment import (
-    fetch_raw as sa_fetch_raw,
-    process as sa_process,
-    OUTPUT_PATH as SA_OUTPUT_PATH,
-)
-from fetch_supplier_compliance import (
-    fetch_raw as sc_fetch_raw,
-    process as sc_process,
-    OUTPUT_PATH as SC_OUTPUT_PATH,
-)
-from fetch_supplier_maturity import (
-    fetch_raw as sm_fetch_raw,
-    process as sm_process,
-    OUTPUT_PATH as SM_OUTPUT_PATH,
-)
-from fetch_co2_emission import (
-    fetch_raw as co2_fetch_raw,
-    process as co2_process,
-    OUTPUT_PATH as CO2_OUTPUT_PATH,
-)
-from fetch_eclipse import (
-    fetch_raw as ecl_fetch_raw,
-    process as ecl_process,
-    OUTPUT_PATH as ECL_OUTPUT_PATH,
-)
-from fetch_invoice_conformity import (
-    fetch_raw as ic_fetch_raw,
-    process as ic_process,
-    OUTPUT_PATH as IC_OUTPUT_PATH,
-)
-from fetch_price_divergence import (
-    fetch_raw as pdiv_fetch_raw,
-    process as pdiv_process,
-    OUTPUT_PATH as PDIV_OUTPUT_PATH,
-)
+# ─── Sandbox mode: serve from pre-built CSV files, no Databricks ────────────
+DATA_DIR         = Path(__file__).resolve().parent / "data"
+DOT_OUTPUT_PATH  = DATA_DIR / "dot_kpi.csv"
+IOT_OUTPUT_PATH  = DATA_DIR / "iot_kpi.csv"
+SA_OUTPUT_PATH   = DATA_DIR / "supplier_assessment.csv"
+SC_OUTPUT_PATH   = DATA_DIR / "supplier_compliance.csv"
+SM_OUTPUT_PATH   = DATA_DIR / "supplier_maturity.csv"
+CO2_OUTPUT_PATH  = DATA_DIR / "co2_emission.csv"
+ECL_OUTPUT_PATH  = DATA_DIR / "eclipse.csv"
+IC_OUTPUT_PATH   = DATA_DIR / "invoice_conformity.csv"
+PDIV_OUTPUT_PATH = DATA_DIR / "price_divergence.csv"
 from scorecard import compute_scorecard, list_filter_options
 
 
@@ -89,6 +63,14 @@ _sc_lock = threading.Lock()
 _sm_lock = threading.Lock()
 _co2_lock = threading.Lock()
 _feedback_lock = threading.Lock()
+
+# ─── Pre-computed scorecard cache (Approach B2) ───────────────────────────────────
+# Computed once at startup (and on /api/scorecard/rebuild) over the full
+# population.  Endpoints with no zone/category filter serve from here
+# (< 5 ms).  Zone/category-filtered requests fall back to on-the-fly
+# computation because those filters change per-KPI row aggregation.
+_scored_cache: dict = {}
+_scored_cache_lock = threading.Lock()
 
 
 class FeedbackCreateRequest(BaseModel):
@@ -206,6 +188,28 @@ def _load_cache_from_disk():
         _cache["price_divergence"] = []
 
     _load_feedback_from_disk()
+
+
+def _build_scored_cache() -> None:
+    """Pre-compute the normalized scorecard for ALL parent suppliers.
+
+    Uses the full KPI_CONFIGS (floor, target, weights, max_score) defined in
+    scorecard.py as the single source of truth.  Percentile ranks are computed
+    across the entire population so each parent's earned score reflects where
+    it stands relative to all peers — matching the formula used by the
+    individual KPI pages (softStretch mode).
+
+    Call this at startup and via POST /api/scorecard/rebuild when config
+    or data changes.
+    """
+    from datetime import datetime
+    global _scored_cache
+
+    result = compute_scorecard(_cache, include_kpi_breakdown=True, top_n=None)
+    result["cached_at"] = datetime.now().isoformat()
+    result["parent_count"] = len(result.get("scorecards", []))
+    with _scored_cache_lock:
+        _scored_cache = result
 
 
 def _background_refresh_dot():
@@ -341,6 +345,7 @@ def _background_refresh_co2_emission():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _load_cache_from_disk()
+    _build_scored_cache()          # B2: pre-compute full scorecard at startup
     _cache["status"] = "ready"
     _cache["sa_status"] = "ready"
     _cache["sc_status"] = "ready"
@@ -353,7 +358,7 @@ app = FastAPI(title="SPM Scorecard API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -703,6 +708,68 @@ def _split_csv_param(value: str | None) -> list[str]:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
+def _serve_scorecard(
+    zones_param: str | None,
+    categories_param: str | None,
+    parents_param: str | None,
+    include_kpi_breakdown: bool,
+    top_n: int | None,
+) -> dict:
+    """Return scorecard data from cache when possible, else recompute.
+
+    * No zone/category filter  → serve from pre-computed ``_scored_cache``
+      (O(N) list filter, < 5 ms).
+    * Zone or category filter  → recompute on the fly because those filters
+      change which CSV rows feed each KPI’s aggregation.
+    """
+    zones = _split_csv_param(zones_param)
+    categories = _split_csv_param(categories_param)
+    parents = _split_csv_param(parents_param)
+
+    # Zone/category filters change the aggregation — must recompute.
+    if zones or categories or not _scored_cache:
+        return compute_scorecard(
+            _cache,
+            zones=zones,
+            categories=categories,
+            parents=parents,
+            include_kpi_breakdown=include_kpi_breakdown,
+            top_n=top_n,
+        )
+
+    # Serve from pre-computed cache.
+    all_scorecards: list[dict] = list(_scored_cache.get("scorecards", []))
+
+    # Apply parent filter.
+    if parents:
+        parents_set = set(parents)
+        all_scorecards = [s for s in all_scorecards if s["parentSupplier"] in parents_set]
+
+    # Strip per-KPI breakdown for leaderboard view.
+    if not include_kpi_breakdown:
+        stripped = []
+        for s in all_scorecards:
+            sc = {**s}
+            sc["pillars"] = [{k: v for k, v in p.items() if k != "kpis"} for p in s.get("pillars", [])]
+            stripped.append(sc)
+        all_scorecards = stripped
+
+    # Apply top_n (rank by invoice value when no explicit parent filter).
+    if top_n and top_n > 0 and not parents:
+        all_scorecards = sorted(all_scorecards, key=lambda s: s["invoice_value"], reverse=True)[:top_n]
+
+    return {
+        **{k: v for k, v in _scored_cache.items() if k != "scorecards"},
+        "scorecards": all_scorecards,
+        "filters_applied": {
+            "zones": zones,
+            "categories": categories,
+            "parents": parents,
+            "top_n": top_n,
+        },
+    }
+
+
 @app.get("/api/scorecard")
 def get_scorecard(
     zones: str | None = None,
@@ -713,16 +780,12 @@ def get_scorecard(
     """
     Normalized Supplier Scorecard.
 
-    Defaults to the Top 20 parent suppliers ranked by aggregated invoice value
-    (from ``price_divergence``) — this keeps the response tiny (~50 KB) so the
-    UI stays snappy. Pass ``top_n=0`` to disable the cap and return every
-    matching parent.
+    Served from the pre-computed cache when no zone/category filter is applied
+    (< 5 ms).  Zone/category filters trigger on-the-fly recomputation because
+    those filters change per-KPI row aggregation.
     """
-    result = compute_scorecard(
-        _cache,
-        zones=_split_csv_param(zones),
-        categories=_split_csv_param(categories),
-        parents=_split_csv_param(parents),
+    result = _serve_scorecard(
+        zones, categories, parents,
         include_kpi_breakdown=True,
         top_n=top_n if top_n and top_n > 0 else None,
     )
@@ -740,11 +803,8 @@ def get_scorecard_leaderboard(
     Lightweight per-parent summary for the leaderboard view. Drops the per-KPI
     breakdown, keeping only pillar %s + normalized/coverage/adjusted totals.
     """
-    result = compute_scorecard(
-        _cache,
-        zones=_split_csv_param(zones),
-        categories=_split_csv_param(categories),
-        parents=_split_csv_param(parents),
+    result = _serve_scorecard(
+        zones, categories, parents,
         include_kpi_breakdown=False,
         top_n=top_n if top_n and top_n > 0 else None,
     )
@@ -759,21 +819,16 @@ def get_scorecard_parent(
 ):
     """
     Full drill-down (pillar + per-KPI breakdown) for a single parent supplier.
-    ``name`` is required and case-sensitive to match the leaderboard row.
+    Served from cache when no zone/category filter is applied.
     """
-    result = compute_scorecard(
-        _cache,
-        zones=_split_csv_param(zones),
-        categories=_split_csv_param(categories),
-        parents=[name],
-        include_kpi_breakdown=True,
-    )
+    result = _serve_scorecard(zones, categories, name, include_kpi_breakdown=True, top_n=None)
     parent = result["scorecards"][0] if result["scorecards"] else None
     return JSONResponse({
         "pillar_weights": result["pillar_weights"],
         "total_expected_kpi_weight": result["total_expected_kpi_weight"],
         "kpis": result["kpis"],
         "scorecard": parent,
+        "cached_at": result.get("cached_at"),
     })
 
 
@@ -781,3 +836,38 @@ def get_scorecard_parent(
 def get_scorecard_filters():
     """Distinct zones / categories / parent suppliers across all KPI datasets."""
     return JSONResponse(list_filter_options(_cache))
+
+
+@app.post("/api/scorecard/rebuild")
+def rebuild_scorecard_cache():
+    """Rebuild the pre-computed scorecard cache without restarting the server.
+
+    Call this after:
+    - Updating KPI config in scorecard.py (floor, target, max_score, weights)
+    - Loading fresh CSV data via the individual KPI refresh endpoints
+    """
+    _build_scored_cache()
+    return JSONResponse({
+        "status": "ok",
+        "message": "Scorecard cache rebuilt successfully.",
+        "rebuilt_at": _scored_cache.get("cached_at"),
+        "parent_count": _scored_cache.get("parent_count", 0),
+    })
+
+
+@app.get("/api/scorecard/cache-status")
+def get_scorecard_cache_status():
+    """Return metadata about the current pre-computed scorecard cache."""
+    return JSONResponse({
+        "cached_at": _scored_cache.get("cached_at"),
+        "parent_count": _scored_cache.get("parent_count", 0),
+        "is_ready": bool(_scored_cache),
+    })
+
+
+# ─── Serve built frontend (must be last) ────────────────────────────────────
+from fastapi.staticfiles import StaticFiles
+
+_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if _DIST.exists():
+    app.mount("/", StaticFiles(directory=str(_DIST), html=True), name="frontend")

@@ -3,15 +3,15 @@
 // ---------------------------------------------------------------------------
 
 const KPI_BUDGET = [
-  { kpi: "DOT (Delivery On Time)", pillar: "Operational", input: "On-Time PO Lines / Adjusted Denominator", floor: "70%", target: "85%", max: 15 },
-  { kpi: "IOT (Invoice On Time)", pillar: "Operational", input: "Invoice On-Time Count / Total PO Lines", floor: "70%", target: "85%", max: 15 },
-  { kpi: "Invoice Conformity", pillar: "Operational", input: "1 \u2212 (Missing PO + Wrong PO + Wrong Invoice) / Total Invoices", floor: "70%", target: "85%", max: 15 },
-  { kpi: "Price Divergence", pillar: "Operational", input: "ABS(Invoice Value \u2212 PO Value) / PO Value (lower = better)", floor: "15%", target: "5%", max: 10 },
-  { kpi: "Supplier Assessment", pillar: "Quality", input: "Green / Yellow / Red rating counts \u2192 Health Index", floor: "50%", target: "80%", max: 10 },
-  { kpi: "Supplier Compliance %", pillar: "Quality", input: "Completed Docs / Required Docs", floor: "60%", target: "90%", max: 10 },
-  { kpi: "CO\u2082 Reduction Potential", pillar: "Sustainability", input: "Absolute tCO\u2082e value (higher = better)", floor: "Q1 / manual", target: "Q3 / manual", max: 10 },
+  { kpi: "DOT (Delivery On Time)", pillar: "Service Level", input: "On-Time PO Lines / Adjusted Denominator", floor: "70%", target: "85%", max: 10 },
+  { kpi: "Supplier Assessment", pillar: "Service Level", input: "Green / Yellow / Red rating counts \u2192 Health Index", floor: "50%", target: "80%", max: 10 },
+  { kpi: "Supplier Compliance %", pillar: "Service Level", input: "Completed Docs / Required Docs", floor: "60%", target: "90%", max: 5 },
+  { kpi: "Price Divergence", pillar: "Operational", input: "ABS(Invoice Value \u2212 PO Value) / PO Value (lower = better)", floor: "15%", target: "5%", max: 5 },
+  { kpi: "Invoice Conformity", pillar: "Operational", input: "1 \u2212 (Missing PO + Wrong PO + Wrong Invoice) / Total Invoices", floor: "70%", target: "85%", max: 5 },
+  { kpi: "IOT (Invoice On Time)", pillar: "Operational", input: "Invoice On-Time Count / Total PO Lines", floor: "70%", target: "85%", max: 10 },
   { kpi: "Supplier Maturity Score", pillar: "Sustainability", input: "0\u2013100 maturity score", floor: "40", target: "80", max: 10 },
   { kpi: "Eclipse Score", pillar: "Sustainability", input: "0\u2013100 combined pillar score (CA + Engagement + Reporting)", floor: "50", target: "80", max: 5 },
+  { kpi: "CO\u2082 Reduction Potential", pillar: "Sustainability", input: "Absolute tCO\u2082e value (higher = better)", floor: "Q1 / manual", target: "Q3 / manual", max: 5 },
 ];
 
 const PERCENTILE_EXAMPLE = [

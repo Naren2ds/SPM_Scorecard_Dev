@@ -240,7 +240,7 @@ function PriceDivergencePage() {
   const [rows, setRows] = useState<PdInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
   const [config, setConfig] = useState<KpiConfig>({
-    maxScore: 10,
+    maxScore: 5,
     criticalFloor: 0.15,
     target: 0.05,
     cohortLevel: "Supplier",

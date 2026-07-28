@@ -236,7 +236,7 @@ function IotKpiPage() {
   const [rows, setRows] = useState<IotInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
   const [config, setConfig] = useState<KpiConfig>({
-    maxScore: 15,
+    maxScore: 10,
     criticalFloor: 0.7,
     target: 0.85,
     cohortLevel: "Supplier",

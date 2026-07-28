@@ -56,6 +56,9 @@ const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 interface IotRollupRow {
   id: string;
   label: string;
+  sumOnTime: number | null;
+  sumTotalPoLines: number | null;
+  iotDenominator: number | null;
   iotPercent: number | null;
   rank: number | null;
   percentile: number | null;
@@ -143,6 +146,9 @@ function calculateIotRollup(
   const seeds = Array.from(groups.entries()).map(([label, g], i) => ({
     id: `rollup-${groupBy}-${i}`,
     label,
+    sumOnTime: g.onTime,
+    sumTotalPoLines: g.total,
+    iotDenominator: g.total,
     iotPercent: g.total > 0 ? g.onTime / g.total : null,
     contributingRows: g.count,
   }));
@@ -465,7 +471,9 @@ function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>{label}</th><th>IOT %</th><th>Rank</th><th>Percentile</th>
+          <th>{label}</th>
+          <th>Invoice On-Time</th><th>Total PO Lines</th><th>IOT Denominator</th>
+          <th>IOT %</th><th>Rank</th><th>Percentile</th>
           <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
           <th>Status</th><th>Rows</th><th>Explanation</th>
         </tr></thead>
@@ -473,6 +481,9 @@ function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
           {rows.map((row) => (
             <tr key={row.id} className={row.status === "Below critical floor" ? "invalid-row" : ""}>
               <td>{row.label}</td>
+              <td>{row.sumOnTime !== null ? row.sumOnTime.toLocaleString() : "-"}</td>
+              <td>{row.sumTotalPoLines !== null ? row.sumTotalPoLines.toLocaleString() : "-"}</td>
+              <td>{row.iotDenominator !== null ? row.iotDenominator.toLocaleString() : "-"}</td>
               <td>{percent(row.iotPercent, 2)}</td>
               <td>{formatRank(row.rank)}</td>
               <td>{percent(row.percentile, 2)}</td>

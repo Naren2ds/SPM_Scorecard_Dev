@@ -457,7 +457,11 @@ function RollupResults({ rows, label }: { rows: RollupRow[]; label: string }) {
     <div className="table-frame">
       <table className="data-table results-table">
         <thead><tr>
-          <th>{label}</th><th>DOT %</th><th>Rank</th><th>Percentile</th>
+          <th>{label}</th>
+          <th>On-Time PO Lines</th><th>Total Delivered PO Lines</th>
+          <th>X1 Delayed &gt;30 Days</th><th>X2 Early &gt;30 Days</th>
+          <th>DOT Denominator</th><th>DOT %</th>
+          <th>Rank</th><th>Percentile</th>
           <th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th>
           <th>Status</th><th>Rows</th><th>Explanation</th>
         </tr></thead>
@@ -465,6 +469,11 @@ function RollupResults({ rows, label }: { rows: RollupRow[]; label: string }) {
           {rows.map((row) => (
             <tr key={row.id} className={rowClass(row.scoreStatus)}>
               <td>{row.label}</td>
+              <td>{row.sumOnTimePoLines !== null ? row.sumOnTimePoLines.toLocaleString() : "-"}</td>
+              <td>{row.sumTotalDeliveredPoLines !== null ? row.sumTotalDeliveredPoLines.toLocaleString() : "-"}</td>
+              <td>{row.sumX1DelayedOver30Days !== null ? row.sumX1DelayedOver30Days.toLocaleString() : "-"}</td>
+              <td>{row.sumX2EarlyOver30Days !== null ? row.sumX2EarlyOver30Days.toLocaleString() : "-"}</td>
+              <td>{row.dotDenominator !== null ? row.dotDenominator.toLocaleString(undefined, { maximumFractionDigits: 1 }) : "-"}</td>
               <td>{percent(row.normalizedDot, 2)}</td>
               <td>{formatRank(row.rankDescending)}</td>
               <td>{percent(row.percentile, 2)}</td>

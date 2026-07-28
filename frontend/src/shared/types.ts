@@ -78,6 +78,11 @@ export interface RollupRow {
   zone: string;
   country: string;
   dotRawInput: string;
+  sumOnTimePoLines: number | null;
+  sumTotalDeliveredPoLines: number | null;
+  sumX1DelayedOver30Days: number | null;
+  sumX2EarlyOver30Days: number | null;
+  dotDenominator: number | null;
   normalizedDot: number | null;
   rankDescending: number | null;
   percentile: number | null;

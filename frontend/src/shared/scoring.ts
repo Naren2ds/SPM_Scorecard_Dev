@@ -570,6 +570,11 @@ const buildRollupSeeds = (
     let dotRawInput = "";
     let sourceStatus = "";
     let isApplicable = true;
+    let sumOnTimePoLines: number | null = null;
+    let sumTotalDeliveredPoLines: number | null = null;
+    let sumX1DelayedOver30Days: number | null = null;
+    let sumX2EarlyOver30Days: number | null = null;
+    let dotDenominator: number | null = null;
     const errors: string[] = [];
 
     if (validRows.length === 0 && notApplicableCount === groupRows.length) {
@@ -602,10 +607,16 @@ const buildRollupSeeds = (
         },
       );
 
+      sumOnTimePoLines = totals.onTimePoLines;
+      sumTotalDeliveredPoLines = totals.totalDeliveredPoLines;
+      sumX1DelayedOver30Days = totals.x1DelayedOver30Days;
+      sumX2EarlyOver30Days = totals.x2EarlyOver30Days;
+
       const denominator =
         totals.totalDeliveredPoLines +
         0.99 * totals.x1DelayedOver30Days +
         0.1 * totals.x2EarlyOver30Days;
+      dotDenominator = denominator;
       normalizedDot = denominator > 0 ? totals.onTimePoLines / denominator : null;
       dotRawInput = formatRawFormula(totals);
       sourceStatus = "Weighted raw aggregation";
@@ -644,6 +655,11 @@ const buildRollupSeeds = (
       zone: level === "Zone" ? label : "All zones",
       country: summarizeCountries(groupRows),
       dotRawInput,
+      sumOnTimePoLines,
+      sumTotalDeliveredPoLines,
+      sumX1DelayedOver30Days,
+      sumX2EarlyOver30Days,
+      dotDenominator,
       normalizedDot: errors.length > 0 ? null : normalizedDot,
       criticalFloor: 0,
       target: 0,

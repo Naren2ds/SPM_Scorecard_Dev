@@ -1,13 +1,12 @@
 node_modules
-dist
 .vite
 *.local
 *.tsbuildinfo
 vite-dev.*.log
 .env
 backend/.env
-backend/data/
 __pycache__/
 *.pyc
 .venv/
 scorecard_preview.png
+# dist and backend/data/ are tracked on this deploy branch

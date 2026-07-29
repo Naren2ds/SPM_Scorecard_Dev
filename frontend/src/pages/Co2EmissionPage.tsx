@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateParentRollup,
   calculateSupplierScores,
@@ -54,13 +55,15 @@ const displayText = (value: string, fallback: string) =>
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function Co2EmissionPage() {
+interface Co2EmissionPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent }: Co2EmissionPageProps) {
   const [rows, setRows] = useState<Co2EmissionInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<Co2Config>({
-    maxScore: 10,
+  const [config, setConfig] = usePersistedState<Co2Config>('kpi-co2-config', {
+    maxScore: 5,
     criticalFloor: 0,
     target: 1,
     cohortLevel: "Supplier",
@@ -74,7 +77,7 @@ function Co2EmissionPage() {
   // match the source column `emissions_tco2e_2024`.
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selParent, setSelParent] = useState<string[]>([]);
+  // selParent / setSelParent provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
@@ -173,7 +176,19 @@ function Co2EmissionPage() {
       }),
     [rows, selCategory, selYear, selParent, selSupplier, selZone],
   );
-
+  // contextRows excludes parent/supplier filters so percentile ranks match the
+  // Normalized Scorecard backend (global/zone-contextual population).
+  const contextRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (selCategory.length > 0 && !selCategory.includes(row.category))
+          return false;
+        if (selYear.length > 0 && !selYear.includes(row.year)) return false;
+        if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+        return true;
+      }),
+    [rows, selCategory, selYear, selZone],
+  );
   // ─── Quartile defaults (Floor = Q1, Target = Q3) ────────────────────────
   const quartiles = useMemo(
     () => computeQuartileDefaults(filteredRows),
@@ -205,8 +220,15 @@ function Co2EmissionPage() {
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateParentRollup(filteredRows, config) : []),
-    [filteredRows, config, configIsValid],
+    () => (configIsValid ? calculateParentRollup(contextRows, config) : []),
+    [contextRows, config, configIsValid],
+  );
+  const displayedParentRollup = useMemo(
+    () =>
+      selParent.length > 0
+        ? parentRollup.filter((r) => selParent.includes(r.parentSupplier))
+        : parentRollup,
+    [parentRollup, selParent],
   );
 
   // ─── Config helpers ─────────────────────────────────────────────────────
@@ -248,7 +270,7 @@ function Co2EmissionPage() {
       ...rollupExportRows(zoneRollup, "Zone"),
       [],
       ["Parent Rollup"],
-      ...rollupExportRows(parentRollup, "Parent Supplier"),
+      ...rollupExportRows(displayedParentRollup, "Parent Supplier"),
     ]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -273,9 +295,7 @@ function Co2EmissionPage() {
           {statusMessage && <p className="supporting">{statusMessage}</p>}
         </div>
         <div className="header-actions">
-          <button type="button" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing..." : "Refresh Data"}
-          </button>
+
           <button
             type="button"
             onClick={exportResults}
@@ -436,8 +456,8 @@ function Co2EmissionPage() {
               <div className="rollup-scroll"><RollupResults rows={zoneRollup} label="Zone" /></div>
             </details>
             <details className="calculation-section" open>
-              <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Rollup ({parentRollup.length})</h3></summary>
-              <div className="rollup-scroll"><RollupResults rows={parentRollup} label="Parent Supplier" /></div>
+              <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Rollup ({displayedParentRollup.length})</h3></summary>
+              <div className="rollup-scroll"><RollupResults rows={displayedParentRollup} label="Parent Supplier" /></div>
             </details>
           </div>
         )}

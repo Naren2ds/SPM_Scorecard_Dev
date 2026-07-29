@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculatePercentileRanks,
   calculateEarnedScore,
@@ -165,19 +167,22 @@ function calculatePdRollup(
   config: KpiConfig,
   groupBy: "zone" | "parentSupplier" | "category",
 ): PdRollupRow[] {
-  const groups = new Map<string, { poValue: number; invoiceValue: number; count: number }>();
+  const groups = new Map<string, { poValue: number; invoiceValue: number; absDiff: number; count: number }>();
   rows.forEach((row) => {
     if (row.kpiApplicability === "Not Applicable") return;
-    const key = row[groupBy]?.trim() || "Unassigned";
-    const existing = groups.get(key) || { poValue: 0, invoiceValue: 0, count: 0 };
+    const key = groupBy === "parentSupplier"
+      ? (row.parentSupplier?.trim() || "Unassigned parent")
+      : (row[groupBy]?.trim() || "Unassigned");
+    const existing = groups.get(key) || { poValue: 0, invoiceValue: 0, absDiff: 0, count: 0 };
     existing.poValue += Number(row.poValue) || 0;
     existing.invoiceValue += Number(row.invoiceValue) || 0;
+    existing.absDiff += Math.abs((Number(row.invoiceValue) || 0) - (Number(row.poValue) || 0));
     existing.count += 1;
     groups.set(key, existing);
   });
 
   const seeds = Array.from(groups.entries()).map(([label, g], i) => {
-    const divergence = g.poValue > 0 ? Math.abs(g.invoiceValue - g.poValue) / g.poValue : null;
+    const divergence = g.poValue > 0 ? g.absDiff / g.poValue : null;
     return {
       id: `rollup-${groupBy}-${i}`,
       label,
@@ -227,13 +232,15 @@ function calculatePdRollup(
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function PriceDivergencePage() {
+interface PriceDivergencePageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function PriceDivergencePage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: PriceDivergencePageProps) {
   const [rows, setRows] = useState<PdInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
-    maxScore: 10,
-    criticalFloor: 0.15,
-    target: 0.05,
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-pdiv-config', {
+    maxScore: 5,
+    criticalFloor: 0.25,
+    target: 0.199,
     cohortLevel: "Supplier",
     formulaMode: "softStretch",
   });
@@ -241,7 +248,7 @@ function PriceDivergencePage() {
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
   const [selMonth, setSelMonth] = useState<string[]>([]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
@@ -320,6 +327,19 @@ function PriceDivergencePage() {
     });
   }, [rows, selCategory, selYear, selMonth, selParentSupplier, selSupplier, selCountry, selZone]);
 
+  // contextRows excludes parent/supplier filters so percentile ranks match the
+  // Normalized Scorecard backend (global/zone-contextual population).
+  const contextRows = useMemo(() => {
+    return rows.filter((row) => {
+      if (selCategory.length > 0 && !selCategory.includes(row.category)) return false;
+      if (selYear.length > 0 && !selYear.includes(row.year)) return false;
+      if (selMonth.length > 0 && !selMonth.includes(row.month)) return false;
+      if (selCountry.length > 0 && !selCountry.includes(row.country)) return false;
+      if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+      return true;
+    });
+  }, [rows, selCategory, selYear, selMonth, selCountry, selZone]);
+
   // Scoring
   const configErrors = useMemo(() => validatePdConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
@@ -334,8 +354,14 @@ function PriceDivergencePage() {
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculatePdRollup(filteredRows, config, "parentSupplier") : []),
-    [filteredRows, config, configIsValid],
+    () => (configIsValid ? calculatePdRollup(contextRows, config, "parentSupplier") : []),
+    [contextRows, config, configIsValid],
+  );
+  const displayedParentRollup = useMemo(
+    () => selParentSupplier.length > 0
+      ? parentRollup.filter((r) => selParentSupplier.includes(r.label))
+      : parentRollup,
+    [parentRollup, selParentSupplier],
   );
   const categoryRollup = useMemo(
     () => (configIsValid ? calculatePdRollup(filteredRows, config, "category") : []),
@@ -374,9 +400,7 @@ function PriceDivergencePage() {
           {uploadMessage && <p className="supporting">{uploadMessage}</p>}
         </div>
         <div className="header-actions">
-          <button type="button" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing..." : "Refresh Data"}
-          </button>
+
           <button type="button" onClick={() => fileInputRef.current?.click()}>Upload CSV</button>
           <input ref={fileInputRef} className="visually-hidden" type="file" accept=".csv" onChange={() => {}} />
           <button type="button" onClick={exportResults} disabled={!configIsValid || filteredRows.length === 0}>
@@ -409,6 +433,7 @@ function PriceDivergencePage() {
           </select>
         </label>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((e) => <p key={e}>{e}</p>)}</div>}
+        <ApplyScorecardButton kpiId="PDIV" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}
@@ -494,7 +519,7 @@ function PriceDivergencePage() {
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Supplier Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={parentRollup} label="Parent Supplier" config={config} /></div>
+              <div className="rollup-scroll"><RollupTable rows={displayedParentRollup} label="Parent Supplier" config={config} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>

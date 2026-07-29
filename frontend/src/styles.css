@@ -1677,6 +1677,24 @@ details.summary-section:not([open]) > .summary-section-summary {
   overflow-wrap: anywhere;
 }
 
+.sc-supplier-search {
+  margin-top: 6px;
+  width: 100%;
+  max-width: 520px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 4px;
+  background: var(--surface, #fff);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.sc-supplier-search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .sc-supplier-select {
   margin-top: 6px;
   font-size: 1.3rem;

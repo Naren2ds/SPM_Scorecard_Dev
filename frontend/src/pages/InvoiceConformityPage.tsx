@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateAttainmentFactor,
   calculateEarnedScore,
@@ -137,7 +139,9 @@ function calculateInvoiceRollup(
   const groups = new Map<string, { missingPo: number; wrongPo: number; wrongInvoice: number; totalInvoices: number; count: number }>();
   rows.forEach((row) => {
     if (row.kpiApplicability === "Not Applicable") return;
-    const key = row[groupBy]?.trim() || "Unassigned";
+    const key = groupBy === "parentSupplier"
+      ? (row.parentSupplier?.trim() || "Unassigned parent")
+      : (row[groupBy]?.trim() || "Unassigned");
     const existing = groups.get(key) || { missingPo: 0, wrongPo: 0, wrongInvoice: 0, totalInvoices: 0, count: 0 };
     existing.missingPo += Number(row.missingPo) || 0;
     existing.wrongPo += Number(row.wrongPo) || 0;
@@ -202,11 +206,13 @@ function calculateInvoiceRollup(
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function InvoiceConformityPage() {
+interface InvoiceConformityPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function InvoiceConformityPage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: InvoiceConformityPageProps) {
   const [rows, setRows] = useState<InvoiceInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
-    maxScore: 15,
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-ic-config', {
+    maxScore: 5,
     criticalFloor: 0.7,
     target: 0.85,
     cohortLevel: "Supplier",
@@ -214,7 +220,7 @@ function InvoiceConformityPage() {
   });
 
   const [selCategory, setSelCategory] = useState<string[]>([]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
@@ -290,6 +296,17 @@ function InvoiceConformityPage() {
     });
   }, [rows, selCategory, selParentSupplier, selSupplier, selCountry, selZone]);
 
+  // contextRows excludes parent/supplier filters so percentile ranks match the
+  // Normalized Scorecard backend (global/zone-contextual population).
+  const contextRows = useMemo(() => {
+    return rows.filter((row) => {
+      if (selCategory.length > 0 && !selCategory.includes(row.category)) return false;
+      if (selCountry.length > 0 && !selCountry.includes(row.country)) return false;
+      if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+      return true;
+    });
+  }, [rows, selCategory, selCountry, selZone]);
+
   // Scoring
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
@@ -304,8 +321,14 @@ function InvoiceConformityPage() {
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateInvoiceRollup(filteredRows, config, "parentSupplier") : []),
-    [filteredRows, config, configIsValid],
+    () => (configIsValid ? calculateInvoiceRollup(contextRows, config, "parentSupplier") : []),
+    [contextRows, config, configIsValid],
+  );
+  const displayedParentRollup = useMemo(
+    () => selParentSupplier.length > 0
+      ? parentRollup.filter((r) => selParentSupplier.includes(r.label))
+      : parentRollup,
+    [parentRollup, selParentSupplier],
   );
   const categoryRollup = useMemo(
     () => (configIsValid ? calculateInvoiceRollup(filteredRows, config, "category") : []),
@@ -344,9 +367,7 @@ function InvoiceConformityPage() {
           {uploadMessage && <p className="supporting">{uploadMessage}</p>}
         </div>
         <div className="header-actions">
-          <button type="button" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing..." : "Refresh Data"}
-          </button>
+
           <button type="button" onClick={() => fileInputRef.current?.click()}>Upload CSV</button>
           <input ref={fileInputRef} className="visually-hidden" type="file" accept=".csv" onChange={() => {}} />
           <button type="button" onClick={exportResults} disabled={!configIsValid || filteredRows.length === 0}>
@@ -377,6 +398,7 @@ function InvoiceConformityPage() {
           </select>
         </label>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((e) => <p key={e}>{e}</p>)}</div>}
+        <ApplyScorecardButton kpiId="IC" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}
@@ -462,7 +484,7 @@ function InvoiceConformityPage() {
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Supplier Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={parentRollup} label="Parent Supplier" config={config} /></div>
+              <div className="rollup-scroll"><RollupTable rows={displayedParentRollup} label="Parent Supplier" config={config} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>

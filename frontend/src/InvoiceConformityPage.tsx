@@ -241,7 +241,7 @@ function InvoiceConformityPage() {
   const [rows, setRows] = useState<InvoiceInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
   const [config, setConfig] = useState<KpiConfig>({
-    maxScore: 15,
+    maxScore: 5,
     criticalFloor: 0.7,
     target: 0.85,
     cohortLevel: "Supplier",

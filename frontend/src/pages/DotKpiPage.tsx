@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateCategoryRollup,
   calculateParentRollup,
@@ -78,11 +80,13 @@ const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function DotKpiPage() {
+interface DotKpiPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function DotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: DotKpiPageProps) {
   const [rows, setRows] = useState<SupplierKpiInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
-    maxScore: 15,
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-dot-config', {
+    maxScore: 10,
     criticalFloor: 0.7,
     target: 0.85,
     cohortLevel: "Supplier",
@@ -93,7 +97,7 @@ function DotKpiPage() {
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
   const [selMonth, setSelMonth] = useState<string[]>([]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
@@ -197,6 +201,20 @@ function DotKpiPage() {
     });
   }, [rows, selCategory, selYear, selMonth, selParentSupplier, selSupplier, selCountry, selZone]);
 
+  // contextRows excludes parent/supplier filters so percentile ranks are computed
+  // against the full global (or zone/category-contextual) population — consistent
+  // with the Normalized Scorecard backend. Parent filter applies only at display time.
+  const contextRows = useMemo(() => {
+    return rows.filter((row) => {
+      if (selCategory.length > 0 && !selCategory.includes(row.category)) return false;
+      if (selYear.length > 0 && !selYear.includes(row.year)) return false;
+      if (selMonth.length > 0 && !selMonth.some((m) => normalizeMonth(m) === normalizeMonth(row.month))) return false;
+      if (selCountry.length > 0 && !selCountry.includes(row.country)) return false;
+      if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+      return true;
+    });
+  }, [rows, selCategory, selYear, selMonth, selCountry, selZone]);
+
   // ─── Scoring ────────────────────────────────────────────────────────────
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
@@ -216,8 +234,14 @@ function DotKpiPage() {
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateParentRollup(filteredRows, config) : []),
-    [filteredRows, config, configIsValid],
+    () => (configIsValid ? calculateParentRollup(contextRows, config) : []),
+    [contextRows, config, configIsValid],
+  );
+  const displayedParentRollup = useMemo(
+    () => selParentSupplier.length > 0
+      ? parentRollup.filter((r) => selParentSupplier.includes(r.parentSupplier))
+      : parentRollup,
+    [parentRollup, selParentSupplier],
   );
   const categoryRollup = useMemo(
     () => (configIsValid ? calculateCategoryRollup(filteredRows, config) : []),
@@ -266,9 +290,7 @@ function DotKpiPage() {
           {uploadMessage && <p className="supporting">{uploadMessage}</p>}
         </div>
         <div className="header-actions">
-          <button type="button" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing..." : "Refresh Data"}
-          </button>
+
           <button type="button" onClick={exportResults} disabled={!configIsValid || filteredRows.length === 0}>
             Export Results
           </button>
@@ -315,6 +337,7 @@ function DotKpiPage() {
             {configErrors.map((err) => <p key={err}>{err}</p>)}
           </div>
         )}
+        <ApplyScorecardButton kpiId="DOT" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}
@@ -406,7 +429,7 @@ function DotKpiPage() {
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupResults rows={parentRollup} label="Parent Supplier" /></div>
+              <div className="rollup-scroll"><RollupResults rows={displayedParentRollup} label="Parent Supplier" /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>

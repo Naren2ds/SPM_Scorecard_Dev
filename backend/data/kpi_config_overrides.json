@@ -1,0 +1,47 @@
+{
+  "DOT": {
+    "floor": 0.7,
+    "target": 0.85,
+    "max_score": 10.0
+  },
+  "SA": {
+    "floor": 0.5,
+    "target": 0.8,
+    "max_score": 10.0
+  },
+  "SC": {
+    "floor": 0.6,
+    "target": 0.9,
+    "max_score": 5.0
+  },
+  "PDIV": {
+    "floor": 0.6,
+    "target": 0.4,
+    "max_score": 5.0
+  },
+  "IC": {
+    "floor": 0.7,
+    "target": 0.85,
+    "max_score": 5.0
+  },
+  "IOT": {
+    "floor": 0.7,
+    "target": 0.85,
+    "max_score": 10.0
+  },
+  "SM": {
+    "floor": 0.4,
+    "target": 0.8,
+    "max_score": 10.0
+  },
+  "ECL": {
+    "floor": 0.5,
+    "target": 0.8,
+    "max_score": 5.0
+  },
+  "CO2": {
+    "floor": null,
+    "target": null,
+    "max_score": 5.0
+  }
+}

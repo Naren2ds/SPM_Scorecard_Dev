@@ -9,6 +9,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateAttainmentFactor,
   calculateEarnedScore,
@@ -136,7 +138,9 @@ function calculateEclipseRollup(
     if (row.kpiApplicability === "Not Applicable") return;
     const raw = parseFloat(row.eclipseScore);
     if (!Number.isFinite(raw)) return;
-    const key = row[groupBy]?.trim() || "Unassigned";
+    const key = groupBy === "parentSupplier"
+      ? (row.parentSupplier?.trim() || "Unassigned parent")
+      : (row[groupBy]?.trim() || "Unassigned");
     const existing = groups.get(key) || { sum: 0, count: 0 };
     existing.sum += raw;
     existing.count += 1;
@@ -190,10 +194,12 @@ function calculateEclipseRollup(
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function EclipsePage() {
+interface EclipsePageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function EclipsePage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: EclipsePageProps) {
   const [rows, setRows] = useState<EclipseInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-ecl-config', {
     maxScore: 5,
     criticalFloor: 0.5,
     target: 0.8,
@@ -203,7 +209,7 @@ function EclipsePage() {
 
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
@@ -247,7 +253,7 @@ function EclipsePage() {
       .then(() => {
         const poll = setInterval(() => {
           fetch(`${API_BASE}/api/status`).then((r) => r.json()).then((j) => {
-            if (j.eclipse_status !== "refreshing") { clearInterval(poll); setRefreshing(false); loadFromApi(); }
+            if (j.status !== "refreshing") { clearInterval(poll); setRefreshing(false); loadFromApi(); }
           });
         }, 2000);
       })
@@ -275,6 +281,17 @@ function EclipsePage() {
     });
   }, [rows, selCategory, selYear, selParentSupplier, selSupplier, selZone]);
 
+  // contextRows excludes parent/supplier filters so percentile ranks match the
+  // Normalized Scorecard backend (global/zone-contextual population).
+  const contextRows = useMemo(() => {
+    return rows.filter((row) => {
+      if (selCategory.length > 0 && !selCategory.includes(row.category)) return false;
+      if (selYear.length > 0 && !selYear.includes(row.year)) return false;
+      if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+      return true;
+    });
+  }, [rows, selCategory, selYear, selZone]);
+
   // Scoring
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
@@ -293,8 +310,14 @@ function EclipsePage() {
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateEclipseRollup(filteredRows, config, "parentSupplier") : []),
-    [filteredRows, config, configIsValid],
+    () => (configIsValid ? calculateEclipseRollup(contextRows, config, "parentSupplier") : []),
+    [contextRows, config, configIsValid],
+  );
+  const displayedParentRollup = useMemo(
+    () => selParentSupplier.length > 0
+      ? parentRollup.filter((r) => selParentSupplier.includes(r.label))
+      : parentRollup,
+    [parentRollup, selParentSupplier],
   );
   const categoryRollup = useMemo(
     () => (configIsValid ? calculateEclipseRollup(filteredRows, config, "category") : []),
@@ -333,9 +356,7 @@ function EclipsePage() {
           {uploadMessage && <p className="supporting">{uploadMessage}</p>}
         </div>
         <div className="header-actions">
-          <button type="button" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing..." : "Refresh Data"}
-          </button>
+
           <button type="button" onClick={() => fileInputRef.current?.click()}>Upload CSV</button>
           <input ref={fileInputRef} className="visually-hidden" type="file" accept=".csv" onChange={() => {}} />
           <button type="button" onClick={exportResults} disabled={!configIsValid || filteredRows.length === 0}>
@@ -366,6 +387,7 @@ function EclipsePage() {
           </select>
         </label>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((e) => <p key={e}>{e}</p>)}</div>}
+        <ApplyScorecardButton kpiId="ECL" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}
@@ -445,7 +467,7 @@ function EclipsePage() {
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Supplier Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={parentRollup} label="Parent Supplier" maxScore={config.maxScore} /></div>
+              <div className="rollup-scroll"><RollupTable rows={displayedParentRollup} label="Parent Supplier" maxScore={config.maxScore} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>

@@ -9,6 +9,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateAttainmentFactor,
   calculateEarnedScore,
@@ -136,7 +138,9 @@ function calculateEclipseRollup(
     if (row.kpiApplicability === "Not Applicable") return;
     const raw = parseFloat(row.eclipseScore);
     if (!Number.isFinite(raw)) return;
-    const key = row[groupBy]?.trim() || "Unassigned";
+    const key = groupBy === "parentSupplier"
+      ? (row.parentSupplier?.trim() || "Unassigned parent")
+      : (row[groupBy]?.trim() || "Unassigned");
     const existing = groups.get(key) || { sum: 0, count: 0 };
     existing.sum += raw;
     existing.count += 1;
@@ -190,10 +194,12 @@ function calculateEclipseRollup(
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function EclipsePage() {
+interface EclipsePageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function EclipsePage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: EclipsePageProps) {
   const [rows, setRows] = useState<EclipseInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-ecl-config', {
     maxScore: 5,
     criticalFloor: 0.5,
     target: 0.8,
@@ -203,7 +209,7 @@ function EclipsePage() {
 
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
@@ -247,7 +253,7 @@ function EclipsePage() {
       .then(() => {
         const poll = setInterval(() => {
           fetch(`${API_BASE}/api/status`).then((r) => r.json()).then((j) => {
-            if (j.eclipse_status !== "refreshing") { clearInterval(poll); setRefreshing(false); loadFromApi(); }
+            if (j.status !== "refreshing") { clearInterval(poll); setRefreshing(false); loadFromApi(); }
           });
         }, 2000);
       })
@@ -381,6 +387,7 @@ function EclipsePage() {
           </select>
         </label>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((e) => <p key={e}>{e}</p>)}</div>}
+        <ApplyScorecardButton kpiId="ECL" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}

@@ -28,8 +28,14 @@ const KPI_TABS: Array<{ id: KpiTab; label: string; shortLabel: string }> = [
   { id: "co2Emission",        label: "CO₂ Emission",          shortLabel: "SUS-CO2" },
 ];
 
+interface KpiPageProps {
+  sharedParent: string[];
+  onParentChange: (v: string[]) => void;
+}
+
 function App() {
   const [activeKpi, setActiveKpi] = useState<KpiTab>("summary");
+  const [sharedParent, setSharedParent] = useState<string[]>([]);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const feedbackEnabled = activeKpi !== "summary";
   const activeLabel = KPI_TABS.find((tab) => tab.id === activeKpi)?.label ?? "Scoring Guide";
@@ -67,15 +73,15 @@ function App() {
         >
           {activeKpi === "summary" && <SummaryPage />}
           {activeKpi === "scorecard" && <ScorecardPage />}
-          {activeKpi === "dot" && <DotKpiPage />}
-          {activeKpi === "iot" && <IotKpiPage />}
-          {activeKpi === "supplierAssessment" && <SupplierAssessmentPage />}
-          {activeKpi === "supplierCompliance" && <SupplierCompliancePage />}
-          {activeKpi === "supplierMaturity" && <SupplierMaturityPage />}
-          {activeKpi === "co2Emission" && <Co2EmissionPage />}
-          {activeKpi === "eclipse" && <EclipsePage />}
-          {activeKpi === "invoiceConformity" && <InvoiceConformityPage />}
-          {activeKpi === "priceDivergence" && <PriceDivergencePage />}
+          {activeKpi === "dot" && <DotKpiPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "iot" && <IotKpiPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "supplierAssessment" && <SupplierAssessmentPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "supplierCompliance" && <SupplierCompliancePage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "supplierMaturity" && <SupplierMaturityPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "co2Emission" && <Co2EmissionPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "eclipse" && <EclipsePage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "invoiceConformity" && <InvoiceConformityPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "priceDivergence" && <PriceDivergencePage sharedParent={sharedParent} onParentChange={setSharedParent} />}
           <FeedbackPanel
             enabled={feedbackEnabled}
             visible={feedbackVisible}

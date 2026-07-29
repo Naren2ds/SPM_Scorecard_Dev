@@ -8,6 +8,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateCategoryRollup,
   calculateCountryRollup,
@@ -46,12 +48,14 @@ const displayText = (value: string, fallback: string) =>
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function SupplierAssessmentPage() {
+interface SupplierAssessmentPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function SupplierAssessmentPage({ sharedParent: selParent, onParentChange: setSelParent }: SupplierAssessmentPageProps) {
   const [rows, setRows] = useState<SupplierAssessmentInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<AssessmentConfig>({
+  const [config, setConfig] = usePersistedState<AssessmentConfig>('kpi-sa-config', {
     maxScore: 10,
     greenWeight: 1,
     yellowWeight: 0.5,
@@ -68,7 +72,7 @@ function SupplierAssessmentPage() {
   // Multi-select filter states (empty = All). Year defaults to "2026".
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selParent, setSelParent] = useState<string[]>([]);
+  // selParent / setSelParent provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
@@ -180,6 +184,22 @@ function SupplierAssessmentPage() {
     [rows, selCategory, selYear, selParent, selSupplier, selZone, selCountry],
   );
 
+  // contextRows excludes parent/supplier filters so percentile ranks are computed
+  // against the full global (or zone/category-contextual) population.
+  const contextRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (selCategory.length > 0 && !selCategory.includes(row.category))
+          return false;
+        if (selYear.length > 0 && !selYear.includes(row.year)) return false;
+        if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+        if (selCountry.length > 0 && !selCountry.includes(row.country))
+          return false;
+        return true;
+      }),
+    [rows, selCategory, selYear, selZone, selCountry],
+  );
+
   // ─── Scoring ────────────────────────────────────────────────────────────
   const configErrors = useMemo(() => validateConfig(config), [config]);
   const configIsValid = configErrors.length === 0;
@@ -213,15 +233,7 @@ function SupplierAssessmentPage() {
 
   // ─── Config helpers ─────────────────────────────────────────────────────
   const updateNumericConfig = (
-    field:
-      | "maxScore"
-      | "greenWeight"
-      | "yellowWeight"
-      | "redWeight"
-      | "criticalFloor"
-      | "target"
-      | "redWarningThreshold"
-      | "redCapThreshold",
+    field: "maxScore" | "criticalFloor" | "target",
     value: string,
     scale = 1,
   ) => {
@@ -236,11 +248,11 @@ function SupplierAssessmentPage() {
     const csv = toCsv([
       ["Supplier Assessment Config"],
       ["Max Score", config.maxScore],
-      ["Green / Yellow / Red Weights", `${config.greenWeight} / ${config.yellowWeight} / ${config.redWeight}`],
+      ["Green / Yellow / Red Weights", "1.0 / 0.5 / 0.0 (fixed)"],
       ["Critical Floor %", percent(config.criticalFloor, 2)],
       ["Target %", percent(config.target, 2)],
       ["Formula", formulaModeLabel(config.formulaMode)],
-      ["Cap Score If Red % ≥ Threshold", config.capScoreIfRedExceedsThreshold ? `Yes (@ ${percent(config.redCapThreshold, 2)})` : "No"],
+      ["Red Score Cap", "Disabled (matches Normalized Scorecard)"],
       ["Rows (after filters)", filteredRows.length],
       [],
       ["Supplier Level"],
@@ -277,7 +289,7 @@ function SupplierAssessmentPage() {
           <p className="eyebrow">Quality KPI</p>
           <h1>Supplier Assessment — Percentile Scoring</h1>
           <p className="kpi-value-note">
-            Health Index = (Green × w<sub>G</sub> + Yellow × w<sub>Y</sub> + Red × w<sub>R</sub>) / Total Valid Assessments
+            Health Index = (Green × 1.0 + Yellow × 0.5 + Red × 0) / Total Valid Assessments — weights are fixed to match the Normalized Scorecard.
           </p>
           {statusMessage && <p className="supporting">{statusMessage}</p>}
         </div>
@@ -313,16 +325,8 @@ function SupplierAssessmentPage() {
           <input type="number" min="0" step="0.5" value={Number.isFinite(config.maxScore) ? config.maxScore : ""} onChange={(e) => updateNumericConfig("maxScore", e.target.value)} />
         </label>
         <label>
-          <span>Green Weight</span>
-          <input type="number" min="0" max="1" step="0.05" value={Number.isFinite(config.greenWeight) ? config.greenWeight : ""} onChange={(e) => updateNumericConfig("greenWeight", e.target.value)} />
-        </label>
-        <label>
-          <span>Yellow Weight</span>
-          <input type="number" min="0" max="1" step="0.05" value={Number.isFinite(config.yellowWeight) ? config.yellowWeight : ""} onChange={(e) => updateNumericConfig("yellowWeight", e.target.value)} />
-        </label>
-        <label>
-          <span>Red Weight</span>
-          <input type="number" min="0" max="1" step="0.05" value={Number.isFinite(config.redWeight) ? config.redWeight : ""} onChange={(e) => updateNumericConfig("redWeight", e.target.value)} />
+          <span>Weights (G/Y/R)</span>
+          <input type="text" readOnly value="1.0 / 0.5 / 0.0" title="Fixed to match Normalized Scorecard" style={{cursor: "not-allowed", background: "#f5f5f5", color: "#666"}} />
         </label>
         <label>
           <span>Critical Floor %</span>
@@ -340,27 +344,15 @@ function SupplierAssessmentPage() {
           </select>
         </label>
         <label>
-          <span>Cap @ Red %</span>
-          <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.redCapThreshold) ? Number((config.redCapThreshold * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("redCapThreshold", e.target.value, 100)} />
-        </label>
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={config.capScoreIfRedExceedsThreshold}
-            onChange={(e) =>
-              setConfig((c) => ({
-                ...c,
-                capScoreIfRedExceedsThreshold: e.target.checked,
-              }))
-            }
-          />
-          <span>Enable Red Cap</span>
+          <span>Red Score Cap</span>
+          <input type="text" readOnly value="Disabled" title="Disabled to match Normalized Scorecard" style={{cursor: "not-allowed", background: "#f5f5f5", color: "#666"}} />
         </label>
         {configErrors.length > 0 && (
           <div className="validation-box config-bar-errors">
             {configErrors.map((err) => <p key={err}>{err}</p>)}
           </div>
         )}
+        <ApplyScorecardButton kpiId="SA" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}

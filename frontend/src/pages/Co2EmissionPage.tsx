@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateParentRollup,
   calculateSupplierScores,
@@ -54,12 +55,14 @@ const displayText = (value: string, fallback: string) =>
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function Co2EmissionPage() {
+interface Co2EmissionPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent }: Co2EmissionPageProps) {
   const [rows, setRows] = useState<Co2EmissionInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<Co2Config>({
+  const [config, setConfig] = usePersistedState<Co2Config>('kpi-co2-config', {
     maxScore: 5,
     criticalFloor: 0,
     target: 1,
@@ -74,7 +77,7 @@ function Co2EmissionPage() {
   // match the source column `emissions_tco2e_2024`.
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selParent, setSelParent] = useState<string[]>([]);
+  // selParent / setSelParent provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
@@ -217,8 +220,15 @@ function Co2EmissionPage() {
     [filteredRows, config, configIsValid],
   );
   const parentRollup = useMemo(
-    () => (configIsValid ? calculateParentRollup(filteredRows, config) : []),
-    [filteredRows, config, configIsValid],
+    () => (configIsValid ? calculateParentRollup(contextRows, config) : []),
+    [contextRows, config, configIsValid],
+  );
+  const displayedParentRollup = useMemo(
+    () =>
+      selParent.length > 0
+        ? parentRollup.filter((r) => selParent.includes(r.parentSupplier))
+        : parentRollup,
+    [parentRollup, selParent],
   );
 
   // ─── Config helpers ─────────────────────────────────────────────────────

@@ -8,6 +8,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateCategoryRollup,
   calculateCountryRollup,
@@ -46,12 +48,14 @@ const displayText = (value: string, fallback: string) =>
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function SupplierCompliancePage() {
+interface SupplierCompliancePageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function SupplierCompliancePage({ sharedParent: selParent, onParentChange: setSelParent }: SupplierCompliancePageProps) {
   const [rows, setRows] = useState<SupplierComplianceInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<ComplianceConfig>({
+  const [config, setConfig] = usePersistedState<ComplianceConfig>('kpi-sc-config', {
     maxScore: 5,
     criticalFloor: 0.6,
     target: 0.9,
@@ -62,7 +66,7 @@ function SupplierCompliancePage() {
   // Multi-select filter states (empty = All). Year defaults to "2026".
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selParent, setSelParent] = useState<string[]>([]);
+  // selParent / setSelParent provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
@@ -168,6 +172,22 @@ function SupplierCompliancePage() {
         return true;
       }),
     [rows, selCategory, selYear, selParent, selSupplier, selZone, selCountry],
+  );
+
+  // contextRows excludes parent/supplier filters so percentile ranks are computed
+  // against the full global (or zone/category-contextual) population.
+  const contextRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (selCategory.length > 0 && !selCategory.includes(row.category))
+          return false;
+        if (selYear.length > 0 && !selYear.includes(row.year)) return false;
+        if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+        if (selCountry.length > 0 && !selCountry.includes(row.country))
+          return false;
+        return true;
+      }),
+    [rows, selCategory, selYear, selZone, selCountry],
   );
 
   // ─── Scoring ────────────────────────────────────────────────────────────
@@ -312,6 +332,7 @@ function SupplierCompliancePage() {
             {configErrors.map((err) => <p key={err}>{err}</p>)}
           </div>
         )}
+        <ApplyScorecardButton kpiId="SC" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}

@@ -8,6 +8,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePersistedState } from "./shared/usePersistedState";
 import "./styles.css";
 import type {
   ParentScorecard,
@@ -15,7 +16,7 @@ import type {
   ScorecardResponse,
 } from "./scorecardTypes";
 
-// ─── Number-format helpers (Top-N table shows invoice values in $M / $K) ──
+// ─── Number-format helpers ──────────────────────────────────────────────────
 
 const fmtCurrencyShort = (v: number) => {
   if (!Number.isFinite(v)) return "—";
@@ -25,8 +26,6 @@ const fmtCurrencyShort = (v: number) => {
   if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
   return v.toFixed(0);
 };
-
-const TOP_N = 20;
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -140,15 +139,14 @@ function ScorecardPage() {
     categories: [],
     parents: [],
   });
-  const [selZones, setSelZones] = useState<string[]>([]);
-  const [selCategories, setSelCategories] = useState<string[]>([]);
-  const [selParents, setSelParents] = useState<string[]>([]);
+  const [selZones, setSelZones] = usePersistedState<string[]>("sc-sel-zones", []);
+  const [selCategories, setSelCategories] = usePersistedState<string[]>("sc-sel-categories", []);
 
   const [scorecard, setScorecard] = useState<ScorecardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedParent, setSelectedParent] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [selectedParent, setSelectedParent] = usePersistedState<string | null>("sc-selected-parent", null);
+  const [search, setSearch] = usePersistedState<string>("sc-search", "");
   const [rebuilding, setRebuilding] = useState(false);
   const [cacheInfo, setCacheInfo] = useState<{ cached_at: string | null; parent_count: number } | null>(null);
 
@@ -169,10 +167,8 @@ function ScorecardPage() {
         // Reload scorecard with fresh data
         setLoading(true);
         const params = new URLSearchParams();
-        params.set("top_n", String(TOP_N));
         if (selZones.length) params.set("zones", selZones.join(","));
         if (selCategories.length) params.set("categories", selCategories.join(","));
-        if (selParents.length) params.set("parents", selParents.join(","));
         return fetch(`${API_BASE}/api/scorecard?${params.toString()}`);
       })
       .then((res) => (res as Response).json())
@@ -201,10 +197,8 @@ function ScorecardPage() {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
-    params.set("top_n", String(TOP_N));
     if (selZones.length) params.set("zones", selZones.join(","));
     if (selCategories.length) params.set("categories", selCategories.join(","));
-    if (selParents.length) params.set("parents", selParents.join(","));
     const url = `${API_BASE}/api/scorecard?${params.toString()}`;
     fetch(url)
       .then((res) => res.json())
@@ -216,7 +210,7 @@ function ScorecardPage() {
         setError(String(e));
         setLoading(false);
       });
-  }, [selZones, selCategories, selParents]);
+  }, [selZones, selCategories]);
 
   // Derived: filtered list based on search box + summary metrics
   const filteredScorecards = useMemo(() => {
@@ -251,20 +245,20 @@ function ScorecardPage() {
     };
   }, [filteredScorecards]);
 
-  // Auto-select first result when scorecard loads or filters change
+  // Auto-select: only re-runs when filteredScorecards changes — keeps
+  // current selection if it's still valid, otherwise falls back to first.
   useEffect(() => {
-    if (filteredScorecards.length > 0 && !selectedParent) {
-      setSelectedParent(filteredScorecards[0].parentSupplier);
-    } else if (
-      filteredScorecards.length > 0 &&
-      selectedParent &&
-      !filteredScorecards.some((s) => s.parentSupplier === selectedParent)
-    ) {
-      setSelectedParent(filteredScorecards[0].parentSupplier);
-    } else if (filteredScorecards.length === 0) {
+    if (filteredScorecards.length === 0) {
       setSelectedParent(null);
+      return;
     }
-  }, [filteredScorecards, selectedParent]);
+    setSelectedParent((prev) => {
+      if (prev && filteredScorecards.some((s) => s.parentSupplier === prev)) {
+        return prev; // keep — still in filtered list
+      }
+      return filteredScorecards[0].parentSupplier; // fall back to first
+    });
+  }, [filteredScorecards]);
 
   const selected = useMemo(
     () =>
@@ -473,7 +467,6 @@ function ScorecardPage() {
   const clearFilters = () => {
     setSelZones([]);
     setSelCategories([]);
-    setSelParents([]);
     setSearch("");
   };
 
@@ -598,22 +591,6 @@ function ScorecardPage() {
           onChange={setSelCategories}
           searchable
         />
-        <MultiSelectDropdown
-          label="Parent Supplier"
-          options={filters.parents}
-          selected={selParents}
-          onChange={setSelParents}
-          searchable
-        />
-        <label>
-          <span>Search</span>
-          <input
-            type="search"
-            placeholder="Search suppliers…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
         <button type="button" onClick={clearFilters}>Clear filters</button>
         <div className="filter-summary">
           <strong>{summary.count}</strong> suppliers
@@ -684,6 +661,14 @@ function ScorecardPage() {
               >
                 <div>
                   <p className="eyebrow">Parent Supplier</p>
+                  <input
+                    type="search"
+                    className="sc-supplier-search"
+                    placeholder="Search suppliers…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    aria-label="Search suppliers"
+                  />
                   <select
                     className="sc-supplier-select"
                     value={selectedParent ?? ""}
@@ -1010,7 +995,7 @@ function ScorecardPage() {
             </>
           ) : (
             <div className="sc-detail-empty">
-              <p>Use the filters above to select a parent supplier and see the pillar-by-pillar breakdown.</p>
+              <p>Click a parent supplier in the table above to see the pillar-by-pillar breakdown.</p>
             </div>
           )}
         </div>

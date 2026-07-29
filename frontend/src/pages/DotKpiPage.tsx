@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateCategoryRollup,
   calculateParentRollup,
@@ -78,10 +80,12 @@ const normalizeMonth = (m: string) => m.replace(/^0+/, "") || m;
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function DotKpiPage() {
+interface DotKpiPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function DotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: DotKpiPageProps) {
   const [rows, setRows] = useState<SupplierKpiInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-dot-config', {
     maxScore: 10,
     criticalFloor: 0.7,
     target: 0.85,
@@ -93,7 +97,7 @@ function DotKpiPage() {
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
   const [selMonth, setSelMonth] = useState<string[]>([]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
@@ -333,6 +337,7 @@ function DotKpiPage() {
             {configErrors.map((err) => <p key={err}>{err}</p>)}
           </div>
         )}
+        <ApplyScorecardButton kpiId="DOT" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}

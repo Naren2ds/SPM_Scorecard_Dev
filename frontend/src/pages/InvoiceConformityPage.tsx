@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateAttainmentFactor,
   calculateEarnedScore,
@@ -137,7 +139,9 @@ function calculateInvoiceRollup(
   const groups = new Map<string, { missingPo: number; wrongPo: number; wrongInvoice: number; totalInvoices: number; count: number }>();
   rows.forEach((row) => {
     if (row.kpiApplicability === "Not Applicable") return;
-    const key = row[groupBy]?.trim() || "Unassigned";
+    const key = groupBy === "parentSupplier"
+      ? (row.parentSupplier?.trim() || "Unassigned parent")
+      : (row[groupBy]?.trim() || "Unassigned");
     const existing = groups.get(key) || { missingPo: 0, wrongPo: 0, wrongInvoice: 0, totalInvoices: 0, count: 0 };
     existing.missingPo += Number(row.missingPo) || 0;
     existing.wrongPo += Number(row.wrongPo) || 0;
@@ -202,10 +206,12 @@ function calculateInvoiceRollup(
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function InvoiceConformityPage() {
+interface InvoiceConformityPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function InvoiceConformityPage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: InvoiceConformityPageProps) {
   const [rows, setRows] = useState<InvoiceInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-ic-config', {
     maxScore: 5,
     criticalFloor: 0.7,
     target: 0.85,
@@ -214,7 +220,7 @@ function InvoiceConformityPage() {
   });
 
   const [selCategory, setSelCategory] = useState<string[]>([]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
@@ -392,6 +398,7 @@ function InvoiceConformityPage() {
           </select>
         </label>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((e) => <p key={e}>{e}</p>)}</div>}
+        <ApplyScorecardButton kpiId="IC" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}

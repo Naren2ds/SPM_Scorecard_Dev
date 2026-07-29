@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 # ─── Sandbox mode: serve from pre-built CSV files, no Databricks ────────────
 DATA_DIR         = Path(__file__).resolve().parent / "data"
+CONFIG_OVERRIDES_PATH = DATA_DIR / "kpi_config_overrides.json"
 DOT_OUTPUT_PATH  = DATA_DIR / "dot_kpi.csv"
 IOT_OUTPUT_PATH  = DATA_DIR / "iot_kpi.csv"
 SA_OUTPUT_PATH   = DATA_DIR / "supplier_assessment.csv"
@@ -28,6 +29,42 @@ ECL_OUTPUT_PATH  = DATA_DIR / "eclipse.csv"
 IC_OUTPUT_PATH   = DATA_DIR / "invoice_conformity.csv"
 PDIV_OUTPUT_PATH = DATA_DIR / "price_divergence.csv"
 from scorecard import compute_scorecard, list_filter_options
+
+
+def _load_config_overrides() -> None:
+    """Apply persisted KPI config overrides (floor/target/max_score) to KPI_CONFIGS."""
+    import json
+    from scorecard import KPI_CONFIGS
+    if not CONFIG_OVERRIDES_PATH.exists():
+        return
+    try:
+        overrides: dict = json.loads(CONFIG_OVERRIDES_PATH.read_text(encoding="utf-8"))
+        for kpi in KPI_CONFIGS:
+            ov = overrides.get(kpi["id"])
+            if not ov:
+                continue
+            if ov.get("floor")     is not None: kpi["floor"]     = float(ov["floor"])
+            if ov.get("target")    is not None: kpi["target"]    = float(ov["target"])
+            if ov.get("max_score") is not None: kpi["max_score"] = float(ov["max_score"])
+    except Exception:
+        pass  # silently ignore corrupt/missing file
+
+
+def _save_config_overrides() -> None:
+    """Persist current KPI_CONFIGS floor/target/max_score to disk so they survive restarts."""
+    import json
+    from scorecard import KPI_CONFIGS
+    overrides = {
+        kpi["id"]: {
+            "floor":     kpi["floor"],
+            "target":    kpi["target"],
+            "max_score": kpi["max_score"],
+        }
+        for kpi in KPI_CONFIGS
+        if kpi.get("cache_key")  # only real KPIs, skip placeholders
+    }
+    CONFIG_OVERRIDES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_OVERRIDES_PATH.write_text(json.dumps(overrides, indent=2), encoding="utf-8")
 
 
 FEEDBACK_OUTPUT_PATH = Path(__file__).resolve().parent / "feedback" / "uat_feedback.xlsx"
@@ -229,6 +266,7 @@ def _background_refresh_dot():
         _cache["dot_kpi"] = processed.fillna("").to_dict(orient="records")
         _cache["last_refresh"] = datetime.now().isoformat()
         _cache["status"] = "ready"
+        _build_scored_cache()
     except Exception as e:
         _cache["status"] = f"error: {str(e)}"
 
@@ -250,6 +288,7 @@ def _background_refresh_iot():
         _cache["iot_kpi"] = processed.fillna("").to_dict(orient="records")
         _cache["last_refresh"] = datetime.now().isoformat()
         _cache["status"] = "ready"
+        _build_scored_cache()
     except Exception as e:
         _cache["status"] = f"error: {str(e)}"
 
@@ -272,6 +311,7 @@ def _background_refresh_supplier_assessment():
         _cache["supplier_assessment"] = processed.fillna("").to_dict(orient="records")
         _cache["sa_last_refresh"] = datetime.now().isoformat()
         _cache["sa_status"] = "ready"
+        _build_scored_cache()
     except Exception as e:
         _cache["sa_status"] = f"error: {str(e)}"
 
@@ -294,6 +334,7 @@ def _background_refresh_supplier_compliance():
         _cache["supplier_compliance"] = processed.fillna("").to_dict(orient="records")
         _cache["sc_last_refresh"] = datetime.now().isoformat()
         _cache["sc_status"] = "ready"
+        _build_scored_cache()
     except Exception as e:
         _cache["sc_status"] = f"error: {str(e)}"
 
@@ -316,6 +357,7 @@ def _background_refresh_supplier_maturity():
         _cache["supplier_maturity"] = processed.fillna("").to_dict(orient="records")
         _cache["sm_last_refresh"] = datetime.now().isoformat()
         _cache["sm_status"] = "ready"
+        _build_scored_cache()
     except Exception as e:
         _cache["sm_status"] = f"error: {str(e)}"
 
@@ -338,6 +380,7 @@ def _background_refresh_co2_emission():
         _cache["co2_emission"] = processed.fillna("").to_dict(orient="records")
         _cache["co2_last_refresh"] = datetime.now().isoformat()
         _cache["co2_status"] = "ready"
+        _build_scored_cache()
     except Exception as e:
         _cache["co2_status"] = f"error: {str(e)}"
 
@@ -345,6 +388,7 @@ def _background_refresh_co2_emission():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _load_cache_from_disk()
+    _load_config_overrides()       # restore any persisted KPI threshold overrides
     _build_scored_cache()          # B2: pre-compute full scorecard at startup
     _cache["status"] = "ready"
     _cache["sa_status"] = "ready"
@@ -539,6 +583,7 @@ def _background_refresh_eclipse():
         ECL_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         processed.to_csv(ECL_OUTPUT_PATH, index=False)
         _cache["eclipse"] = processed.fillna("").to_dict(orient="records")
+        _build_scored_cache()
     except Exception as e:
         pass
 
@@ -569,6 +614,7 @@ def _background_refresh_ic():
         IC_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         processed.to_csv(IC_OUTPUT_PATH, index=False)
         _cache["invoice_conformity"] = processed.fillna("").to_dict(orient="records")
+        _build_scored_cache()
     except Exception:
         pass
 
@@ -597,6 +643,7 @@ def _background_refresh_pdiv():
         PDIV_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         processed.to_csv(PDIV_OUTPUT_PATH, index=False)
         _cache["price_divergence"] = processed.fillna("").to_dict(orient="records")
+        _build_scored_cache()
     except Exception:
         pass
 
@@ -775,7 +822,7 @@ def get_scorecard(
     zones: str | None = None,
     categories: str | None = None,
     parents: str | None = None,
-    top_n: int = 20,
+    top_n: int = 0,
 ):
     """
     Normalized Supplier Scorecard.
@@ -797,7 +844,7 @@ def get_scorecard_leaderboard(
     zones: str | None = None,
     categories: str | None = None,
     parents: str | None = None,
-    top_n: int = 20,
+    top_n: int = 0,
 ):
     """
     Lightweight per-parent summary for the leaderboard view. Drops the per-KPI
@@ -834,8 +881,64 @@ def get_scorecard_parent(
 
 @app.get("/api/scorecard/filters")
 def get_scorecard_filters():
-    """Distinct zones / categories / parent suppliers across all KPI datasets."""
-    return JSONResponse(list_filter_options(_cache))
+    """Distinct zones / categories / parent suppliers across all KPI datasets.
+
+    Zones and categories come from the raw KPI rows (they are used as aggregation
+    filters). Parent suppliers come exclusively from the pre-computed scored cache
+    so the dropdown only shows the parent-level names actually present in the
+    scorecard table — not individual supplier fallbacks from rows where
+    parentSupplier is blank.
+    """
+    opts = list_filter_options(_cache)
+    # Override parents with the actual scored parent names from the cache.
+    if _scored_cache and _scored_cache.get("scorecards"):
+        opts["parents"] = sorted(
+            {s["parentSupplier"] for s in _scored_cache["scorecards"]}
+        )
+    return JSONResponse(opts)
+
+
+@app.get("/api/scorecard/config")
+def get_scorecard_kpi_configs():
+    """Return the current effective floor / target / max_score for every real KPI."""
+    from scorecard import KPI_CONFIGS
+    return JSONResponse({
+        kpi["id"]: {
+            "name":     kpi["name"],
+            "floor":    kpi["floor"],
+            "target":   kpi["target"],
+            "maxScore": kpi["max_score"],
+        }
+        for kpi in KPI_CONFIGS
+        if kpi.get("cache_key")
+    })
+
+
+@app.post("/api/scorecard/config")
+def update_scorecard_kpi_config(body: dict):
+    """Update floor / target / max_score for one KPI, persist to disk, and rebuild the cache.
+
+    Body: { kpiId: str, floor?: float, target?: float, maxScore?: float }
+    """
+    from scorecard import KPI_CONFIGS
+    kpi_id = str(body.get("kpiId", "")).upper()
+    if not kpi_id:
+        raise HTTPException(status_code=400, detail="kpiId is required")
+    matched = next((k for k in KPI_CONFIGS if k["id"] == kpi_id), None)
+    if matched is None:
+        raise HTTPException(status_code=404, detail=f"KPI '{kpi_id}' not found")
+    if body.get("floor")    is not None: matched["floor"]     = float(body["floor"])
+    if body.get("target")   is not None: matched["target"]    = float(body["target"])
+    if body.get("maxScore") is not None: matched["max_score"] = float(body["maxScore"])
+    _save_config_overrides()
+    _build_scored_cache()
+    return JSONResponse({
+        "status":      "ok",
+        "kpiId":       kpi_id,
+        "applied":     {"floor": matched["floor"], "target": matched["target"], "maxScore": matched["max_score"]},
+        "rebuilt_at":  _scored_cache.get("cached_at"),
+        "parent_count": _scored_cache.get("parent_count", 0),
+    })
 
 
 @app.post("/api/scorecard/rebuild")

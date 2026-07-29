@@ -8,6 +8,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateCategoryRollup,
   calculateParentRollup,
@@ -45,12 +47,14 @@ const displayText = (value: string, fallback: string) =>
 
 const API_BASE = "http://127.0.0.1:8000";
 
-function SupplierMaturityPage() {
+interface SupplierMaturityPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function SupplierMaturityPage({ sharedParent: selParent, onParentChange: setSelParent }: SupplierMaturityPageProps) {
   const [rows, setRows] = useState<SupplierMaturityInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [config, setConfig] = useState<MaturityConfig>({
+  const [config, setConfig] = usePersistedState<MaturityConfig>('kpi-sm-config', {
     maxScore: 10,
     criticalFloor: 0.6,
     target: 0.8,
@@ -61,7 +65,7 @@ function SupplierMaturityPage() {
   // Multi-select filter states (empty = All). Year defaults to 2025 & 2026.
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
-  const [selParent, setSelParent] = useState<string[]>([]);
+  // selParent / setSelParent provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
@@ -159,6 +163,20 @@ function SupplierMaturityPage() {
         return true;
       }),
     [rows, selCategory, selYear, selParent, selSupplier, selZone],
+  );
+
+  // contextRows excludes parent/supplier filters so percentile ranks are computed
+  // against the full global (or zone/category-contextual) population.
+  const contextRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (selCategory.length > 0 && !selCategory.includes(row.category))
+          return false;
+        if (selYear.length > 0 && !selYear.includes(row.year)) return false;
+        if (selZone.length > 0 && !selZone.includes(row.zone)) return false;
+        return true;
+      }),
+    [rows, selCategory, selYear, selZone],
   );
 
   // ─── Scoring ────────────────────────────────────────────────────────────
@@ -295,6 +313,7 @@ function SupplierMaturityPage() {
             {configErrors.map((err) => <p key={err}>{err}</p>)}
           </div>
         )}
+        <ApplyScorecardButton kpiId="SM" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}

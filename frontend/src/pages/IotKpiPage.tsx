@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { ApplyScorecardButton } from "../shared/ApplyScorecardButton";
+import { usePersistedState } from "../shared/usePersistedState";
 import {
   calculateAttainmentFactor,
   calculateEarnedScore,
@@ -136,7 +138,9 @@ function calculateIotRollup(
   const groups = new Map<string, { onTime: number; total: number; count: number }>();
   rows.forEach((row) => {
     if (row.kpiApplicability === "Not Applicable") return;
-    const key = row[groupBy]?.trim() || "Unassigned";
+    const key = groupBy === "parentSupplier"
+      ? (row.parentSupplier?.trim() || "Unassigned parent")
+      : (row[groupBy]?.trim() || "Unassigned");
     const existing = groups.get(key) || { onTime: 0, total: 0, count: 0 };
     existing.onTime += Number(row.invoiceOnTimeCount) || 0;
     existing.total += Number(row.totalPoLines) || 0;
@@ -193,10 +197,12 @@ function calculateIotRollup(
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
-function IotKpiPage() {
+interface IotKpiPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
+
+function IotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelParentSupplier }: IotKpiPageProps) {
   const [rows, setRows] = useState<IotInputRow[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [config, setConfig] = useState<KpiConfig>({
+  const [config, setConfig] = usePersistedState<KpiConfig>('kpi-iot-config', {
     maxScore: 10,
     criticalFloor: 0.7,
     target: 0.85,
@@ -207,7 +213,7 @@ function IotKpiPage() {
   const [selCategory, setSelCategory] = useState<string[]>([]);
   const [selYear, setSelYear] = useState<string[]>(["2025", "2026"]);
   const [selMonth, setSelMonth] = useState<string[]>([]);
-  const [selParentSupplier, setSelParentSupplier] = useState<string[]>([]);
+  // selParentSupplier / setSelParentSupplier provided via sharedParent prop from App
   const [selSupplier, setSelSupplier] = useState<string[]>([]);
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
@@ -391,6 +397,7 @@ function IotKpiPage() {
           </select>
         </label>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((e) => <p key={e}>{e}</p>)}</div>}
+        <ApplyScorecardButton kpiId="IOT" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
 
       {/* Data Summary */}
@@ -470,15 +477,15 @@ function IotKpiPage() {
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">2</span><h3>Zone Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={zoneRollup} label="Zone" /></div>
+              <div className="rollup-scroll"><RollupTable rows={zoneRollup} label="Zone" maxScore={config.maxScore} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">3</span><h3>Parent Supplier Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={displayedParentRollup} label="Parent Supplier" /></div>
+              <div className="rollup-scroll"><RollupTable rows={displayedParentRollup} label="Parent Supplier" maxScore={config.maxScore} /></div>
             </details>
             <details className="calculation-section" open>
               <summary className="calculation-heading level-summary"><span className="level-badge">4</span><h3>Category Rollup</h3></summary>
-              <div className="rollup-scroll"><RollupTable rows={categoryRollup} label="Category" /></div>
+              <div className="rollup-scroll"><RollupTable rows={categoryRollup} label="Category" maxScore={config.maxScore} /></div>
             </details>
           </div>
         )}
@@ -487,7 +494,7 @@ function IotKpiPage() {
   );
 }
 
-function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
+function RollupTable({ rows, label, maxScore }: { rows: IotRollupRow[]; label: string; maxScore: number }) {
   return (
     <div className="table-frame">
       <table className="data-table results-table">
@@ -508,7 +515,7 @@ function RollupTable({ rows, label }: { rows: IotRollupRow[]; label: string }) {
               <td>{formatRank(row.rank)}</td>
               <td>{percent(row.percentile, 2)}</td>
               <td>{numeric(row.attainment, 4)}</td>
-              <td>{numeric(15, 2)}</td>
+              <td>{numeric(maxScore, 2)}</td>
               <td>{numeric(row.earnedScore, 2)}</td>
               <td>{percent(row.scorePercent, 2)}</td>
               <td><span className={`status-pill ${row.status === "Valid score" ? "status-valid" : row.status === "Below critical floor" ? "status-floor" : "status-na"}`}>{row.status}</span></td>

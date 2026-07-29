@@ -90,8 +90,8 @@ KPI_CONFIGS: list[dict[str, Any]] = [
         "pillar": "Operational",
         "cache_key": "price_divergence",
         "max_score": 5.0,
-        "floor": 0.05,
-        "target": 0.02,
+        "floor": 0.25,
+        "target": 0.199,
         "direction": "lower",
         "unit": "percent",
     },
@@ -101,8 +101,8 @@ KPI_CONFIGS: list[dict[str, Any]] = [
         "pillar": "Operational",
         "cache_key": "invoice_conformity",
         "max_score": 5.0,
-        "floor": 0.80,
-        "target": 0.95,
+        "floor": 0.70,
+        "target": 0.85,
         "direction": "higher",
         "unit": "percent",
     },
@@ -124,7 +124,7 @@ KPI_CONFIGS: list[dict[str, Any]] = [
         "pillar": "Sustainability",
         "cache_key": "supplier_maturity",
         "max_score": 10.0,
-        "floor": 0.40,
+        "floor": 0.60,
         "target": 0.80,
         "direction": "higher",
         "unit": "score_0_1",
@@ -267,11 +267,16 @@ def _attainment(raw: float, floor: float, target: float, direction: str) -> floa
 
 
 def _rollup_key(row: dict[str, Any]) -> str:
-    """Parent supplier as scorecard grouping key (with sensible fallback)."""
+    """Parent supplier as scorecard grouping key.
+
+    Rows with a blank/None parentSupplier are grouped under "Unassigned parent"
+    so they form a single cohort entry — matching the frontend behaviour where
+    ``dim(row.parentSupplier, "Unassigned parent")`` is used.
+    """
     parent = str(row.get("parentSupplier", "") or "").strip()
     if parent and parent.lower() != "none":
         return parent
-    return str(row.get("supplier", "") or "").strip() or "(Unknown)"
+    return "Unassigned parent"
 
 
 def _passes_filters(
@@ -439,21 +444,31 @@ def _aggregate_kpi(
 def _kpi_attainments(
     kpi: dict[str, Any],
     per_parent: dict[str, dict[str, Any]],
+    individual_values: list[float] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Convert raw per-parent ratios into attainment/percentile/earned for one KPI.
 
-    Formula matches the frontend individual KPI page default (softStretch mode):
+    Formula mirrors the frontend KPI pages exactly (softStretch mode):
         earned = max_score × attainment × (0.70 + 0.30 × percentile)
 
-    Percentile is computed across the full population passed in ``per_parent``.
-    Best-performing parent = 100th percentile; worst = 1/N percentile.
-    With a single observation the parent receives the 100th percentile.
+    Percentile uses the same midpoint-rank / (N-1) formula as the frontend:
+        percentile = (N - averageRank) / (N - 1)
+    where averageRank is the midpoint of tied positions (1-indexed).
+    Special cases:
+      - N=1            → percentile = 1.0
+      - all values same → percentile = 1.0 if value >= target else 0.5
+
+    ``individual_values`` (optional): for quartile KPIs, compute Q1/Q3 from these
+    individual-row values instead of from the per-parent averages.  This matches
+    the frontend which derives Q1/Q3 from the individual supplier rows.
     """
     direction = kpi["direction"]
     floor, target = kpi["floor"], kpi["target"]
 
     if direction == "quartile":
-        values = [v["ratio"] for v in per_parent.values()]
+        # Use individual row values when provided (matches frontend computeQuartileDefaults).
+        # Fall back to parent averages if not supplied.
+        values = individual_values if individual_values is not None else [v["ratio"] for v in per_parent.values()]
         if len(values) >= 2:
             s = pd.Series(values, dtype=float)
             q1, q3 = float(s.quantile(0.25)), float(s.quantile(0.75))
@@ -472,22 +487,41 @@ def _kpi_attainments(
         for key, info in per_parent.items()
     }
 
-    # Step 2: compute percentile ranks across the population.
-    # For "higher" direction: higher raw ratio → better → higher percentile.
-    # For "lower"  direction: lower  raw ratio → better → higher percentile.
+    # Step 2: compute percentile ranks — mirrors frontend calculatePercentileRanks().
+    # Formula: percentile = (N - averageRank) / (N - 1)  with tie-averaged rank.
+    # Special cases: N=1 → 1.0;  all values identical → >=target ? 1.0 : 0.5.
     reverse_sort = (direction != "lower")
-    sorted_keys = sorted(
-        per_parent.keys(),
-        key=lambda k: per_parent[k]["ratio"],
-        reverse=reverse_sort,
-    )
-    total = len(sorted_keys)
-    # Rank 0 (best) → percentile = total/total = 1.0
-    # Rank N-1 (worst) → percentile = 1/total
-    percentiles: dict[str, float] = {
-        key: (total - rank_0idx) / total
-        for rank_0idx, key in enumerate(sorted_keys)
-    }
+    total = len(per_parent)
+    percentiles: dict[str, float] = {}
+
+    if total == 1:
+        percentiles[next(iter(per_parent))] = 1.0
+    else:
+        ratios = {k: per_parent[k]["ratio"] for k in per_parent}
+        distinct = set(round(v, 12) for v in ratios.values())
+        if len(distinct) == 1:
+            # No variance — award full percentile if above target, else 0.5.
+            shared = next(iter(ratios.values()))
+            pct = 1.0 if shared >= float(target) else 0.5
+            percentiles = {k: pct for k in per_parent}
+        else:
+            sorted_keys = sorted(
+                per_parent.keys(),
+                key=lambda k: ratios[k],
+                reverse=reverse_sort,
+            )
+            cursor = 0
+            while cursor < total:
+                current = round(ratios[sorted_keys[cursor]], 12)
+                end = cursor + 1
+                while end < total and round(ratios[sorted_keys[end]], 12) == current:
+                    end += 1
+                # 1-indexed midpoint rank for this tied group
+                avg_rank = (cursor + 1 + end) / 2
+                pct = (total - avg_rank) / (total - 1)
+                for i in range(cursor, end):
+                    percentiles[sorted_keys[i]] = pct
+                cursor = end
 
     # Step 3: apply soft-stretch formula (matches frontend default).
     result: dict[str, dict[str, Any]] = {}
@@ -541,9 +575,11 @@ def compute_scorecard(
         parents_set or None,
     )
 
-    # When Top-N is requested, restrict the whole computation universe to just
-    # those parents so we don't score all 8 000+ suppliers just to throw them
-    # away. This turns a ~6 MB payload into ~50 KB.
+    # When Top-N is requested, identify which parents appear in the top N by
+    # invoice value so we can filter the *response* at the end.  Crucially,
+    # percentile ranking must still be computed across the FULL population;
+    # restricting ranking to only the top N would give those parents
+    # artificially inflated percentiles and earned scores.
     top_parent_set: set[str] | None = None
     if top_n and top_n > 0:
         ranked = sorted(invoice_totals.items(), key=lambda kv: kv[1], reverse=True)
@@ -552,10 +588,10 @@ def compute_scorecard(
         if parents_set:
             top_parent_set &= parents_set
 
-    # Step 1 — per-KPI, per-parent aggregation
+    # Step 1 — per-KPI, per-parent aggregation across the full population.
+    # top_parent_set is only used to filter the final response, NOT here.
     kpi_results: dict[str, dict[str, dict[str, Any]]] = {}
     kpi_meta: list[dict[str, Any]] = []
-    aggregation_parents = top_parent_set if top_parent_set is not None else parents_set
     for kpi in KPI_CONFIGS:
         rows = cache.get(kpi["cache_key"], []) or []
         agg = _aggregate_kpi(
@@ -563,9 +599,24 @@ def compute_scorecard(
             rows,
             zones_set or None,
             categories_set or None,
-            aggregation_parents or None,
+            parents_set or None,
         )
-        scored = _kpi_attainments(kpi, agg)
+        # For quartile KPIs (CO2), collect individual row values so Q1/Q3 are
+        # computed from the supplier-level distribution — matching the frontend
+        # computeQuartileDefaults(filteredRows) behaviour.
+        individual_vals: list[float] | None = None
+        if kpi["direction"] == "quartile":
+            individual_vals = []
+            value_field = "co2Emission"  # only quartile KPI in current config
+            for r in (rows or []):
+                if not _passes_filters(r, zones_set or None, categories_set or None, parents_set or None):
+                    continue
+                if not _is_applicable(r.get("kpiApplicability")):
+                    continue
+                v = _to_num(r.get(value_field))
+                if v is not None:
+                    individual_vals.append(v)
+        scored = _kpi_attainments(kpi, agg, individual_values=individual_vals)
         kpi_results[kpi["id"]] = scored
         kpi_meta.append({
             "id": kpi["id"],
@@ -578,13 +629,11 @@ def compute_scorecard(
             "unit": kpi["unit"],
         })
 
-    # Step 2 — build the universe of parent suppliers
-    if top_parent_set is not None:
-        parent_universe: set[str] = set(top_parent_set)
-    else:
-        parent_universe = set()
-        for scored in kpi_results.values():
-            parent_universe.update(scored.keys())
+    # Step 2 — build the universe of parent suppliers from all scored parents.
+    # Percentile ranks are computed inside _kpi_attainments across this full set.
+    parent_universe: set[str] = set()
+    for scored in kpi_results.values():
+        parent_universe.update(scored.keys())
 
     # Total expected KPI weight across all pillars (for coverage %).
     total_expected_weight = sum(k["max_score"] for k in KPI_CONFIGS)
@@ -690,11 +739,11 @@ def compute_scorecard(
             "pillars": pillars_out,
         })
 
+    scorecards.sort(key=lambda s: s["normalized_score"], reverse=True)
     if top_parent_set is not None:
-        # Preserve invoice-value ranking as the primary order for Top-N views.
+        # Filter response to top-N and sort by invoice value for display.
+        scorecards = [s for s in scorecards if s["parentSupplier"] in top_parent_set]
         scorecards.sort(key=lambda s: s["invoice_value"], reverse=True)
-    else:
-        scorecards.sort(key=lambda s: s["normalized_score"], reverse=True)
 
     return {
         "pillar_weights": PILLAR_WEIGHTS,

@@ -15,8 +15,8 @@
     "max_score": 5.0
   },
   "PDIV": {
-    "floor": 0.6,
-    "target": 0.4,
+    "floor": 0.25,
+    "target": 0.199,
     "max_score": 5.0
   },
   "IC": {
@@ -30,7 +30,7 @@
     "max_score": 10.0
   },
   "SM": {
-    "floor": 0.4,
+    "floor": 0.6,
     "target": 0.8,
     "max_score": 10.0
   },

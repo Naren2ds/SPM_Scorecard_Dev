@@ -8,10 +8,10 @@ timeout /t 2 /nobreak >nul
 echo.
 echo [1/2] Starting backend API (FastAPI on port 8000)...
 cd /d "%~dp0"
-start "SPM-Backend" cmd /k "cd /d %~dp0backend && python -m uvicorn server:app --host 127.0.0.1 --port 8000"
+start "SPM-Backend" cmd /k "cd /d %~dp0apps\backend && python -m uvicorn server:app --host 127.0.0.1 --port 8000"
 timeout /t 5 /nobreak >nul
 echo Backend started at http://127.0.0.1:8000
 echo.
 echo [2/2] Starting frontend (Vite on port 5173)...
-cd /d "%~dp0frontend"
+cd /d "%~dp0apps\frontend"
 npm run dev

@@ -1,0 +1,11 @@
+{
+  "name": "spm-scorecard-dev",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix apps/frontend run build",
+    "dev": "npm --prefix apps/frontend run dev",
+    "start": "uvicorn server:app --app-dir apps/backend --host 0.0.0.0 --port 8000"
+  }
+}

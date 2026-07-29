@@ -4,16 +4,16 @@ node_modules
 *.tsbuildinfo
 vite-dev.*.log
 .env
-backend/.env
+apps/backend/.env
 __pycache__/
 *.pyc
 .venv/
 scorecard_preview.png
-# dist and backend/data/ are tracked on this deploy branch
+# dist and apps/backend/data/ are tracked on this deploy branch
 
 # Dev-only scripts — not needed for sandbox deployment
-backend/fetch_*.py
-backend/debug_*.py
-backend/debug_*.txt
-backend/test_*.py
-backend/validate_*.py
+apps/backend/fetch_*.py
+apps/backend/debug_*.py
+apps/backend/debug_*.txt
+apps/backend/test_*.py
+apps/backend/validate_*.py

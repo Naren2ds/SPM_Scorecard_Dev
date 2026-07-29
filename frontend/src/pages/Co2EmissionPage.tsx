@@ -60,7 +60,6 @@ interface Co2EmissionPageProps { sharedParent: string[]; onParentChange: (v: str
 function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent }: Co2EmissionPageProps) {
   const [rows, setRows] = useState<Co2EmissionInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
 
   const [config, setConfig] = usePersistedState<Co2Config>('kpi-co2-config', {
     maxScore: 5,
@@ -106,7 +105,7 @@ function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent
           setStatusMessage(`${parsed.length} rows loaded.`);
         } else {
           setStatusMessage(
-            "No cached CO2 Emission data. Click Refresh Data to fetch from Databricks.",
+            "No cached CO2 Emission data.",
           );
         }
       })
@@ -118,29 +117,6 @@ function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent
   useEffect(() => {
     loadFromApi();
   }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setStatusMessage("Refreshing from Databricks...");
-    fetch(`${API_BASE}/api/co2-emission/refresh`, { method: "POST" })
-      .then(() => {
-        const poll = setInterval(() => {
-          fetch(`${API_BASE}/api/status`)
-            .then((res) => res.json())
-            .then((json) => {
-              if (json.co2_status !== "refreshing") {
-                clearInterval(poll);
-                setRefreshing(false);
-                loadFromApi();
-              }
-            });
-        }, 2000);
-      })
-      .catch(() => {
-        setRefreshing(false);
-        setStatusMessage("Refresh failed.");
-      });
-  };
 
   // ─── Dynamic filter options ─────────────────────────────────────────────
   const opts = useMemo(
@@ -389,7 +365,7 @@ function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent
             <p className="supporting">
               {rows.length > 0
                 ? `${rows.length} total rows loaded. Showing ${filteredRows.length} after filters.`
-                : "No data. Click Refresh Data to fetch from Databricks."}
+                : "No data."}
             </p>
           </div>
         </div>

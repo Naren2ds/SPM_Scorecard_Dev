@@ -218,7 +218,7 @@ function IotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
-  const [refreshing, setRefreshing] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const API_BASE = "http://127.0.0.1:8000";
@@ -251,20 +251,6 @@ function IotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
   };
 
   useEffect(() => { loadFromApi(); }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setUploadMessage("Refreshing IOT from Databricks...");
-    fetch(`${API_BASE}/api/iot-kpi/refresh`, { method: "POST" })
-      .then(() => {
-        const poll = setInterval(() => {
-          fetch(`${API_BASE}/api/status`).then((r) => r.json()).then((j) => {
-            if (j.status !== "refreshing") { clearInterval(poll); setRefreshing(false); loadFromApi(); }
-          });
-        }, 2000);
-      })
-      .catch(() => { setRefreshing(false); setUploadMessage("Refresh failed."); });
-  };
 
   // Dynamic filter options
   const opts = useMemo(() => ({
@@ -365,8 +351,6 @@ function IotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
         </div>
         <div className="header-actions">
 
-          <button type="button" onClick={() => fileInputRef.current?.click()}>Upload CSV</button>
-          <input ref={fileInputRef} className="visually-hidden" type="file" accept=".csv" onChange={() => {}} />
           <button type="button" onClick={exportResults} disabled={!configIsValid || filteredRows.length === 0}>
             Export Results
           </button>
@@ -405,7 +389,7 @@ function IotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
         <div className="panel-heading">
           <h2>Data Summary</h2>
           <p className="supporting">
-            {rows.length > 0 ? `${rows.length} total rows. Showing ${filteredRows.length} after filters.` : "No data. Click Refresh Data."}
+            {rows.length > 0 ? `${rows.length} total rows. Showing ${filteredRows.length} after filters.` : "No data."}
           </p>
         </div>
       </section>

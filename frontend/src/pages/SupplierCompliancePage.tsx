@@ -53,7 +53,6 @@ interface SupplierCompliancePageProps { sharedParent: string[]; onParentChange: 
 function SupplierCompliancePage({ sharedParent: selParent, onParentChange: setSelParent }: SupplierCompliancePageProps) {
   const [rows, setRows] = useState<SupplierComplianceInputRow[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
 
   const [config, setConfig] = usePersistedState<ComplianceConfig>('kpi-sc-config', {
     maxScore: 5,
@@ -98,7 +97,7 @@ function SupplierCompliancePage({ sharedParent: selParent, onParentChange: setSe
           setStatusMessage(`${parsed.length} rows loaded.`);
         } else {
           setStatusMessage(
-            "No cached Supplier Compliance data. Click Refresh Data to fetch from Databricks.",
+            "No cached Supplier Compliance data.",
           );
         }
       })
@@ -110,29 +109,6 @@ function SupplierCompliancePage({ sharedParent: selParent, onParentChange: setSe
   useEffect(() => {
     loadFromApi();
   }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setStatusMessage("Refreshing from Databricks...");
-    fetch(`${API_BASE}/api/supplier-compliance/refresh`, { method: "POST" })
-      .then(() => {
-        const poll = setInterval(() => {
-          fetch(`${API_BASE}/api/status`)
-            .then((res) => res.json())
-            .then((json) => {
-              if (json.sc_status !== "refreshing") {
-                clearInterval(poll);
-                setRefreshing(false);
-                loadFromApi();
-              }
-            });
-        }, 2000);
-      })
-      .catch(() => {
-        setRefreshing(false);
-        setStatusMessage("Refresh failed.");
-      });
-  };
 
   // ─── Dynamic filter options ─────────────────────────────────────────────
   const opts = useMemo(
@@ -343,7 +319,7 @@ function SupplierCompliancePage({ sharedParent: selParent, onParentChange: setSe
             <p className="supporting">
               {rows.length > 0
                 ? `${rows.length} total rows loaded. Showing ${filteredRows.length} after filters.`
-                : "No data. Click Refresh Data to fetch from Databricks."}
+                : "No data."}
             </p>
           </div>
         </div>

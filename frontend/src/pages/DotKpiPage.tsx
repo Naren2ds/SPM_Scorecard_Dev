@@ -102,7 +102,6 @@ function DotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
   const [selCountry, setSelCountry] = useState<string[]>([]);
   const [selZone, setSelZone] = useState<string[]>([]);
 
-  const [refreshing, setRefreshing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const API_BASE = "http://127.0.0.1:8000";
@@ -144,26 +143,6 @@ function DotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
   };
 
   useEffect(() => { loadFromApi(); }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setUploadMessage("Refreshing from Databricks...");
-    fetch(`${API_BASE}/api/dot-kpi/refresh`, { method: "POST" })
-      .then(() => {
-        const poll = setInterval(() => {
-          fetch(`${API_BASE}/api/status`)
-            .then((res) => res.json())
-            .then((json) => {
-              if (json.status !== "refreshing") {
-                clearInterval(poll);
-                setRefreshing(false);
-                loadFromApi();
-              }
-            });
-        }, 2000);
-      })
-      .catch(() => { setRefreshing(false); setUploadMessage("Refresh failed."); });
-  };
 
   const handleCsvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -348,12 +327,8 @@ function DotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
             <p className="supporting">
               {rows.length > 0
                 ? `${rows.length} total rows loaded. Showing ${filteredRows.length} after filters.`
-                : "No data. Click Refresh Data or Upload CSV."}
+                : "No data."}
             </p>
-          </div>
-          <div className="table-actions">
-            <button type="button" onClick={() => fileInputRef.current?.click()}>Upload CSV</button>
-            <input ref={fileInputRef} className="visually-hidden" type="file" accept=".csv,text/csv" onChange={handleCsvUpload} />
           </div>
         </div>
       </section>

@@ -17,3 +17,4 @@ apps/backend/debug_*.py
 apps/backend/debug_*.txt
 apps/backend/test_*.py
 apps/backend/validate_*.py
+apps/backend/data/scorecard_validation_report.csv 

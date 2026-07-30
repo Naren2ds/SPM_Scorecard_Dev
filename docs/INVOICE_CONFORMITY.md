@@ -47,7 +47,7 @@ Result is 0-1 (higher = better). If totalInvoices = 0, value is empty.
 
 ---
 
-## Frontend Page (`frontend/src/InvoiceConformityPage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/InvoiceConformityPage.tsx`)
 
 ### Filters (multi-select dropdowns, dynamic from data)
 | Filter | Default | Behavior |

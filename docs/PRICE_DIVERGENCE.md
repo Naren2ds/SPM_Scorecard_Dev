@@ -51,7 +51,7 @@ divergencePct = ABS(SUM(invoiceValue) - SUM(poValue)) / SUM(poValue)
 
 ---
 
-## Frontend Page (`frontend/src/PriceDivergencePage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/PriceDivergencePage.tsx`)
 
 ### Scoring Direction: INVERTED (lower = better)
 Unlike DOT/IOT where higher % is better, Price Divergence scores **lower values higher**.

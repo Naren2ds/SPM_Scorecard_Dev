@@ -51,7 +51,7 @@ The internal value is always stored in the **[0, 1]** range.
 
 ---
 
-## Frontend Page (`frontend/src/SupplierMaturityPage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/SupplierMaturityPage.tsx`)
 
 ### Filters (multi-select dropdowns, dynamic from data)
 | Filter | Default | Behavior |
@@ -144,7 +144,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
         ↓  GET /api/supplier-maturity (JSON, instant)
         ↓  POST /api/supplier-maturity/refresh (background Databricks re-fetch)
         ↓
-frontend/src/SupplierMaturityPage.tsx (React, loads from API on mount)
+apps/frontend/src/pages/SupplierMaturityPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params (floor, target, formula)
   ├── Scoring engine (supplierMaturityScoring.ts) → compute results
@@ -198,7 +198,7 @@ taskkill /F /IM node.exe
 |---|---|
 | `frontend/src/supplierMaturityTypes.ts` | TypeScript types |
 | `frontend/src/supplierMaturityScoring.ts` | Scoring engine (percentile, attainment, earned score, proxy rollups) |
-| `frontend/src/SupplierMaturityPage.tsx` | Page component (filters, config, results hierarchy, export) |
+| `apps/frontend/src/pages/SupplierMaturityPage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents
 - DOT KPI (structural template): `docs/DOT_KPI.md`

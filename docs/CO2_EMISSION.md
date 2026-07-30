@@ -44,7 +44,7 @@ columns are present in the source schema.
 
 ---
 
-## Frontend Page (`frontend/src/Co2EmissionPage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/Co2EmissionPage.tsx`)
 
 ### Filters (multi-select dropdowns, dynamic from data)
 | Filter | Default | Behavior |
@@ -131,7 +131,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
         ↓  GET /api/co2-emission (JSON, instant)
         ↓  POST /api/co2-emission/refresh (background Databricks re-fetch)
         ↓
-frontend/src/Co2EmissionPage.tsx (React, loads from API on mount)
+apps/frontend/src/pages/Co2EmissionPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Q1 / Q3 of filtered rows → auto-derived Floor / Target
   ├── Configuration → scoring params (floor, target, formula)
@@ -187,7 +187,7 @@ taskkill /F /IM node.exe
 |---|---|
 | `frontend/src/co2EmissionTypes.ts` | TypeScript types |
 | `frontend/src/co2EmissionScoring.ts` | Scoring engine (percentile, attainment, earned score, quartile defaults, proxy rollups) |
-| `frontend/src/Co2EmissionPage.tsx` | Page component (filters, config, results hierarchy, export) |
+| `apps/frontend/src/pages/Co2EmissionPage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents
 - DOT KPI (structural template): `docs/DOT_KPI.md`

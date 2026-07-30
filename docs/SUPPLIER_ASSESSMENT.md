@@ -56,7 +56,7 @@ Each output row represents one supplier per unique dimension combination.
 
 ---
 
-## Frontend Page (`frontend/src/SupplierAssessmentPage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/SupplierAssessmentPage.tsx`)
 
 ### Filters (multi-select dropdowns, dynamic from data)
 | Filter | Default | Behavior |
@@ -158,7 +158,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
         ↓  GET /api/supplier-assessment (JSON, instant)
         ↓  POST /api/supplier-assessment/refresh (background Databricks re-fetch)
         ↓
-frontend/src/SupplierAssessmentPage.tsx (React, loads from API on mount)
+apps/frontend/src/pages/SupplierAssessmentPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params (weights, floor, target, formula, red cap)
   ├── Scoring engine (supplierAssessmentScoring.ts) → compute results
@@ -229,7 +229,7 @@ taskkill /F /IM node.exe
 |---|---|
 | `frontend/src/supplierAssessmentTypes.ts` | TypeScript types (input row, config, scored row, rollup row) |
 | `frontend/src/supplierAssessmentScoring.ts` | Scoring engine (AHI, percentile, attainment, earned score, rollups) |
-| `frontend/src/SupplierAssessmentPage.tsx` | Page component (filters, config, results hierarchy, export) |
+| `apps/frontend/src/pages/SupplierAssessmentPage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents
 - Scoring specification: `docs/Support_Docs/supplier-assessment-percentile-scoring.md`

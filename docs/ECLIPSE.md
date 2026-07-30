@@ -45,7 +45,7 @@ SELECT * FROM brewdat_uc_supchn_dev.gld_ghq_procurement_spm.supplier_sustainabil
 
 ---
 
-## Frontend Page (`frontend/src/EclipsePage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/EclipsePage.tsx`)
 
 ### Filters (multi-select dropdowns, dynamic from data)
 | Filter | Default | Behavior |

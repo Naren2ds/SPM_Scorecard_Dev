@@ -53,7 +53,7 @@ The internal value is always stored in the **[0, 1]** range.
 
 ---
 
-## Frontend Page (`frontend/src/SupplierCompliancePage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/SupplierCompliancePage.tsx`)
 
 ### Filters (multi-select dropdowns, dynamic from data)
 | Filter | Default | Behavior |
@@ -148,7 +148,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
         ↓  GET /api/supplier-compliance (JSON, instant)
         ↓  POST /api/supplier-compliance/refresh (background Databricks re-fetch)
         ↓
-frontend/src/SupplierCompliancePage.tsx (React, loads from API on mount)
+apps/frontend/src/pages/SupplierCompliancePage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params (floor, target, formula)
   ├── Scoring engine (supplierComplianceScoring.ts) → compute results
@@ -202,7 +202,7 @@ taskkill /F /IM node.exe
 |---|---|
 | `frontend/src/supplierComplianceTypes.ts` | TypeScript types |
 | `frontend/src/supplierComplianceScoring.ts` | Scoring engine (percentile, attainment, earned score, proxy rollups) |
-| `frontend/src/SupplierCompliancePage.tsx` | Page component (filters, config, results hierarchy, export) |
+| `apps/frontend/src/pages/SupplierCompliancePage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents
 - Scoring specification: `docs/Support_Docs/supplier-compliance-scoring.md`

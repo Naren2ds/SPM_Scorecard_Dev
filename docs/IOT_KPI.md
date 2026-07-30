@@ -43,7 +43,7 @@ From `delivery_month` (format `YYYY-MM`):
 
 ---
 
-## Frontend Scoring (`frontend/src/IotKpiPage.tsx`)
+## Frontend Scoring (`apps/frontend/src/pages/IotKpiPage.tsx`)
 
 ### IOT Formula
 ```

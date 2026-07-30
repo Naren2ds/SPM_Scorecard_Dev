@@ -6,7 +6,7 @@ All fixes applied during the July 2026 audit session.
 
 ## Fix 1 — `contextRows is not defined` (Runtime Crash)
 
-**Affected files**: `frontend/src/pages/SupplierAssessmentPage.tsx`, `SupplierCompliancePage.tsx`, `SupplierMaturityPage.tsx`  
+**Affected files**: `apps/frontend/src/pages/SupplierAssessmentPage.tsx`, `SupplierCompliancePage.tsx`, `SupplierMaturityPage.tsx`
 **Symptom**: Pages crashed immediately on load with `ReferenceError: contextRows is not defined`.  
 **Root cause**: The `parentRollup` useMemo referenced `contextRows`, which was never declared in those files.  
 **Fix**: Added `contextRows` useMemo to each page. It filters by category/year/zone/country (and excludes the `selParent`/`selSupplier` filters) so that percentile ranks are computed across the full population — matching the Normalized Scorecard backend behaviour.
@@ -15,7 +15,7 @@ All fixes applied during the July 2026 audit session.
 
 ## Fix 2 — `displayedParentRollup` Undefined (Runtime Crash)
 
-**Affected file**: `frontend/src/pages/Co2EmissionPage.tsx`  
+**Affected file**: `apps/frontend/src/pages/Co2EmissionPage.tsx`
 **Symptom**: Page crashed when the Parent Rollup table tried to render.  
 **Root cause**: `displayedParentRollup` was used in the JSX but never defined.  
 **Fix**: Added `displayedParentRollup` useMemo that post-filters `parentRollup` by selected parent supplier. Also fixed `parentRollup` to use `contextRows` instead of `filteredRows`.
@@ -24,7 +24,7 @@ All fixes applied during the July 2026 audit session.
 
 ## Fix 3 — IotKpiPage Hardcoded Max Score in Rollup Table
 
-**Affected file**: `frontend/src/pages/IotKpiPage.tsx`  
+**Affected file**: `apps/frontend/src/pages/IotKpiPage.tsx`
 **Symptom**: The Parent/Zone/Category rollup tables always showed max score as `15` regardless of the configured value.  
 **Root cause**: The `RollupTable` component received a hardcoded `numeric(15, 2)` for the Max Score column.  
 **Fix**: Added `maxScore` prop to `RollupTable` and passed `config.maxScore` at all three call sites.
@@ -33,7 +33,7 @@ All fixes applied during the July 2026 audit session.
 
 ## Fix 4 — EclipsePage Wrong Refresh Poll Key
 
-**Affected file**: `frontend/src/pages/EclipsePage.tsx`  
+**Affected file**: `apps/frontend/src/pages/EclipsePage.tsx`
 **Symptom**: Clicking "Refresh Data" appeared to hang indefinitely — the polling loop never terminated.  
 **Root cause**: The poll checked `j.eclipse_status`, which is never set by the backend. The backend sets `j.status`.  
 **Fix**: Changed `j.eclipse_status !== "refreshing"` → `j.status !== "refreshing"`.
@@ -42,7 +42,7 @@ All fixes applied during the July 2026 audit session.
 
 ## Fix 5 — Normalized Scorecard Showed Only Top 20 Suppliers
 
-**Affected files**: `frontend/src/ScorecardPage.tsx`, `backend/server.py`  
+**Affected files**: `apps/frontend/src/ScorecardPage.tsx`, `apps/backend/server.py`
 **Symptom**: The Normalized Scorecard page always returned only 20 parent suppliers.  
 **Root cause**: The frontend sent `top_n=20` on every request. The backend also defaulted `top_n=20` for both `/api/scorecard` and `/api/scorecard/leaderboard`.  
 **Fix**:
@@ -53,7 +53,7 @@ All fixes applied during the July 2026 audit session.
 
 ## Fix 6 — Parent Supplier Dropdown Showing 8,799 Entries
 
-**Affected file**: `frontend/src/ScorecardPage.tsx`, `backend/server.py`  
+**Affected file**: `apps/frontend/src/ScorecardPage.tsx`, `apps/backend/server.py`
 **Symptom**: The Parent Supplier multi-select on the Scorecard page listed ~8,799 individual supplier names instead of actual parent suppliers.  
 **Root cause**: The `/api/scorecard/filters` endpoint sourced the `parents` list from raw KPI rows using `_rollup_key`. Before the orphan fix (see Fix 9 below), rows with no `parentSupplier` fell back to the individual supplier name, producing thousands of virtual parent entries.  
 **Fix**:
@@ -142,7 +142,7 @@ Since `_rollup_key` and `_kpi_attainments` are shared helpers, these two fixes a
 
 ## Fix 10 — Frontend Parent Rollup Orphan Label Mismatch
 
-**Affected files**: `frontend/src/pages/EclipsePage.tsx`, `InvoiceConformityPage.tsx`, `IotKpiPage.tsx`, `PriceDivergencePage.tsx`  
+**Affected files**: `apps/frontend/src/pages/EclipsePage.tsx`, `InvoiceConformityPage.tsx`, `IotKpiPage.tsx`, `PriceDivergencePage.tsx`
 **Symptom**: The Parent Rollup table on these 4 pages grouped orphan suppliers (empty `parentSupplier`) under `"Unassigned"`, while the Normalized Scorecard groups them under `"Unassigned parent"`. This caused a label mismatch between the individual KPI page and the scorecard.  
 **Root cause**: These 4 pages have inline rollup functions that used a generic fallback:
 ```typescript

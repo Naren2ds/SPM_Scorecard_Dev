@@ -52,7 +52,7 @@ DOT = onTimePoLines / (totalDeliveredPoLines + 0.99 × x1DelayedOver30Days + 0.1
 
 ---
 
-## Frontend Page (`frontend/src/DotKpiPage.tsx`)
+## Frontend Page (`apps/frontend/src/pages/DotKpiPage.tsx`)
 
 ### Filters (multi-select dropdowns, dynamic from data)
 | Filter | Default | Behavior |
@@ -132,7 +132,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
         ↓  GET /api/dot-kpi (JSON, instant)
         ↓  POST /api/dot-kpi/refresh (background Databricks re-fetch)
         ↓
-frontend/src/DotKpiPage.tsx (React, loads from API on mount)
+apps/frontend/src/pages/DotKpiPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params
   ├── Scoring engine (scoring.ts) → compute results
@@ -210,7 +210,7 @@ Follow this pattern for each new KPI:
    - `GET /api/<kpi-name>` — serve cached data
    - `POST /api/<kpi-name>/refresh` — background refresh
 
-3. **Frontend**: Create `frontend/src/<KpiName>KpiPage.tsx`
+3. **Frontend**: Create `apps/frontend/src/pages/<KpiName>KpiPage.tsx`
    - Load from API on mount
    - Add filters (dynamic multi-select from data)
    - Add configuration bar

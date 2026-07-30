@@ -45,7 +45,7 @@ const displayText = (value: string, fallback: string) =>
 
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 
 interface SupplierMaturityPageProps { sharedParent: string[]; onParentChange: (v: string[]) => void; }
 

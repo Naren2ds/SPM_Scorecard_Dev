@@ -104,7 +104,7 @@ function DotKpiPage({ sharedParent: selParentSupplier, onParentChange: setSelPar
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const API_BASE = "http://127.0.0.1:8000";
+  const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 
   // Load cached data from API on mount
   const loadFromApi = () => {

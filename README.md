@@ -42,3 +42,12 @@ Or use the root convenience launcher:
 ```powershell
 .\run.bat
 ```
+
+## Deploy to Databricks Apps
+
+The production frontend uses same-origin `/api` requests, and FastAPI serves
+the generated frontend from `apps/frontend/dist`. Databricks installs the root
+dependencies, runs `npm run build`, and starts the command in `app.yaml`.
+
+See [docs/DATABRICKS_APPS_DEPLOYMENT.md](docs/DATABRICKS_APPS_DEPLOYMENT.md)
+for the validated Git deployment settings and verification steps.

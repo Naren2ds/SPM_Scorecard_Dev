@@ -38,7 +38,7 @@ Create a custom Databricks App and configure these values:
 
 | Setting | Value |
 |---|---|
-| Git repository | `https://github.com/Sarthak-ABIIN/SPM_Scorecard_Dev.git` |
+| Git repository | `https://github.com/Naren2ds/SPM_Scorecard_Dev.git` |
 | Git provider | GitHub |
 | Git reference | `deployment` |
 | Reference type | Branch |
@@ -63,7 +63,7 @@ before the following commands can be used:
 ```powershell
 databricks auth login --host https://<workspace-host>
 
-databricks apps create <app-name> --json '{"git_repository":{"url":"https://github.com/Sarthak-ABIIN/SPM_Scorecard_Dev.git","provider":"gitHub"}}'
+databricks apps create <app-name> --json '{"git_repository":{"url":"https://github.com/Naren2ds/SPM_Scorecard_Dev.git","provider":"gitHub"}}'
 
 databricks apps deploy <app-name> --json '{"git_source":{"branch":"deployment"}}'
 ```

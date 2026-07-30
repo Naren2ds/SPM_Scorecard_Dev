@@ -159,7 +159,7 @@ frontend/src/DotKpiPage.tsx (React, loads from API on mount)
 
 ### First time setup
 ```bash
-git clone https://github.com/Sarthak-ABIIN/SPM_Scorecard_Dev.git
+git clone https://github.com/Naren2ds/SPM_Scorecard_Dev.git
 cd SPM_Scorecard_Dev
 conda create -n spm_scorecard python=3.13 -y
 conda activate spm_scorecard

@@ -147,7 +147,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
 apps/frontend/src/pages/SupplierMaturityPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params (floor, target, formula)
-  ├── Scoring engine (supplierMaturityScoring.ts) → compute results
+  ├── Scoring engine (features/supplier-maturity/scoring.ts) → compute results
   └── Scrollable result tables with sticky headers (4 levels)
 ```
 
@@ -196,8 +196,8 @@ taskkill /F /IM node.exe
 ## Frontend Files
 | File | Purpose |
 |---|---|
-| `frontend/src/supplierMaturityTypes.ts` | TypeScript types |
-| `frontend/src/supplierMaturityScoring.ts` | Scoring engine (percentile, attainment, earned score, proxy rollups) |
+| `apps/frontend/src/features/supplier-maturity/types.ts` | TypeScript types |
+| `apps/frontend/src/features/supplier-maturity/scoring.ts` | Scoring engine (percentile, attainment, earned score, proxy rollups) |
 | `apps/frontend/src/pages/SupplierMaturityPage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents

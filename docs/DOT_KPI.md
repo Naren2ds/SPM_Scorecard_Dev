@@ -135,7 +135,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
 apps/frontend/src/pages/DotKpiPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params
-  ├── Scoring engine (scoring.ts) → compute results
+  ├── Scoring engine (shared/scoring.ts) → compute results
   └── Scrollable result tables with sticky headers
 ```
 

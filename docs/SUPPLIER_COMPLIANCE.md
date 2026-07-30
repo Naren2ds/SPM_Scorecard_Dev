@@ -151,7 +151,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
 apps/frontend/src/pages/SupplierCompliancePage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params (floor, target, formula)
-  ├── Scoring engine (supplierComplianceScoring.ts) → compute results
+  ├── Scoring engine (features/supplier-compliance/scoring.ts) → compute results
   └── Scrollable result tables with sticky headers (5 levels)
 ```
 
@@ -200,8 +200,8 @@ taskkill /F /IM node.exe
 ## Frontend Files
 | File | Purpose |
 |---|---|
-| `frontend/src/supplierComplianceTypes.ts` | TypeScript types |
-| `frontend/src/supplierComplianceScoring.ts` | Scoring engine (percentile, attainment, earned score, proxy rollups) |
+| `apps/frontend/src/features/supplier-compliance/types.ts` | TypeScript types |
+| `apps/frontend/src/features/supplier-compliance/scoring.ts` | Scoring engine (percentile, attainment, earned score, proxy rollups) |
 | `apps/frontend/src/pages/SupplierCompliancePage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents

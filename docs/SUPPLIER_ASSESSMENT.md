@@ -161,7 +161,7 @@ backend/server.py (FastAPI, loads CSV into memory on startup)
 apps/frontend/src/pages/SupplierAssessmentPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Configuration → scoring params (weights, floor, target, formula, red cap)
-  ├── Scoring engine (supplierAssessmentScoring.ts) → compute results
+  ├── Scoring engine (features/supplier-assessment/scoring.ts) → compute results
   └── Scrollable result tables with sticky headers (5 levels)
 ```
 
@@ -227,8 +227,8 @@ taskkill /F /IM node.exe
 ## Frontend Files
 | File | Purpose |
 |---|---|
-| `frontend/src/supplierAssessmentTypes.ts` | TypeScript types (input row, config, scored row, rollup row) |
-| `frontend/src/supplierAssessmentScoring.ts` | Scoring engine (AHI, percentile, attainment, earned score, rollups) |
+| `apps/frontend/src/features/supplier-assessment/types.ts` | TypeScript types (input row, config, scored row, rollup row) |
+| `apps/frontend/src/features/supplier-assessment/scoring.ts` | Scoring engine (AHI, percentile, attainment, earned score, rollups) |
 | `apps/frontend/src/pages/SupplierAssessmentPage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents

@@ -11,7 +11,7 @@ Use this file before merging any KPI branch to master.
 git diff --name-only master
 ```
 **PASS if:** Only your KPI files + `App.tsx` + `server.py` show up.
-**FAIL if:** `DotKpiPage.tsx`, `scoring.ts`, `fetch_dot_kpi.py`, or another KPI's files appear.
+**FAIL if:** `DotKpiPage.tsx`, `shared/scoring.ts`, `fetch_dot_kpi.py`, or another KPI's files appear.
 
 ### 2. TypeScript Compiles
 ```powershell

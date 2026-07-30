@@ -2,7 +2,7 @@
 // Supplier Assessment (Quality) KPI Page
 // Mirrors DotKpiPage exactly: API-backed data + refresh button, multi-select
 // filter bar, configuration bar, hierarchical rollup tables.
-// Only the scoring math differs (see supplierAssessmentScoring.ts, which
+// Only the scoring math differs (see features/supplier-assessment/scoring.ts, which
 // implements docs/Support_Docs/supplier-assessment-percentile-scoring.md).
 // ---------------------------------------------------------------------------
 

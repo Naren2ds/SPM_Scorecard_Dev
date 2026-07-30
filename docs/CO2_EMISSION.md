@@ -135,7 +135,7 @@ apps/frontend/src/pages/Co2EmissionPage.tsx (React, loads from API on mount)
   ├── Multi-select filters → filter rows
   ├── Q1 / Q3 of filtered rows → auto-derived Floor / Target
   ├── Configuration → scoring params (floor, target, formula)
-  ├── Scoring engine (co2EmissionScoring.ts) → compute results
+  ├── Scoring engine (features/co2-emission/scoring.ts) → compute results
   └── Scrollable result tables with sticky headers (3 levels)
 ```
 
@@ -185,8 +185,8 @@ taskkill /F /IM node.exe
 ## Frontend Files
 | File | Purpose |
 |---|---|
-| `frontend/src/co2EmissionTypes.ts` | TypeScript types |
-| `frontend/src/co2EmissionScoring.ts` | Scoring engine (percentile, attainment, earned score, quartile defaults, proxy rollups) |
+| `apps/frontend/src/features/co2-emission/types.ts` | TypeScript types |
+| `apps/frontend/src/features/co2-emission/scoring.ts` | Scoring engine (percentile, attainment, earned score, quartile defaults, proxy rollups) |
 | `apps/frontend/src/pages/Co2EmissionPage.tsx` | Page component (filters, config, results hierarchy, export) |
 
 ## Reference Documents

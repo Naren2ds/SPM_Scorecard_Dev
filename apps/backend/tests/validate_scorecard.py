@@ -264,9 +264,8 @@ def _write_excel_report(df: "pd.DataFrame", path: "Path") -> None:
             cell.font   = HEADER_FONT
             cell.alignment = Alignment(horizontal="center", wrap_text=True)
 
-        for row_data in data_df.itertuples(index=False):
+        for row_idx, row_data in enumerate(data_df.itertuples(index=False), start=2):
             ws.append(list(row_data))
-            row_idx = ws.max_row
             for col_idx, col_name in enumerate(headers, start=1):
                 cell  = ws.cell(row=row_idx, column=col_idx)
                 value = getattr(row_data, col_name, None)
@@ -526,7 +525,7 @@ def run_validation(
     print(f"  KPI field checks         : {total_checks}")
     print(f"  KPI field failures       : {failed_checks}")
     print(f"  Normalized score failures: {norm_fails}")
-    print(f"  Overall result           : {'✓ ALL PASS' if all_pass else '✗ FAILURES DETECTED'}")
+    print(f"  Overall result           : {'ALL PASS' if all_pass else 'FAILURES DETECTED'}")
     print("=" * 70 + "\n")
 
     return all_pass

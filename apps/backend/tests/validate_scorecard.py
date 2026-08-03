@@ -53,7 +53,7 @@ from scorecard import (
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-REPORT_PATH = DATA_DIR / "scorecard_validation_report.csv"
+REPORT_PATH = DATA_DIR / "scorecard_validation_report.xlsx"
 CONFIG_OVERRIDES_PATH = DATA_DIR / "kpi_config_overrides.json"
 
 TOLERANCE       = 0.001   # max allowed absolute difference for KPI-level fields
@@ -209,6 +209,119 @@ def recompute_from_scratch(
         }
 
     return result
+
+
+# ── Excel report writer ──────────────────────────────────────────────────────
+
+def _write_excel_report(df: "pd.DataFrame", path: "Path") -> None:
+    """
+    Write the validation DataFrame to a formatted Excel workbook.
+
+    Sheets
+    ------
+    Detail      — one row per parent × KPI with all computed values and flags.
+    Summary     — one row per parent with normalized score comparison and overall status.
+    Failures    — filtered view of Detail containing only FAIL rows (empty if all pass).
+
+    Formatting
+    ----------
+    - PASS cells  → green fill
+    - FAIL cells  → red fill
+    - N/A cells   → grey fill
+    - Flag columns are highlighted; value columns use number format 0.0000.
+    - Header row is bold with a dark blue background and white text.
+    - Columns are auto-sized for readability.
+    """
+    import openpyxl
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    GREEN = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    RED   = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+    GREY  = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    HEADER_FILL = PatternFill(start_color="1F3864", end_color="1F3864", fill_type="solid")
+    HEADER_FONT = Font(bold=True, color="FFFFFF")
+
+    FLAG_COLS = {"raw_flag", "att_flag", "pct_flag", "earn_flag",
+                 "normalized_flag", "coverage_flag"}
+
+    NUM_FMT  = "0.000000"
+    NORM_FMT = "0.00"
+
+    def _apply_flag_fill(cell, value: str) -> None:
+        if value == "PASS":
+            cell.fill = GREEN
+        elif value == "FAIL":
+            cell.fill = RED
+        else:
+            cell.fill = GREY
+
+    def _write_sheet(ws, data_df: "pd.DataFrame") -> None:
+        headers = list(data_df.columns)
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.fill   = HEADER_FILL
+            cell.font   = HEADER_FONT
+            cell.alignment = Alignment(horizontal="center", wrap_text=True)
+
+        for row_data in data_df.itertuples(index=False):
+            ws.append(list(row_data))
+            row_idx = ws.max_row
+            for col_idx, col_name in enumerate(headers, start=1):
+                cell  = ws.cell(row=row_idx, column=col_idx)
+                value = getattr(row_data, col_name, None)
+                if col_name in FLAG_COLS:
+                    _apply_flag_fill(cell, str(value or "N/A"))
+                elif isinstance(value, float):
+                    fmt = NORM_FMT if "normalized" in col_name or "coverage" in col_name else NUM_FMT
+                    cell.number_format = fmt
+
+        # Auto-size columns using DataFrame lengths (fast — avoids cell iteration)
+        for col_idx, col_name in enumerate(headers, start=1):
+            if col_name in data_df.columns:
+                col_series = data_df[col_name].astype(str)
+                max_len = max(len(col_name), col_series.str.len().max() or 0)
+            else:
+                max_len = len(col_name)
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 2, 30)
+        ws.freeze_panes = "A2"
+
+    # ── Build summary (one row per parent) ───────────────────────────────────
+    summary_cols = [
+        "parent_supplier",
+        "srv_normalized_score", "rec_normalized_score", "normalized_diff", "normalized_flag",
+        "srv_coverage_pct", "rec_coverage_pct", "coverage_diff", "coverage_flag",
+    ]
+    summary_df = (
+        df[summary_cols]
+        .drop_duplicates(subset="parent_supplier")
+        .sort_values("normalized_flag", ascending=False)  # FAILs first
+        .reset_index(drop=True)
+    )
+    summary_df.insert(
+        1, "overall_status",
+        summary_df["normalized_flag"].apply(lambda f: "FAIL" if f == "FAIL" else "PASS")
+    )
+
+    # ── Build failures sheet ─────────────────────────────────────────────────
+    fail_mask = (
+        (df["raw_flag"]        == "FAIL") |
+        (df["att_flag"]        == "FAIL") |
+        (df["pct_flag"]        == "FAIL") |
+        (df["earn_flag"]       == "FAIL") |
+        (df["normalized_flag"] == "FAIL") |
+        (df["coverage_flag"]   == "FAIL")
+    )
+    failures_df = df[fail_mask].reset_index(drop=True)
+
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)  # remove default sheet
+
+    _write_sheet(wb.create_sheet("Summary"), summary_df)
+    _write_sheet(wb.create_sheet("Detail"), df)
+    _write_sheet(wb.create_sheet("Failures"), failures_df if not failures_df.empty else df.iloc[0:0])
+
+    wb.save(path)
 
 
 # ── Comparison logic ─────────────────────────────────────────────────────────
@@ -385,10 +498,10 @@ def run_validation(
                 "coverage_flag":         cov_flag,
             })
 
-    # ── Write CSV report ─────────────────────────────────────────────────────
+    # ── Write Excel report ────────────────────────────────────────────────────
     if report_rows:
         df = pd.DataFrame(report_rows)
-        df.to_csv(REPORT_PATH, index=False)
+        _write_excel_report(df, REPORT_PATH)
         print(f"\nDetailed report written to: {REPORT_PATH}")
     else:
         print("\n[WARN] No data to report.")

@@ -1,0 +1,51 @@
+{
+  "refreshed_at_utc": "2026-08-03T13:34:16.005794+00:00",
+  "dataset_count": 9,
+  "datasets": {
+    "dot": {
+      "previous_rows": 29967,
+      "refreshed_rows": 201225,
+      "row_ratio": 6.714886
+    },
+    "iot": {
+      "previous_rows": 25331,
+      "refreshed_rows": 206620,
+      "row_ratio": 8.156804
+    },
+    "supplier_assessment": {
+      "previous_rows": 3547,
+      "refreshed_rows": 3544,
+      "row_ratio": 0.999154
+    },
+    "supplier_compliance": {
+      "previous_rows": 3547,
+      "refreshed_rows": 3544,
+      "row_ratio": 0.999154
+    },
+    "supplier_maturity": {
+      "previous_rows": 291,
+      "refreshed_rows": 291,
+      "row_ratio": 1.0
+    },
+    "co2": {
+      "previous_rows": 30,
+      "refreshed_rows": 30,
+      "row_ratio": 1.0
+    },
+    "eclipse": {
+      "previous_rows": 291,
+      "refreshed_rows": 291,
+      "row_ratio": 1.0
+    },
+    "invoice_conformity": {
+      "previous_rows": 5784,
+      "refreshed_rows": 5784,
+      "row_ratio": 1.0
+    },
+    "price_divergence": {
+      "previous_rows": 31136,
+      "refreshed_rows": 175874,
+      "row_ratio": 5.648574
+    }
+  }
+}

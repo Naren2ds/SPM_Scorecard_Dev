@@ -9,10 +9,10 @@ __pycache__/
 *.pyc
 .venv/
 scorecard_preview.png
+apps/backend/data/scorecard_validation_report.csv
 # dist and apps/backend/data/ are tracked on this deploy branch
 
-# Dev-only scripts — not needed for sandbox deployment
-apps/backend/fetch_*.py
+# Other local debugging scripts
 apps/backend/debug_*.py
 apps/backend/debug_*.txt
 apps/backend/test_*.py

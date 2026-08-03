@@ -1,4 +1,6 @@
 pandas>=2.2.2
+databricks-sql-connector[pyarrow]>=3.5.0
+python-dotenv>=1.0.1
 fastapi>=0.115.0
 uvicorn>=0.32.0
 openpyxl>=3.1.5

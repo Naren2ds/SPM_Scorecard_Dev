@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "test:consistent-kpis": "node --experimental-strip-types scripts/validate-consistent-kpis.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

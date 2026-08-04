@@ -1,16 +1,11 @@
 import { useState } from "react";
 import { FeedbackPanel } from "../components/FeedbackPanel";
-import Co2EmissionPage from "../pages/Co2EmissionPage";
+import ConsistentKpiPage from "../pages/ConsistentKpiPage";
 import DotKpiPage from "../pages/DotKpiPageOptimized";
 import ScorecardPage from "../ScorecardPage";
-import EclipsePage from "../pages/EclipsePage";
-import InvoiceConformityPage from "../pages/InvoiceConformityPage";
 import IotKpiPage from "../pages/IotKpiPageOptimized";
-import PriceDivergencePage from "../pages/PriceDivergencePage";
+import PriceDivergencePage from "../pages/PriceDivergencePageOptimized";
 import SummaryPage from "../pages/SummaryPage";
-import SupplierAssessmentPage from "../pages/SupplierAssessmentPage";
-import SupplierCompliancePage from "../pages/SupplierCompliancePage";
-import SupplierMaturityPage from "../pages/SupplierMaturityPage";
 
 type KpiTab = "summary" | "scorecard" | "dot" | "iot" | "supplierAssessment" | "supplierCompliance" | "supplierMaturity" | "co2Emission" | "eclipse" | "invoiceConformity" | "priceDivergence";
 
@@ -75,12 +70,12 @@ function App() {
           {activeKpi === "scorecard" && <ScorecardPage />}
           {activeKpi === "dot" && <DotKpiPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
           {activeKpi === "iot" && <IotKpiPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
-          {activeKpi === "supplierAssessment" && <SupplierAssessmentPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
-          {activeKpi === "supplierCompliance" && <SupplierCompliancePage sharedParent={sharedParent} onParentChange={setSharedParent} />}
-          {activeKpi === "supplierMaturity" && <SupplierMaturityPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
-          {activeKpi === "co2Emission" && <Co2EmissionPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
-          {activeKpi === "eclipse" && <EclipsePage sharedParent={sharedParent} onParentChange={setSharedParent} />}
-          {activeKpi === "invoiceConformity" && <InvoiceConformityPage sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "supplierAssessment" && <ConsistentKpiPage kpiId="SA" sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "supplierCompliance" && <ConsistentKpiPage kpiId="SC" sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "supplierMaturity" && <ConsistentKpiPage kpiId="SM" sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "co2Emission" && <ConsistentKpiPage kpiId="CO2" sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "eclipse" && <ConsistentKpiPage kpiId="ECL" sharedParent={sharedParent} onParentChange={setSharedParent} />}
+          {activeKpi === "invoiceConformity" && <ConsistentKpiPage kpiId="IC" sharedParent={sharedParent} onParentChange={setSharedParent} />}
           {activeKpi === "priceDivergence" && <PriceDivergencePage sharedParent={sharedParent} onParentChange={setSharedParent} />}
           <FeedbackPanel
             enabled={feedbackEnabled}

@@ -69,6 +69,21 @@ from iot_read_model import (
     summarize_iot_model,
     validate_iot_config,
 )
+from pdiv_read_model import (
+    PDIV_LEVELS,
+    PDIV_SORT_FIELDS,
+    PdivConfig,
+    PdivReadModel,
+    build_pdiv_read_model,
+    iter_pdiv_csv,
+    list_pdiv_filter_options,
+    pdiv_filter_key,
+    query_pdiv_results,
+    reconfigure_pdiv_read_model,
+    search_pdiv_results,
+    summarize_pdiv_model,
+    validate_pdiv_config,
+)
 
 
 def _load_config_overrides() -> None:
@@ -189,6 +204,21 @@ _iot_filter_options: dict[str, list[str]] = {
 _IOT_CONTEXT_CACHE_SIZE = 1
 _IOT_PREVIEW_CACHE_SIZE = 1
 
+# Price Divergence keeps the production sum-of-row-absolute-differences
+# formula while moving the large source cohort out of the browser.
+_pdiv_context_cache: OrderedDict[tuple[tuple[str, ...], ...], PdivReadModel] = OrderedDict()
+_pdiv_preview_cache: OrderedDict[str, PdivReadModel] = OrderedDict()
+_pdiv_read_model_lock = threading.RLock()
+_pdiv_filter_options: dict[str, list[str]] = {
+    "categories": [],
+    "years": [],
+    "months": [],
+    "countries": [],
+    "zones": [],
+}
+_PDIV_CONTEXT_CACHE_SIZE = 1
+_PDIV_PREVIEW_CACHE_SIZE = 1
+
 
 class FeedbackCreateRequest(BaseModel):
     page: str
@@ -210,6 +240,14 @@ class DotPreviewRequest(BaseModel):
 
 
 class IotPreviewRequest(BaseModel):
+    maxScore: float
+    criticalFloor: float
+    target: float
+    formulaMode: str = "softStretch"
+    filters: dict[str, list[str]] = Field(default_factory=dict)
+
+
+class PdivPreviewRequest(BaseModel):
     maxScore: float
     criticalFloor: float
     target: float
@@ -497,6 +535,7 @@ async def lifespan(app: FastAPI):
     _build_scored_cache()          # B2: pre-compute full scorecard at startup
     _build_dot_saved_cache()       # DOT parent-first read model
     _build_iot_saved_cache()       # IOT parent-first read model
+    _build_pdiv_saved_cache()      # Price Divergence parent-first read model
     _cache["status"] = "ready"
     _cache["sa_status"] = "ready"
     _cache["sc_status"] = "ready"
@@ -751,6 +790,7 @@ def _background_refresh_pdiv():
         processed.to_csv(PDIV_OUTPUT_PATH, index=False)
         _cache["price_divergence"] = processed.fillna("").to_dict(orient="records")
         _build_scored_cache()
+        _build_pdiv_saved_cache()
     except Exception:
         pass
 
@@ -1028,6 +1068,93 @@ def _iot_model_from_query(
 ) -> IotReadModel:
     filters = _iot_filters_from_params(categories, years, months, countries, zones)
     return _get_iot_read_model(filters, preview_id)
+
+
+def _saved_pdiv_config() -> PdivConfig:
+    """Return the official Price Divergence configuration used by the scorecard."""
+    from scorecard import KPI_CONFIGS
+
+    config = next(kpi for kpi in KPI_CONFIGS if kpi["id"] == "PDIV")
+    return PdivConfig(
+        max_score=float(config["max_score"]),
+        critical_floor=float(config["floor"]),
+        target=float(config["target"]),
+        formula_mode="softStretch",
+    )
+
+
+def _pdiv_filters_from_params(
+    categories: str | None,
+    years: str | None,
+    months: str | None,
+    countries: str | None,
+    zones: str | None,
+) -> dict[str, list[str]]:
+    return {
+        "categories": _split_csv_param(categories),
+        "years": _split_csv_param(years),
+        "months": _split_csv_param(months),
+        "countries": _split_csv_param(countries),
+        "zones": _split_csv_param(zones),
+    }
+
+
+def _build_pdiv_saved_cache() -> None:
+    """Rebuild the default Price Divergence cohort after startup, refresh, or Apply."""
+    global _pdiv_filter_options
+
+    rows = _cache["price_divergence"]
+    options = list_pdiv_filter_options(rows)
+    default_years = [year for year in ("2025", "2026") if year in options["years"]]
+    filters = {"years": default_years}
+    model = build_pdiv_read_model(rows, _saved_pdiv_config(), filters)
+    key = pdiv_filter_key(filters)
+    with _pdiv_read_model_lock:
+        _pdiv_filter_options = options
+        _pdiv_context_cache.clear()
+        _pdiv_context_cache[key] = model
+        _pdiv_preview_cache.clear()
+
+
+def _get_pdiv_read_model(
+    filters: dict[str, list[str]],
+    preview_id: str | None = None,
+) -> PdivReadModel:
+    if preview_id:
+        with _pdiv_read_model_lock:
+            preview = _pdiv_preview_cache.get(preview_id)
+            if preview is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Price Divergence preview expired or was discarded.",
+                )
+            _pdiv_preview_cache.move_to_end(preview_id)
+            return preview
+
+    key = pdiv_filter_key(filters)
+    with _pdiv_read_model_lock:
+        cached = _pdiv_context_cache.get(key)
+        if cached is not None:
+            _pdiv_context_cache.move_to_end(key)
+            return cached
+
+        model = build_pdiv_read_model(_cache["price_divergence"], _saved_pdiv_config(), filters)
+        _pdiv_context_cache[key] = model
+        while len(_pdiv_context_cache) > _PDIV_CONTEXT_CACHE_SIZE:
+            _pdiv_context_cache.popitem(last=False)
+        return model
+
+
+def _pdiv_model_from_query(
+    categories: str | None,
+    years: str | None,
+    months: str | None,
+    countries: str | None,
+    zones: str | None,
+    preview_id: str | None,
+) -> PdivReadModel:
+    filters = _pdiv_filters_from_params(categories, years, months, countries, zones)
+    return _get_pdiv_read_model(filters, preview_id)
 
 
 def _scorecard_context_key(
@@ -1339,6 +1466,16 @@ def update_scorecard_kpi_config(body: dict):
         errors = validate_iot_config(proposed)
         if errors:
             raise HTTPException(status_code=400, detail=" ".join(errors))
+    if kpi_id == "PDIV":
+        proposed = PdivConfig(
+            max_score=float(body.get("maxScore", matched["max_score"])),
+            critical_floor=float(body.get("floor", matched["floor"])),
+            target=float(body.get("target", matched["target"])),
+            formula_mode="softStretch",
+        )
+        errors = validate_pdiv_config(proposed)
+        if errors:
+            raise HTTPException(status_code=400, detail=" ".join(errors))
     if body.get("floor")    is not None: matched["floor"]     = float(body["floor"])
     if body.get("target")   is not None: matched["target"]    = float(body["target"])
     if body.get("maxScore") is not None: matched["max_score"] = float(body["maxScore"])
@@ -1348,6 +1485,8 @@ def update_scorecard_kpi_config(body: dict):
         _build_dot_saved_cache()
     if kpi_id == "IOT":
         _build_iot_saved_cache()
+    if kpi_id == "PDIV":
+        _build_pdiv_saved_cache()
     return JSONResponse({
         "status":      "ok",
         "kpiId":       kpi_id,
@@ -1368,6 +1507,7 @@ def rebuild_scorecard_cache():
     _build_scored_cache()
     _build_dot_saved_cache()
     _build_iot_saved_cache()
+    _build_pdiv_saved_cache()
     return JSONResponse({
         "status": "ok",
         "message": "Scorecard cache rebuilt successfully.",
@@ -1776,6 +1916,207 @@ def discard_iot_preview(preview_id: str):
 
 
 # ─── Serve built frontend (must be last) ────────────────────────────────────
+# Lightweight Price Divergence endpoints used by the Parent-first KPI page.
+# The legacy /api/price-divergence endpoint remains available during rollout.
+@app.get("/api/pdiv/config")
+def get_pdiv_config():
+    return JSONResponse({
+        "config": _saved_pdiv_config().as_api_dict(),
+        "savableFormulaModes": ["softStretch"],
+        "previewFormulaModes": ["softStretch", "strict"],
+    })
+
+
+@app.get("/api/pdiv/filters")
+def get_pdiv_filters():
+    return JSONResponse(_pdiv_filter_options)
+
+
+@app.get("/api/pdiv/summary")
+def get_pdiv_summary(
+    level: str = "parent",
+    parents: str | None = None,
+    suppliers: str | None = None,
+    search: str = "",
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    preview_id: str | None = None,
+):
+    if level not in PDIV_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence result level: {level}")
+    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    return JSONResponse(summarize_pdiv_model(
+        model,
+        level,
+        _split_csv_param(parents),
+        _split_csv_param(suppliers),
+        search,
+    ))
+
+
+@app.get("/api/pdiv/results")
+def get_pdiv_results(
+    level: str = "parent",
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    parents: str | None = None,
+    suppliers: str | None = None,
+    search: str = "",
+    sort: str = "rankAscending",
+    order: str = "asc",
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=200),
+    preview_id: str | None = None,
+):
+    if level not in PDIV_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence result level: {level}")
+    if sort not in PDIV_SORT_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence sort field: {sort}")
+    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    try:
+        result = query_pdiv_results(
+            model,
+            level=level,
+            search=search,
+            parents=_split_csv_param(parents),
+            suppliers=_split_csv_param(suppliers),
+            sort=sort,
+            order=order,
+            page=page,
+            page_size=page_size,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    result["preview_id"] = preview_id
+    return JSONResponse(result)
+
+
+@app.get("/api/pdiv/search")
+def search_pdiv_entities(
+    q: str = "",
+    level: str = "parent",
+    parents: str | None = None,
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    limit: int = Query(default=30, ge=1, le=50),
+    preview_id: str | None = None,
+):
+    if level not in PDIV_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence result level: {level}")
+    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    return JSONResponse({
+        "items": search_pdiv_results(
+            model,
+            level=level,
+            query=q,
+            limit=limit,
+            parents=_split_csv_param(parents),
+        ),
+        "limit": limit,
+    })
+
+
+@app.get("/api/pdiv/detail")
+def get_pdiv_parent_detail(
+    parent: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=200),
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    preview_id: str | None = None,
+):
+    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    parent_result = query_pdiv_results(model, level="parent", parents=[parent], page=1, page_size=1)
+    if not parent_result["items"]:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Price Divergence parent '{parent}' not found in this cohort.",
+        )
+    suppliers = query_pdiv_results(
+        model,
+        level="supplier",
+        parents=[parent],
+        page=page,
+        page_size=page_size,
+    )
+    return JSONResponse({"parent": parent_result["items"][0], "suppliers": suppliers})
+
+
+@app.get("/api/pdiv/export")
+def export_pdiv_results(
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    parents: str | None = None,
+    suppliers: str | None = None,
+    preview_id: str | None = None,
+):
+    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    filename = f"price_divergence_results_{datetime.now().date().isoformat()}.csv"
+    return StreamingResponse(
+        iter_pdiv_csv(
+            model,
+            parents=_split_csv_param(parents),
+            suppliers=_split_csv_param(suppliers),
+        ),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/api/pdiv/preview")
+def create_pdiv_preview(payload: PdivPreviewRequest):
+    config = PdivConfig(
+        max_score=payload.maxScore,
+        critical_floor=payload.criticalFloor,
+        target=payload.target,
+        formula_mode=payload.formulaMode,
+    )
+    errors = validate_pdiv_config(config)
+    if errors:
+        raise HTTPException(status_code=400, detail=" ".join(errors))
+    saved_model = _get_pdiv_read_model(payload.filters)
+    model = reconfigure_pdiv_read_model(saved_model, config)
+    preview_id = str(uuid4())
+    with _pdiv_read_model_lock:
+        _pdiv_preview_cache[preview_id] = model
+        while len(_pdiv_preview_cache) > _PDIV_PREVIEW_CACHE_SIZE:
+            _pdiv_preview_cache.popitem(last=False)
+    return JSONResponse({
+        "previewId": preview_id,
+        "createdAt": datetime.now().isoformat(),
+        "config": config.as_api_dict(),
+        "summary": summarize_pdiv_model(model, "parent"),
+        "temporary": True,
+    })
+
+
+@app.delete("/api/pdiv/preview/{preview_id}")
+def discard_pdiv_preview(preview_id: str):
+    with _pdiv_read_model_lock:
+        removed = _pdiv_preview_cache.pop(preview_id, None)
+    if removed is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Price Divergence preview expired or was already discarded.",
+        )
+    return JSONResponse({"status": "discarded", "previewId": preview_id})
+
+
 from fastapi.staticfiles import StaticFiles
 
 _DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"

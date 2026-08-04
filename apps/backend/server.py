@@ -54,6 +54,21 @@ from dot_read_model import (
     summarize_dot_model,
     validate_dot_config,
 )
+from iot_read_model import (
+    IOT_LEVELS,
+    IOT_SORT_FIELDS,
+    IotConfig,
+    IotReadModel,
+    build_iot_read_model,
+    iot_filter_key,
+    iter_iot_csv,
+    list_iot_filter_options,
+    query_iot_results,
+    reconfigure_iot_read_model,
+    search_iot_results,
+    summarize_iot_model,
+    validate_iot_config,
+)
 
 
 def _load_config_overrides() -> None:
@@ -159,6 +174,21 @@ _dot_filter_options: dict[str, list[str]] = {
 _DOT_CONTEXT_CACHE_SIZE = 1
 _DOT_PREVIEW_CACHE_SIZE = 1
 
+# IOT follows the same bounded Parent-first cache strategy as DOT while
+# retaining its own weighted invoice numerator/denominator calculations.
+_iot_context_cache: OrderedDict[tuple[tuple[str, ...], ...], IotReadModel] = OrderedDict()
+_iot_preview_cache: OrderedDict[str, IotReadModel] = OrderedDict()
+_iot_read_model_lock = threading.RLock()
+_iot_filter_options: dict[str, list[str]] = {
+    "categories": [],
+    "years": [],
+    "months": [],
+    "countries": [],
+    "zones": [],
+}
+_IOT_CONTEXT_CACHE_SIZE = 1
+_IOT_PREVIEW_CACHE_SIZE = 1
+
 
 class FeedbackCreateRequest(BaseModel):
     page: str
@@ -172,6 +202,14 @@ class FeedbackUpdateRequest(BaseModel):
 
 
 class DotPreviewRequest(BaseModel):
+    maxScore: float
+    criticalFloor: float
+    target: float
+    formulaMode: str = "softStretch"
+    filters: dict[str, list[str]] = Field(default_factory=dict)
+
+
+class IotPreviewRequest(BaseModel):
     maxScore: float
     criticalFloor: float
     target: float
@@ -355,6 +393,7 @@ def _background_refresh_iot():
         _cache["last_refresh"] = datetime.now().isoformat()
         _cache["status"] = "ready"
         _build_scored_cache()
+        _build_iot_saved_cache()
     except Exception as e:
         _cache["status"] = f"error: {str(e)}"
 
@@ -457,6 +496,7 @@ async def lifespan(app: FastAPI):
     _load_config_overrides()       # restore any persisted KPI threshold overrides
     _build_scored_cache()          # B2: pre-compute full scorecard at startup
     _build_dot_saved_cache()       # DOT parent-first read model
+    _build_iot_saved_cache()       # IOT parent-first read model
     _cache["status"] = "ready"
     _cache["sa_status"] = "ready"
     _cache["sc_status"] = "ready"
@@ -906,6 +946,90 @@ def _dot_model_from_query(
     return _get_dot_read_model(filters, preview_id)
 
 
+def _saved_iot_config() -> IotConfig:
+    """Return the official IOT configuration used by the scorecard."""
+    from scorecard import KPI_CONFIGS
+
+    config = next(kpi for kpi in KPI_CONFIGS if kpi["id"] == "IOT")
+    return IotConfig(
+        max_score=float(config["max_score"]),
+        critical_floor=float(config["floor"]),
+        target=float(config["target"]),
+        formula_mode="softStretch",
+    )
+
+
+def _iot_filters_from_params(
+    categories: str | None,
+    years: str | None,
+    months: str | None,
+    countries: str | None,
+    zones: str | None,
+) -> dict[str, list[str]]:
+    return {
+        "categories": _split_csv_param(categories),
+        "years": _split_csv_param(years),
+        "months": _split_csv_param(months),
+        "countries": _split_csv_param(countries),
+        "zones": _split_csv_param(zones),
+    }
+
+
+def _build_iot_saved_cache() -> None:
+    """Rebuild the default IOT cohort after startup, refresh, or Apply."""
+    global _iot_filter_options
+
+    rows = _cache["iot_kpi"]
+    options = list_iot_filter_options(rows)
+    default_years = [year for year in ("2025", "2026") if year in options["years"]]
+    filters = {"years": default_years}
+    model = build_iot_read_model(rows, _saved_iot_config(), filters)
+    key = iot_filter_key(filters)
+    with _iot_read_model_lock:
+        _iot_filter_options = options
+        _iot_context_cache.clear()
+        _iot_context_cache[key] = model
+        _iot_preview_cache.clear()
+
+
+def _get_iot_read_model(
+    filters: dict[str, list[str]],
+    preview_id: str | None = None,
+) -> IotReadModel:
+    if preview_id:
+        with _iot_read_model_lock:
+            preview = _iot_preview_cache.get(preview_id)
+            if preview is None:
+                raise HTTPException(status_code=404, detail="IOT preview expired or was discarded.")
+            _iot_preview_cache.move_to_end(preview_id)
+            return preview
+
+    key = iot_filter_key(filters)
+    with _iot_read_model_lock:
+        cached = _iot_context_cache.get(key)
+        if cached is not None:
+            _iot_context_cache.move_to_end(key)
+            return cached
+
+        model = build_iot_read_model(_cache["iot_kpi"], _saved_iot_config(), filters)
+        _iot_context_cache[key] = model
+        while len(_iot_context_cache) > _IOT_CONTEXT_CACHE_SIZE:
+            _iot_context_cache.popitem(last=False)
+        return model
+
+
+def _iot_model_from_query(
+    categories: str | None,
+    years: str | None,
+    months: str | None,
+    countries: str | None,
+    zones: str | None,
+    preview_id: str | None,
+) -> IotReadModel:
+    filters = _iot_filters_from_params(categories, years, months, countries, zones)
+    return _get_iot_read_model(filters, preview_id)
+
+
 def _scorecard_context_key(
     zones_param: str | None,
     categories_param: str | None,
@@ -1205,6 +1329,16 @@ def update_scorecard_kpi_config(body: dict):
         errors = validate_dot_config(proposed)
         if errors:
             raise HTTPException(status_code=400, detail=" ".join(errors))
+    if kpi_id == "IOT":
+        proposed = IotConfig(
+            max_score=float(body.get("maxScore", matched["max_score"])),
+            critical_floor=float(body.get("floor", matched["floor"])),
+            target=float(body.get("target", matched["target"])),
+            formula_mode="softStretch",
+        )
+        errors = validate_iot_config(proposed)
+        if errors:
+            raise HTTPException(status_code=400, detail=" ".join(errors))
     if body.get("floor")    is not None: matched["floor"]     = float(body["floor"])
     if body.get("target")   is not None: matched["target"]    = float(body["target"])
     if body.get("maxScore") is not None: matched["max_score"] = float(body["maxScore"])
@@ -1212,6 +1346,8 @@ def update_scorecard_kpi_config(body: dict):
     _build_scored_cache()
     if kpi_id == "DOT":
         _build_dot_saved_cache()
+    if kpi_id == "IOT":
+        _build_iot_saved_cache()
     return JSONResponse({
         "status":      "ok",
         "kpiId":       kpi_id,
@@ -1231,6 +1367,7 @@ def rebuild_scorecard_cache():
     """
     _build_scored_cache()
     _build_dot_saved_cache()
+    _build_iot_saved_cache()
     return JSONResponse({
         "status": "ok",
         "message": "Scorecard cache rebuilt successfully.",
@@ -1440,6 +1577,201 @@ def discard_dot_preview(preview_id: str):
         removed = _dot_preview_cache.pop(preview_id, None)
     if removed is None:
         raise HTTPException(status_code=404, detail="DOT preview expired or was already discarded.")
+    return JSONResponse({"status": "discarded", "previewId": preview_id})
+
+
+# Lightweight IOT endpoints used by the Parent-first Individual KPI page.
+# The legacy /api/iot-kpi endpoint remains available during the POC rollout.
+@app.get("/api/iot/config")
+def get_iot_config():
+    return JSONResponse({
+        "config": _saved_iot_config().as_api_dict(),
+        "savableFormulaModes": ["softStretch"],
+        "previewFormulaModes": ["softStretch", "strict"],
+    })
+
+
+@app.get("/api/iot/filters")
+def get_iot_filters():
+    return JSONResponse(_iot_filter_options)
+
+
+@app.get("/api/iot/summary")
+def get_iot_summary(
+    level: str = "parent",
+    parents: str | None = None,
+    suppliers: str | None = None,
+    search: str = "",
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    preview_id: str | None = None,
+):
+    if level not in IOT_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported IOT result level: {level}")
+    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    return JSONResponse(summarize_iot_model(
+        model,
+        level,
+        _split_csv_param(parents),
+        _split_csv_param(suppliers),
+        search,
+    ))
+
+
+@app.get("/api/iot/results")
+def get_iot_results(
+    level: str = "parent",
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    parents: str | None = None,
+    suppliers: str | None = None,
+    search: str = "",
+    sort: str = "rankDescending",
+    order: str = "asc",
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=200),
+    preview_id: str | None = None,
+):
+    if level not in IOT_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported IOT result level: {level}")
+    if sort not in IOT_SORT_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Unsupported IOT sort field: {sort}")
+    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    try:
+        result = query_iot_results(
+            model,
+            level=level,
+            search=search,
+            parents=_split_csv_param(parents),
+            suppliers=_split_csv_param(suppliers),
+            sort=sort,
+            order=order,
+            page=page,
+            page_size=page_size,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    result["preview_id"] = preview_id
+    return JSONResponse(result)
+
+
+@app.get("/api/iot/search")
+def search_iot_entities(
+    q: str = "",
+    level: str = "parent",
+    parents: str | None = None,
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    limit: int = Query(default=30, ge=1, le=50),
+    preview_id: str | None = None,
+):
+    if level not in IOT_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported IOT result level: {level}")
+    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    return JSONResponse({
+        "items": search_iot_results(
+            model,
+            level=level,
+            query=q,
+            limit=limit,
+            parents=_split_csv_param(parents),
+        ),
+        "limit": limit,
+    })
+
+
+@app.get("/api/iot/detail")
+def get_iot_parent_detail(
+    parent: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=200),
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    preview_id: str | None = None,
+):
+    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    parent_result = query_iot_results(model, level="parent", parents=[parent], page=1, page_size=1)
+    if not parent_result["items"]:
+        raise HTTPException(status_code=404, detail=f"IOT parent '{parent}' not found in this cohort.")
+    suppliers = query_iot_results(
+        model,
+        level="supplier",
+        parents=[parent],
+        page=page,
+        page_size=page_size,
+    )
+    return JSONResponse({"parent": parent_result["items"][0], "suppliers": suppliers})
+
+
+@app.get("/api/iot/export")
+def export_iot_results(
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    parents: str | None = None,
+    suppliers: str | None = None,
+    preview_id: str | None = None,
+):
+    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    filename = f"iot_kpi_results_{datetime.now().date().isoformat()}.csv"
+    return StreamingResponse(
+        iter_iot_csv(
+            model,
+            parents=_split_csv_param(parents),
+            suppliers=_split_csv_param(suppliers),
+        ),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/api/iot/preview")
+def create_iot_preview(payload: IotPreviewRequest):
+    config = IotConfig(
+        max_score=payload.maxScore,
+        critical_floor=payload.criticalFloor,
+        target=payload.target,
+        formula_mode=payload.formulaMode,
+    )
+    errors = validate_iot_config(config)
+    if errors:
+        raise HTTPException(status_code=400, detail=" ".join(errors))
+    saved_model = _get_iot_read_model(payload.filters)
+    model = reconfigure_iot_read_model(saved_model, config)
+    preview_id = str(uuid4())
+    with _iot_read_model_lock:
+        _iot_preview_cache[preview_id] = model
+        while len(_iot_preview_cache) > _IOT_PREVIEW_CACHE_SIZE:
+            _iot_preview_cache.popitem(last=False)
+    return JSONResponse({
+        "previewId": preview_id,
+        "createdAt": datetime.now().isoformat(),
+        "config": config.as_api_dict(),
+        "summary": summarize_iot_model(model, "parent"),
+        "temporary": True,
+    })
+
+
+@app.delete("/api/iot/preview/{preview_id}")
+def discard_iot_preview(preview_id: str):
+    with _iot_read_model_lock:
+        removed = _iot_preview_cache.pop(preview_id, None)
+    if removed is None:
+        raise HTTPException(status_code=404, detail="IOT preview expired or was already discarded.")
     return JSONResponse({"status": "discarded", "previewId": preview_id})
 
 

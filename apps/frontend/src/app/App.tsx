@@ -5,7 +5,7 @@ import DotKpiPage from "../pages/DotKpiPageOptimized";
 import ScorecardPage from "../ScorecardPage";
 import EclipsePage from "../pages/EclipsePage";
 import InvoiceConformityPage from "../pages/InvoiceConformityPage";
-import IotKpiPage from "../pages/IotKpiPage";
+import IotKpiPage from "../pages/IotKpiPageOptimized";
 import PriceDivergencePage from "../pages/PriceDivergencePage";
 import SummaryPage from "../pages/SummaryPage";
 import SupplierAssessmentPage from "../pages/SupplierAssessmentPage";

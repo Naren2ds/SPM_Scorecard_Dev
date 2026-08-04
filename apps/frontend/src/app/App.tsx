@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FeedbackPanel } from "../components/FeedbackPanel";
 import Co2EmissionPage from "../pages/Co2EmissionPage";
-import DotKpiPage from "../pages/DotKpiPage";
+import DotKpiPage from "../pages/DotKpiPageOptimized";
 import ScorecardPage from "../ScorecardPage";
 import EclipsePage from "../pages/EclipsePage";
 import InvoiceConformityPage from "../pages/InvoiceConformityPage";

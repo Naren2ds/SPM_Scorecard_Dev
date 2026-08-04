@@ -15,7 +15,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # ─── Sandbox mode: serve from pre-built CSV files, no Databricks ────────────
 DATA_DIR         = Path(__file__).resolve().parent / "data"
@@ -38,6 +38,21 @@ from scorecard_read_model import (
     paginate_leaderboard,
     sort_leaderboard,
     summarize_scorecards,
+)
+from dot_read_model import (
+    DOT_LEVELS,
+    DOT_SORT_FIELDS,
+    DotConfig,
+    DotReadModel,
+    build_dot_read_model,
+    dot_filter_key,
+    iter_dot_csv,
+    list_dot_filter_options,
+    query_dot_results,
+    reconfigure_dot_read_model,
+    search_dot_results,
+    summarize_dot_model,
+    validate_dot_config,
 )
 
 
@@ -128,6 +143,22 @@ _scorecard_context_cache: OrderedDict[tuple[tuple[str, ...], tuple[str, ...]], d
 _scorecard_context_lock = threading.Lock()
 _SCORECARD_CONTEXT_CACHE_SIZE = 1
 
+# DOT is served from compact read models instead of sending every source row to
+# the browser. One saved cohort and one short-lived preview keep POC memory
+# bounded while allowing users to compare an explicit scenario safely.
+_dot_context_cache: OrderedDict[tuple[tuple[str, ...], ...], DotReadModel] = OrderedDict()
+_dot_preview_cache: OrderedDict[str, DotReadModel] = OrderedDict()
+_dot_read_model_lock = threading.RLock()
+_dot_filter_options: dict[str, list[str]] = {
+    "categories": [],
+    "years": [],
+    "months": [],
+    "countries": [],
+    "zones": [],
+}
+_DOT_CONTEXT_CACHE_SIZE = 1
+_DOT_PREVIEW_CACHE_SIZE = 1
+
 
 class FeedbackCreateRequest(BaseModel):
     page: str
@@ -138,6 +169,14 @@ class FeedbackCreateRequest(BaseModel):
 class FeedbackUpdateRequest(BaseModel):
     status: str | None = None
     comment: str | None = None
+
+
+class DotPreviewRequest(BaseModel):
+    maxScore: float
+    criticalFloor: float
+    target: float
+    formulaMode: str = "softStretch"
+    filters: dict[str, list[str]] = Field(default_factory=dict)
 
 
 def _normalize_feedback_rows(rows: list[dict]) -> list[dict]:
@@ -293,6 +332,7 @@ def _background_refresh_dot():
         _cache["last_refresh"] = datetime.now().isoformat()
         _cache["status"] = "ready"
         _build_scored_cache()
+        _build_dot_saved_cache()
     except Exception as e:
         _cache["status"] = f"error: {str(e)}"
 
@@ -416,6 +456,7 @@ async def lifespan(app: FastAPI):
     _load_cache_from_disk()
     _load_config_overrides()       # restore any persisted KPI threshold overrides
     _build_scored_cache()          # B2: pre-compute full scorecard at startup
+    _build_dot_saved_cache()       # DOT parent-first read model
     _cache["status"] = "ready"
     _cache["sa_status"] = "ready"
     _cache["sc_status"] = "ready"
@@ -781,6 +822,90 @@ def _split_csv_param(value: str | None) -> list[str]:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
+def _saved_dot_config() -> DotConfig:
+    """Return the official DOT configuration used by the scorecard."""
+    from scorecard import KPI_CONFIGS
+
+    config = next(kpi for kpi in KPI_CONFIGS if kpi["id"] == "DOT")
+    return DotConfig(
+        max_score=float(config["max_score"]),
+        critical_floor=float(config["floor"]),
+        target=float(config["target"]),
+        formula_mode="softStretch",
+    )
+
+
+def _dot_filters_from_params(
+    categories: str | None,
+    years: str | None,
+    months: str | None,
+    countries: str | None,
+    zones: str | None,
+) -> dict[str, list[str]]:
+    return {
+        "categories": _split_csv_param(categories),
+        "years": _split_csv_param(years),
+        "months": _split_csv_param(months),
+        "countries": _split_csv_param(countries),
+        "zones": _split_csv_param(zones),
+    }
+
+
+def _build_dot_saved_cache() -> None:
+    """Rebuild the default DOT cohort after startup, refresh, or Apply."""
+    global _dot_filter_options
+
+    rows = _cache["dot_kpi"]
+    options = list_dot_filter_options(rows)
+    default_years = [year for year in ("2025", "2026") if year in options["years"]]
+    filters = {"years": default_years}
+    model = build_dot_read_model(rows, _saved_dot_config(), filters)
+    key = dot_filter_key(filters)
+    with _dot_read_model_lock:
+        _dot_filter_options = options
+        _dot_context_cache.clear()
+        _dot_context_cache[key] = model
+        _dot_preview_cache.clear()
+
+
+def _get_dot_read_model(
+    filters: dict[str, list[str]],
+    preview_id: str | None = None,
+) -> DotReadModel:
+    if preview_id:
+        with _dot_read_model_lock:
+            preview = _dot_preview_cache.get(preview_id)
+            if preview is None:
+                raise HTTPException(status_code=404, detail="DOT preview expired or was discarded.")
+            _dot_preview_cache.move_to_end(preview_id)
+            return preview
+
+    key = dot_filter_key(filters)
+    with _dot_read_model_lock:
+        cached = _dot_context_cache.get(key)
+        if cached is not None:
+            _dot_context_cache.move_to_end(key)
+            return cached
+
+        model = build_dot_read_model(_cache["dot_kpi"], _saved_dot_config(), filters)
+        _dot_context_cache[key] = model
+        while len(_dot_context_cache) > _DOT_CONTEXT_CACHE_SIZE:
+            _dot_context_cache.popitem(last=False)
+        return model
+
+
+def _dot_model_from_query(
+    categories: str | None,
+    years: str | None,
+    months: str | None,
+    countries: str | None,
+    zones: str | None,
+    preview_id: str | None,
+) -> DotReadModel:
+    filters = _dot_filters_from_params(categories, years, months, countries, zones)
+    return _get_dot_read_model(filters, preview_id)
+
+
 def _scorecard_context_key(
     zones_param: str | None,
     categories_param: str | None,
@@ -1070,11 +1195,23 @@ def update_scorecard_kpi_config(body: dict):
     matched = next((k for k in KPI_CONFIGS if k["id"] == kpi_id), None)
     if matched is None:
         raise HTTPException(status_code=404, detail=f"KPI '{kpi_id}' not found")
+    if kpi_id == "DOT":
+        proposed = DotConfig(
+            max_score=float(body.get("maxScore", matched["max_score"])),
+            critical_floor=float(body.get("floor", matched["floor"])),
+            target=float(body.get("target", matched["target"])),
+            formula_mode="softStretch",
+        )
+        errors = validate_dot_config(proposed)
+        if errors:
+            raise HTTPException(status_code=400, detail=" ".join(errors))
     if body.get("floor")    is not None: matched["floor"]     = float(body["floor"])
     if body.get("target")   is not None: matched["target"]    = float(body["target"])
     if body.get("maxScore") is not None: matched["max_score"] = float(body["maxScore"])
     _save_config_overrides()
     _build_scored_cache()
+    if kpi_id == "DOT":
+        _build_dot_saved_cache()
     return JSONResponse({
         "status":      "ok",
         "kpiId":       kpi_id,
@@ -1093,6 +1230,7 @@ def rebuild_scorecard_cache():
     - Loading fresh CSV data via the individual KPI refresh endpoints
     """
     _build_scored_cache()
+    _build_dot_saved_cache()
     return JSONResponse({
         "status": "ok",
         "message": "Scorecard cache rebuilt successfully.",
@@ -1109,6 +1247,200 @@ def get_scorecard_cache_status():
         "parent_count": _scored_cache.get("parent_count", 0),
         "is_ready": bool(_scored_cache),
     })
+
+
+# Lightweight DOT endpoints used by the Parent-first Individual KPI page.
+# The legacy /api/dot-kpi endpoint remains available during the POC rollout.
+@app.get("/api/dot/config")
+def get_dot_config():
+    return JSONResponse({
+        "config": _saved_dot_config().as_api_dict(),
+        "savableFormulaModes": ["softStretch"],
+        "previewFormulaModes": ["softStretch", "strict"],
+    })
+
+
+@app.get("/api/dot/filters")
+def get_dot_filters():
+    return JSONResponse(_dot_filter_options)
+
+
+@app.get("/api/dot/summary")
+def get_dot_summary(
+    level: str = "parent",
+    parents: str | None = None,
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    preview_id: str | None = None,
+):
+    if level not in DOT_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported DOT result level: {level}")
+    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    return JSONResponse(summarize_dot_model(model, level, _split_csv_param(parents)))
+
+
+@app.get("/api/dot/results")
+def get_dot_results(
+    level: str = "parent",
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    parents: str | None = None,
+    suppliers: str | None = None,
+    search: str = "",
+    sort: str = "rankDescending",
+    order: str = "asc",
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=200),
+    preview_id: str | None = None,
+):
+    if level not in DOT_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported DOT result level: {level}")
+    if sort not in DOT_SORT_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Unsupported DOT sort field: {sort}")
+    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    try:
+        result = query_dot_results(
+            model,
+            level=level,
+            search=search,
+            parents=_split_csv_param(parents),
+            suppliers=_split_csv_param(suppliers),
+            sort=sort,
+            order=order,
+            page=page,
+            page_size=page_size,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    result["preview_id"] = preview_id
+    return JSONResponse(result)
+
+
+@app.get("/api/dot/search")
+def search_dot_entities(
+    q: str = "",
+    level: str = "parent",
+    parents: str | None = None,
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    limit: int = Query(default=30, ge=1, le=50),
+    preview_id: str | None = None,
+):
+    if level not in DOT_LEVELS:
+        raise HTTPException(status_code=400, detail=f"Unsupported DOT result level: {level}")
+    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    return JSONResponse({
+        "items": search_dot_results(
+            model,
+            level=level,
+            query=q,
+            limit=limit,
+            parents=_split_csv_param(parents),
+        ),
+        "limit": limit,
+    })
+
+
+@app.get("/api/dot/detail")
+def get_dot_parent_detail(
+    parent: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=200),
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    preview_id: str | None = None,
+):
+    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    parent_result = query_dot_results(
+        model,
+        level="parent",
+        parents=[parent],
+        page=1,
+        page_size=1,
+    )
+    if not parent_result["items"]:
+        raise HTTPException(status_code=404, detail=f"DOT parent '{parent}' not found in this cohort.")
+    suppliers = query_dot_results(
+        model,
+        level="supplier",
+        parents=[parent],
+        page=page,
+        page_size=page_size,
+    )
+    return JSONResponse({"parent": parent_result["items"][0], "suppliers": suppliers})
+
+
+@app.get("/api/dot/export")
+def export_dot_results(
+    categories: str | None = None,
+    years: str | None = None,
+    months: str | None = None,
+    countries: str | None = None,
+    zones: str | None = None,
+    parents: str | None = None,
+    suppliers: str | None = None,
+    preview_id: str | None = None,
+):
+    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    filename = f"dot_kpi_results_{datetime.now().date().isoformat()}.csv"
+    return StreamingResponse(
+        iter_dot_csv(
+            model,
+            parents=_split_csv_param(parents),
+            suppliers=_split_csv_param(suppliers),
+        ),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/api/dot/preview")
+def create_dot_preview(payload: DotPreviewRequest):
+    config = DotConfig(
+        max_score=payload.maxScore,
+        critical_floor=payload.criticalFloor,
+        target=payload.target,
+        formula_mode=payload.formulaMode,
+    )
+    errors = validate_dot_config(config)
+    if errors:
+        raise HTTPException(status_code=400, detail=" ".join(errors))
+
+    saved_model = _get_dot_read_model(payload.filters)
+    model = reconfigure_dot_read_model(saved_model, config)
+    preview_id = str(uuid4())
+    with _dot_read_model_lock:
+        _dot_preview_cache[preview_id] = model
+        while len(_dot_preview_cache) > _DOT_PREVIEW_CACHE_SIZE:
+            _dot_preview_cache.popitem(last=False)
+    return JSONResponse({
+        "previewId": preview_id,
+        "createdAt": datetime.now().isoformat(),
+        "config": config.as_api_dict(),
+        "summary": summarize_dot_model(model, "parent"),
+        "temporary": True,
+    })
+
+
+@app.delete("/api/dot/preview/{preview_id}")
+def discard_dot_preview(preview_id: str):
+    with _dot_read_model_lock:
+        removed = _dot_preview_cache.pop(preview_id, None)
+    if removed is None:
+        raise HTTPException(status_code=404, detail="DOT preview expired or was already discarded.")
+    return JSONResponse({"status": "discarded", "previewId": preview_id})
 
 
 # ─── Serve built frontend (must be last) ────────────────────────────────────

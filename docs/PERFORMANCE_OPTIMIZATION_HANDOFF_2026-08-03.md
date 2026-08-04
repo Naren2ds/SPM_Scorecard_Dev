@@ -434,6 +434,71 @@ Phase 2 should be considered successful when:
 - The remaining `0.01` validation discrepancy is tracked separately and is not hidden by the performance change.
 - Performance measurements show a material improvement at the validated 29K-parent population.
 
+## Phase 2 Implementation Result - 2026-08-04
+
+Phase 2 has now been implemented on `enable-databricks-refresh` in the working tree.
+
+Implemented backend changes:
+
+- Added a compact scorecard read model and direct parent index.
+- Added server-side summary calculation.
+- Changed `/api/scorecard/leaderboard` to return paginated compact rows.
+- Added bounded parent autocomplete through `/api/scorecard/parents/search`.
+- Changed `/api/scorecard/parent` to use direct indexed lookup.
+- Added streamed, on-demand CSV generation through `/api/scorecard/export`.
+- Precomputed zone/category filter metadata instead of scanning raw KPI rows per page load.
+- Added one-entry filtered-cohort caching so summary, leaderboard, and detail share the same regional percentile population.
+- Retained the legacy full `/api/scorecard` endpoint for compatibility, but the frontend no longer calls it.
+
+Implemented frontend changes:
+
+- Initial loading requests a small summary and the first 100 compact parents.
+- Search waits 250 milliseconds and requests no more than 30 backend matches.
+- Only the selected parent's pillars and KPI details are loaded.
+- Applicability overrides continue to recalculate immediately for the selected parent.
+- CSV export now calls the backend streaming endpoint instead of requiring all detailed parents in React state.
+- The 29K parent `<select>` has been removed; the selector contains at most the first 100 parents or 30 search matches, plus the current selection.
+- The end-user `Rebuild Cache` control has been removed. The backend maintenance endpoint remains available for the internal workflow.
+
+Measured with the refreshed 29,359-parent dataset:
+
+| Response | Warm server time | Uncompressed response size |
+|---|---:|---:|
+| Legacy full `/api/scorecard` | 2,380.6 ms | 99,809,456 bytes |
+| New summary | 17.6 ms | 274 bytes |
+| New leaderboard, 100 rows | 39.4 ms | 27,142 bytes |
+| New parent search, maximum 30 | 39.1 ms | 2,715 bytes |
+| New one-parent detail | 0.2 ms | 5,666 bytes |
+
+The normal initial data path is approximately 33 KB for summary, first leaderboard page, and one parent detail. Compared with the approximately 99.8 MB legacy response, this is approximately a 99.97% reduction in uncompressed application JSON.
+
+Backend data preparation measured:
+
+```text
+CSV cache load: 16.224 seconds
+Full scorecard/read-model build: 4.932 seconds
+```
+
+The startup preparation cost remains internal to backend startup or refresh and is no longer paid through a 99.8 MB browser response.
+
+Verification completed:
+
+- Frontend TypeScript and Vite production build passed.
+- Fast backend calculation and Phase 2 contract suite: `52 passed`.
+- Full backend suite: `55 passed, 1 failed`.
+- All `332,632` KPI field checks passed in the full integration validation.
+- The remaining integration failure is normalized-score reconciliation/rounding, including the previously observed `9.67` versus `9.68` example. The latest report counted 15 normalized-score comparisons outside the strict `0.005` tolerance.
+- The Phase 2 work does not modify `compute_scorecard()` or KPI formula code.
+
+Phase 2 still requires interactive UAT in the running application before promotion:
+
+- Confirm initial global page load and parent selection.
+- Confirm parent search behavior for known suppliers.
+- Confirm zone/category filtered score consistency.
+- Confirm applicability overrides.
+- Confirm complete CSV export and row count.
+- Confirm the backend maintenance workflow after a data refresh.
+
 ## Decisions to Confirm Before Implementation
 
 The current recommendation is to proceed with these assumptions:
@@ -823,7 +888,7 @@ The existing production-like `new-deployment` branch should remain unchanged unt
 | Phase | Deliverable | Status |
 |---|---|---|
 | 1 | Validated data-volume report confirming approximately 29K parents | Confirmed |
-| 2 | Optimized Normalized Scorecard APIs and frontend flow | Proposed, awaiting confirmation |
+| 2 | Optimized Normalized Scorecard APIs and frontend flow | Implemented, automated verification complete; interactive UAT pending |
 | 3 | Optimized shared backend flow for high-volume Individual KPI pages | Planned after Phase 2 |
 | 4 | Validated immutable refresh snapshot and cache workflow | Planned after Phase 3 evidence |
 | 5 | Performance report, regression evidence, deployment and rollback plan | Planned throughout, finalized before promotion |

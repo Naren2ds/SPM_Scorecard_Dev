@@ -11,9 +11,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePersistedState } from "./shared/usePersistedState";
 import "./styles.css";
 import type {
+  ParentDetailResponse,
   ParentScorecard,
   ScorecardFilterOptions,
-  ScorecardResponse,
+  ScorecardLeaderboardResponse,
+  ScorecardParentSearchResponse,
+  ScorecardSummary,
 } from "./scorecardTypes";
 
 // ─── Number-format helpers ──────────────────────────────────────────────────
@@ -28,6 +31,14 @@ const fmtCurrencyShort = (v: number) => {
 };
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+
+async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(url, { signal });
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status})`);
+  }
+  return response.json() as Promise<T>;
+}
 
 // ─── Formatting helpers ────────────────────────────────────────────────────
 
@@ -142,130 +153,158 @@ function ScorecardPage() {
   const [selZones, setSelZones] = usePersistedState<string[]>("sc-sel-zones", []);
   const [selCategories, setSelCategories] = usePersistedState<string[]>("sc-sel-categories", []);
 
-  const [scorecard, setScorecard] = useState<ScorecardResponse | null>(null);
+  const [summary, setSummary] = useState<ScorecardSummary | null>(null);
+  const [leaderboard, setLeaderboard] = useState<ScorecardLeaderboardResponse | null>(null);
+  const [parentSearch, setParentSearch] = useState<ScorecardParentSearchResponse | null>(null);
+  const [parentDetail, setParentDetail] = useState<ParentDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedParent, setSelectedParent] = usePersistedState<string | null>("sc-selected-parent", null);
   const [search, setSearch] = usePersistedState<string>("sc-search", "");
-  const [rebuilding, setRebuilding] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [cacheInfo, setCacheInfo] = useState<{ cached_at: string | null; parent_count: number } | null>(null);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [search]);
 
   // Load cache status once on mount
   useEffect(() => {
-    fetch(`${API_BASE}/api/scorecard/cache-status`)
-      .then((res) => res.json())
+    fetchJson<{ cached_at: string | null; parent_count: number }>(`${API_BASE}/api/scorecard/cache-status`)
       .then((data) => setCacheInfo(data))
       .catch(() => {});
   }, []);
 
-  const handleRebuild = () => {
-    setRebuilding(true);
-    fetch(`${API_BASE}/api/scorecard/rebuild`, { method: "POST" })
-      .then((res) => res.json())
-      .then((data) => {
-        setCacheInfo({ cached_at: data.rebuilt_at, parent_count: data.parent_count });
-        // Reload scorecard with fresh data
-        setLoading(true);
-        const params = new URLSearchParams();
-        if (selZones.length) params.set("zones", selZones.join(","));
-        if (selCategories.length) params.set("categories", selCategories.join(","));
-        return fetch(`${API_BASE}/api/scorecard?${params.toString()}`);
-      })
-      .then((res) => (res as Response).json())
-      .then((data: ScorecardResponse) => {
-        setScorecard(data);
-        setLoading(false);
-        setRebuilding(false);
-      })
-      .catch((e) => {
-        setError(String(e));
-        setRebuilding(false);
-        setLoading(false);
-      });
-  };
-
   // Load filter options once
   useEffect(() => {
-    fetch(`${API_BASE}/api/scorecard/filters`)
-      .then((res) => res.json())
+    fetchJson<ScorecardFilterOptions>(`${API_BASE}/api/scorecard/filters`)
       .then((data: ScorecardFilterOptions) => setFilters(data))
       .catch((e) => setError(String(e)));
   }, []);
 
   // Load scorecard whenever filters change
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
     if (selZones.length) params.set("zones", selZones.join(","));
     if (selCategories.length) params.set("categories", selCategories.join(","));
-    const url = `${API_BASE}/api/scorecard?${params.toString()}`;
-    fetch(url)
-      .then((res) => res.json())
-      .then((data: ScorecardResponse) => {
-        setScorecard(data);
+    params.set("page", "1");
+    params.set("page_size", "100");
+    params.set("sort", "normalized_score");
+    params.set("order", "desc");
+    fetchJson<ScorecardLeaderboardResponse>(
+      `${API_BASE}/api/scorecard/leaderboard?${params.toString()}`,
+      controller.signal,
+    )
+      .then((data) => {
+        setLeaderboard(data);
         setLoading(false);
       })
       .catch((e) => {
+        if (controller.signal.aborted) return;
         setError(String(e));
         setLoading(false);
       });
+    return () => controller.abort();
   }, [selZones, selCategories]);
 
-  // Derived: filtered list based on search box + summary metrics
-  const filteredScorecards = useMemo(() => {
-    if (!scorecard) return [];
-    const q = search.trim().toLowerCase();
-    if (!q) return scorecard.scorecards;
-    return scorecard.scorecards.filter((s) =>
-      s.parentSupplier.toLowerCase().includes(q),
-    );
-  }, [scorecard, search]);
-
-  const summary = useMemo(() => {
-    if (!filteredScorecards.length) {
-      return { count: 0, avgNorm: 0, avgCov: 0, greens: 0, ambers: 0, reds: 0 };
-    }
-    const norm =
-      filteredScorecards.reduce((s, r) => s + r.normalized_score, 0) /
-      filteredScorecards.length;
-    const cov =
-      filteredScorecards.reduce((s, r) => s + r.coverage_pct, 0) /
-      filteredScorecards.length;
-    const greens = filteredScorecards.filter((r) => r.band === "Green").length;
-    const ambers = filteredScorecards.filter((r) => r.band === "Amber").length;
-    const reds = filteredScorecards.filter((r) => r.band === "Red").length;
-    return {
-      count: filteredScorecards.length,
-      avgNorm: norm,
-      avgCov: cov,
-      greens,
-      ambers,
-      reds,
-    };
-  }, [filteredScorecards]);
-
-  // Auto-select: only re-runs when filteredScorecards changes — keeps
-  // current selection if it's still valid, otherwise falls back to first.
   useEffect(() => {
-    if (filteredScorecards.length === 0) {
+    const controller = new AbortController();
+    const params = new URLSearchParams();
+    if (selZones.length) params.set("zones", selZones.join(","));
+    if (selCategories.length) params.set("categories", selCategories.join(","));
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    fetchJson<ScorecardSummary>(
+      `${API_BASE}/api/scorecard/summary?${params.toString()}`,
+      controller.signal,
+    )
+      .then(setSummary)
+      .catch((e) => {
+        if (!controller.signal.aborted) setError(String(e));
+      });
+    return () => controller.abort();
+  }, [selZones, selCategories, debouncedSearch]);
+
+  useEffect(() => {
+    if (debouncedSearch.length < 2) {
+      setParentSearch(null);
+      return;
+    }
+    const controller = new AbortController();
+    const params = new URLSearchParams({ q: debouncedSearch, limit: "30" });
+    if (selZones.length) params.set("zones", selZones.join(","));
+    if (selCategories.length) params.set("categories", selCategories.join(","));
+    fetchJson<ScorecardParentSearchResponse>(
+      `${API_BASE}/api/scorecard/parents/search?${params.toString()}`,
+      controller.signal,
+    )
+      .then(setParentSearch)
+      .catch((e) => {
+        if (!controller.signal.aborted) setError(String(e));
+      });
+    return () => controller.abort();
+  }, [selZones, selCategories, debouncedSearch]);
+
+  // Use the leading compact row only when there is no persisted selection.
+  useEffect(() => {
+    if (!leaderboard || leaderboard.items.length === 0) {
       setSelectedParent(null);
       return;
     }
     setSelectedParent((prev) => {
-      if (prev && filteredScorecards.some((s) => s.parentSupplier === prev)) {
-        return prev; // keep — still in filtered list
+      if (prev) {
+        return prev;
       }
-      return filteredScorecards[0].parentSupplier; // fall back to first
+      return leaderboard.items[0].parentSupplier;
     });
-  }, [filteredScorecards]);
+  }, [leaderboard]);
 
-  const selected = useMemo(
-    () =>
-      scorecard?.scorecards.find((s) => s.parentSupplier === selectedParent) ??
-      null,
-    [scorecard, selectedParent],
-  );
+  useEffect(() => {
+    if (!selectedParent) {
+      setParentDetail(null);
+      return;
+    }
+    const controller = new AbortController();
+    setParentDetail(null);
+    setDetailLoading(true);
+    const params = new URLSearchParams({ name: selectedParent });
+    if (selZones.length) params.set("zones", selZones.join(","));
+    if (selCategories.length) params.set("categories", selCategories.join(","));
+    fetchJson<ParentDetailResponse>(
+      `${API_BASE}/api/scorecard/parent?${params.toString()}`,
+      controller.signal,
+    )
+      .then((data) => {
+        setParentDetail(data);
+        if (!data.scorecard) {
+          const fallback = leaderboard?.items[0]?.parentSupplier ?? null;
+          setSelectedParent(fallback === selectedParent ? null : fallback);
+        }
+        setDetailLoading(false);
+      })
+      .catch((e) => {
+        if (controller.signal.aborted) return;
+        setError(String(e));
+        setDetailLoading(false);
+      });
+    return () => controller.abort();
+  }, [selectedParent, selZones, selCategories, leaderboard]);
+
+  const parentOptionNames = useMemo(() => {
+    const names = debouncedSearch.length >= 2
+      ? (parentSearch?.items.map((item) => item.parentSupplier) ?? [])
+      : (leaderboard?.items.map((item) => item.parentSupplier) ?? []);
+    if (selectedParent && !names.includes(selectedParent)) {
+      return [selectedParent, ...names];
+    }
+    return names;
+  }, [debouncedSearch, parentSearch, leaderboard, selectedParent]);
+
+  const selected = parentDetail?.scorecard ?? null;
 
   // ─── User applicability overrides (per KPI, per parent) ─────────────────
   //
@@ -319,8 +358,8 @@ function ScorecardPage() {
   // Because every KPI ships in the response, the whole calculation can run
   // client-side, giving instant feedback when the user flips a dropdown.
   const totalExpectedKpiWeight =
-    scorecard?.total_expected_kpi_weight ??
-    (scorecard?.kpis.reduce((s, k) => s + k.max_score, 0) ?? 0);
+    parentDetail?.total_expected_kpi_weight ??
+    (parentDetail?.kpis.reduce((s, k) => s + k.max_score, 0) ?? 0);
 
   type ComputedKpi = {
     id: string;
@@ -367,7 +406,7 @@ function ScorecardPage() {
     score >= 80 ? "Green" : score >= 60 ? "Amber" : "Red";
 
   const computed: ComputedScorecard = useMemo(() => {
-    if (!selected || !scorecard) return null;
+    if (!selected || !parentDetail) return null;
 
     const pillars: ComputedPillar[] = selected.pillars.map((p) => {
       let earnedSum = 0;
@@ -460,7 +499,7 @@ function ScorecardPage() {
       total_earned: totalEarned,
       total_applicable_max: totalApplicableMax,
     };
-  }, [selected, scorecard, parentOverrides, totalExpectedKpiWeight]);
+  }, [selected, parentDetail, parentOverrides, totalExpectedKpiWeight]);
 
   const overrideCount = Object.keys(parentOverrides).length;
 
@@ -471,67 +510,13 @@ function ScorecardPage() {
   };
 
   const exportCsv = () => {
-    if (!scorecard) return;
-    const header = [
-      "Parent Supplier",
-      "Normalized Score",
-      "Coverage %",
-      "Coverage-Adjusted",
-      "Band",
-      ...scorecard.kpis.flatMap((k) => [
-        `${k.name} — Earned`,
-        `${k.name} — Max`,
-      ]),
-      "Service Level %",
-      "Operational %",
-      "Sustainability %",
-      "Value Creation %",
-    ];
-    const rows = filteredScorecards.map((s) => {
-      const kpiCols = scorecard.kpis.flatMap((k) => {
-        const found = s.pillars
-          .flatMap((p) => p.kpis)
-          .find((x) => x.id === k.id);
-        return [
-          found?.earned === null || found?.earned === undefined
-            ? ""
-            : found.earned.toFixed(3),
-          k.max_score.toFixed(1),
-        ];
-      });
-      const pctFor = (name: string) => {
-        const p = s.pillars.find((pp) => pp.pillar === name);
-        return p && p.pillar_pct !== null ? (p.pillar_pct * 100).toFixed(2) : "";
-      };
-      return [
-        s.parentSupplier,
-        s.normalized_score.toFixed(2),
-        (s.coverage_pct * 100).toFixed(2),
-        s.coverage_adjusted_score.toFixed(2),
-        s.band,
-        ...kpiCols,
-        pctFor("Service Level"),
-        pctFor("Operational"),
-        pctFor("Sustainability"),
-        pctFor("Value Creation"),
-      ];
-    });
-    const csv = [header, ...rows]
-      .map((r) =>
-        r
-          .map((v) => {
-            const s = String(v ?? "");
-            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-          })
-          .join(","),
-      )
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const params = new URLSearchParams();
+    if (selZones.length) params.set("zones", selZones.join(","));
+    if (selCategories.length) params.set("categories", selCategories.join(","));
+    if (debouncedSearch) params.set("search", debouncedSearch);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `normalized_scorecard_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.href = `${API_BASE}/api/scorecard/export?${params.toString()}`;
     a.click();
-    URL.revokeObjectURL(a.href);
   };
 
   return (
@@ -548,7 +533,7 @@ function ScorecardPage() {
             Pillar&nbsp;% = Σ(Earned&nbsp;KPI&nbsp;Points)&nbsp;/&nbsp;Σ(Applicable&nbsp;Max&nbsp;Points)
           </p>
           {error && <p className="supporting">Error loading scorecard: {error}</p>}
-          {loading && !scorecard && <p className="supporting">Loading scorecard…</p>}
+          {loading && !leaderboard && <p className="supporting">Loading scorecard…</p>}
         </div>
         <div className="header-actions">
           <div style={{ textAlign: "right" }}>
@@ -557,19 +542,11 @@ function ScorecardPage() {
                 Cache built: {new Date(cacheInfo.cached_at).toLocaleString()} &nbsp;|&nbsp; {cacheInfo.parent_count} parents
               </p>
             )}
-            <button
-              type="button"
-              onClick={handleRebuild}
-              disabled={rebuilding}
-              title="Rebuilds the pre-computed scorecard cache. Run after changing KPI config or refreshing CSV data."
-            >
-              {rebuilding ? "Rebuilding Cache…" : "Rebuild Cache"}
-            </button>
           </div>
           <button
             type="button"
             onClick={exportCsv}
-            disabled={!filteredScorecards.length}
+            disabled={!summary?.filtered_parent_count}
           >
             Export CSV
           </button>
@@ -593,14 +570,14 @@ function ScorecardPage() {
         />
         <button type="button" onClick={clearFilters}>Clear filters</button>
         <div className="filter-summary">
-          <strong>{summary.count}</strong> suppliers
-          {summary.count > 0 && (
+          <strong>{summary?.filtered_parent_count ?? 0}</strong> suppliers
+          {(summary?.filtered_parent_count ?? 0) > 0 && summary && (
             <>
-              &nbsp;·&nbsp;Avg&nbsp;<strong>{summary.avgNorm.toFixed(1)}</strong>
+              &nbsp;·&nbsp;Avg&nbsp;<strong>{summary.average_normalized_score.toFixed(1)}</strong>
               &nbsp;·&nbsp;
-              <span className="sc-band-chip green">{summary.greens}&thinsp;G</span>{" "}
-              <span className="sc-band-chip amber">{summary.ambers}&thinsp;A</span>{" "}
-              <span className="sc-band-chip red">{summary.reds}&thinsp;R</span>
+              <span className="sc-band-chip green">{summary.band_counts.Green}&thinsp;G</span>{" "}
+              <span className="sc-band-chip amber">{summary.band_counts.Amber}&thinsp;A</span>{" "}
+              <span className="sc-band-chip red">{summary.band_counts.Red}&thinsp;R</span>
             </>
           )}
         </div>
@@ -674,9 +651,9 @@ function ScorecardPage() {
                     value={selectedParent ?? ""}
                     onChange={(e) => setSelectedParent(e.target.value)}
                   >
-                    {filteredScorecards.map((s) => (
-                      <option key={s.parentSupplier} value={s.parentSupplier}>
-                        {s.parentSupplier}
+                    {parentOptionNames.map((parentName) => (
+                      <option key={parentName} value={parentName}>
+                        {parentName}
                       </option>
                     ))}
                   </select>
@@ -995,7 +972,7 @@ function ScorecardPage() {
             </>
           ) : (
             <div className="sc-detail-empty">
-              <p>Click a parent supplier in the table above to see the pillar-by-pillar breakdown.</p>
+              <p>{detailLoading ? "Loading parent scorecard..." : "Search for and select a parent supplier to see the pillar-by-pillar breakdown."}</p>
             </div>
           )}
         </div>
@@ -1005,13 +982,13 @@ function ScorecardPage() {
       <section className="config-bar">
         <div className="filter-summary">
           <strong>Pillar Weights:</strong>{" "}
-          {scorecard
-            ? Object.entries(scorecard.pillar_weights)
+          {parentDetail
+            ? Object.entries(parentDetail.pillar_weights)
                 .map(([p, w]) => `${p} ${w}`)
                 .join(" · ")
             : "—"}
           &nbsp;·&nbsp;
-          <strong>Coverage %</strong> = Available KPI Weight / Total Expected KPI Weight ({scorecard ? scorecard.total_expected_kpi_weight : 0})
+          <strong>Coverage %</strong> = Available KPI Weight / Total Expected KPI Weight ({parentDetail ? parentDetail.total_expected_kpi_weight : 0})
           &nbsp;·&nbsp;
           <strong>Coverage-Adjusted</strong> = Normalized × Coverage %
         </div>

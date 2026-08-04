@@ -9,6 +9,7 @@ export type ScorecardKpi = {
   max_score: number;
   raw: number | null;
   attainment: number | null;
+  percentile?: number | null;
   earned: number | null;
   applicable: boolean;
   floor_used: number | null;
@@ -68,11 +69,55 @@ export type ParentDetailResponse = {
   total_expected_kpi_weight: number;
   kpis: ScorecardKpiMeta[];
   scorecard: ParentScorecard | null;
+  cached_at?: string | null;
 };
 
 export type ScorecardFilterOptions = {
   zones: string[];
   categories: string[];
   parents: string[];
+};
+
+export type ScorecardLeaderboardItem = {
+  parentSupplier: string;
+  normalized_score: number;
+  coverage_pct: number;
+  coverage_adjusted_score: number;
+  invoice_value: number;
+  band: ParentScorecard["band"];
+  pillar_scores: Record<string, number | null>;
+};
+
+export type ScorecardLeaderboardResponse = {
+  items: ScorecardLeaderboardItem[];
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+  search: string;
+  sort: string;
+  order: "asc" | "desc";
+  cached_at: string | null;
+};
+
+export type ScorecardSummary = {
+  total_parent_count: number;
+  filtered_parent_count: number;
+  average_normalized_score: number;
+  average_coverage_pct: number;
+  band_counts: Record<ParentScorecard["band"], number>;
+  cached_at: string | null;
+};
+
+export type ScorecardParentSearchItem = {
+  parentSupplier: string;
+  normalized_score: number;
+  band: ParentScorecard["band"];
+};
+
+export type ScorecardParentSearchResponse = {
+  items: ScorecardParentSearchItem[];
+  query: string;
+  limit: number;
 };
 

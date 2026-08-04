@@ -5,15 +5,16 @@ FastAPI server for SPM Scorecard.
 """
 
 import threading
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 # ─── Sandbox mode: serve from pre-built CSV files, no Databricks ────────────
@@ -29,6 +30,15 @@ ECL_OUTPUT_PATH  = DATA_DIR / "eclipse.csv"
 IC_OUTPUT_PATH   = DATA_DIR / "invoice_conformity.csv"
 PDIV_OUTPUT_PATH = DATA_DIR / "price_divergence.csv"
 from scorecard import compute_scorecard, list_filter_options
+from scorecard_read_model import (
+    LEADERBOARD_SORT_FIELDS,
+    build_scorecard_read_model,
+    filter_leaderboard,
+    iter_scorecard_csv,
+    paginate_leaderboard,
+    sort_leaderboard,
+    summarize_scorecards,
+)
 
 
 def _load_config_overrides() -> None:
@@ -103,11 +113,20 @@ _feedback_lock = threading.Lock()
 
 # ─── Pre-computed scorecard cache (Approach B2) ───────────────────────────────────
 # Computed once at startup (and on /api/scorecard/rebuild) over the full
-# population.  Endpoints with no zone/category filter serve from here
-# (< 5 ms).  Zone/category-filtered requests fall back to on-the-fly
-# computation because those filters change per-KPI row aggregation.
+# population. Lightweight global endpoints derive compact views from this
+# result. The most recent zone/category cohort is cached separately because
+# those filters change per-KPI aggregation and percentile populations.
 _scored_cache: dict = {}
+_scored_read_model: dict = {}
 _scored_cache_lock = threading.Lock()
+_scorecard_filter_options: dict[str, list[str]] = {
+    "zones": [],
+    "categories": [],
+    "parents": [],
+}
+_scorecard_context_cache: OrderedDict[tuple[tuple[str, ...], tuple[str, ...]], dict] = OrderedDict()
+_scorecard_context_lock = threading.Lock()
+_SCORECARD_CONTEXT_CACHE_SIZE = 1
 
 
 class FeedbackCreateRequest(BaseModel):
@@ -240,13 +259,20 @@ def _build_scored_cache() -> None:
     or data changes.
     """
     from datetime import datetime
-    global _scored_cache
+    global _scored_cache, _scored_read_model, _scorecard_filter_options
 
     result = compute_scorecard(_cache, include_kpi_breakdown=True, top_n=None)
     result["cached_at"] = datetime.now().isoformat()
     result["parent_count"] = len(result.get("scorecards", []))
+    read_model = build_scorecard_read_model(result)
+    filter_options = list_filter_options(_cache)
+    filter_options["parents"] = []
     with _scored_cache_lock:
         _scored_cache = result
+        _scored_read_model = read_model
+        _scorecard_filter_options = filter_options
+    with _scorecard_context_lock:
+        _scorecard_context_cache.clear()
 
 
 def _background_refresh_dot():
@@ -755,6 +781,52 @@ def _split_csv_param(value: str | None) -> list[str]:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
+def _scorecard_context_key(
+    zones_param: str | None,
+    categories_param: str | None,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    zones = tuple(sorted(set(_split_csv_param(zones_param))))
+    categories = tuple(sorted(set(_split_csv_param(categories_param))))
+    return zones, categories
+
+
+def _get_scorecard_read_model(
+    zones_param: str | None,
+    categories_param: str | None,
+) -> dict:
+    """Return the global or most recently used filtered scorecard read model."""
+    key = _scorecard_context_key(zones_param, categories_param)
+    zones, categories = key
+    if not zones and not categories:
+        if not _scored_read_model:
+            _build_scored_cache()
+        return _scored_read_model
+
+    # Keep one regional context so related API calls share the same cohort
+    # without retaining several large detailed cohorts in memory.
+    with _scorecard_context_lock:
+        cached = _scorecard_context_cache.get(key)
+        if cached is not None:
+            _scorecard_context_cache.move_to_end(key)
+            return cached
+
+        result = compute_scorecard(
+            _cache,
+            zones=zones,
+            categories=categories,
+            include_kpi_breakdown=True,
+            top_n=None,
+        )
+        result["cached_at"] = _scored_cache.get("cached_at")
+        result["context_cached_at"] = datetime.now().isoformat()
+        result["parent_count"] = len(result.get("scorecards", []))
+        read_model = build_scorecard_read_model(result)
+        _scorecard_context_cache[key] = read_model
+        while len(_scorecard_context_cache) > _SCORECARD_CONTEXT_CACHE_SIZE:
+            _scorecard_context_cache.popitem(last=False)
+        return read_model
+
+
 def _serve_scorecard(
     zones_param: str | None,
     categories_param: str | None,
@@ -762,35 +834,21 @@ def _serve_scorecard(
     include_kpi_breakdown: bool,
     top_n: int | None,
 ) -> dict:
-    """Return scorecard data from cache when possible, else recompute.
-
-    * No zone/category filter  → serve from pre-computed ``_scored_cache``
-      (O(N) list filter, < 5 ms).
-    * Zone or category filter  → recompute on the fly because those filters
-      change which CSV rows feed each KPI’s aggregation.
-    """
+    """Serve the legacy full response from a consistent cohort read model."""
     zones = _split_csv_param(zones_param)
     categories = _split_csv_param(categories_param)
     parents = _split_csv_param(parents_param)
 
-    # Zone/category filters change the aggregation — must recompute.
-    if zones or categories or not _scored_cache:
-        return compute_scorecard(
-            _cache,
-            zones=zones,
-            categories=categories,
-            parents=parents,
-            include_kpi_breakdown=include_kpi_breakdown,
-            top_n=top_n,
-        )
+    read_model = _get_scorecard_read_model(zones_param, categories_param)
+    result = read_model["result"]
 
     # Serve from pre-computed cache.
-    all_scorecards: list[dict] = list(_scored_cache.get("scorecards", []))
+    all_scorecards: list[dict] = list(result.get("scorecards", []))
 
     # Apply parent filter.
     if parents:
-        parents_set = set(parents)
-        all_scorecards = [s for s in all_scorecards if s["parentSupplier"] in parents_set]
+        parent_index = read_model["parent_index"]
+        all_scorecards = [parent_index[parent] for parent in parents if parent in parent_index]
 
     # Strip per-KPI breakdown for leaderboard view.
     if not include_kpi_breakdown:
@@ -806,7 +864,7 @@ def _serve_scorecard(
         all_scorecards = sorted(all_scorecards, key=lambda s: s["invoice_value"], reverse=True)[:top_n]
 
     return {
-        **{k: v for k, v in _scored_cache.items() if k != "scorecards"},
+        **{k: v for k, v in result.items() if k != "scorecards"},
         "scorecards": all_scorecards,
         "filters_applied": {
             "zones": zones,
@@ -843,19 +901,64 @@ def get_scorecard(
 def get_scorecard_leaderboard(
     zones: str | None = None,
     categories: str | None = None,
-    parents: str | None = None,
-    top_n: int = 0,
+    search: str = "",
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=200),
+    sort: str = "normalized_score",
+    order: str = "desc",
 ):
-    """
-    Lightweight per-parent summary for the leaderboard view. Drops the per-KPI
-    breakdown, keeping only pillar %s + normalized/coverage/adjusted totals.
-    """
-    result = _serve_scorecard(
-        zones, categories, parents,
-        include_kpi_breakdown=False,
-        top_n=top_n if top_n and top_n > 0 else None,
+    """Return one page of compact parent rows without KPI details."""
+    if sort not in LEADERBOARD_SORT_FIELDS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"sort must be one of: {', '.join(sorted(LEADERBOARD_SORT_FIELDS))}",
+        )
+    if order not in {"asc", "desc"}:
+        raise HTTPException(status_code=400, detail="order must be 'asc' or 'desc'")
+
+    model = _get_scorecard_read_model(zones, categories)
+    filtered = filter_leaderboard(model["leaderboard"], search)
+    sorted_rows = sort_leaderboard(filtered, sort, order)
+    items, total_items, total_pages = paginate_leaderboard(sorted_rows, page, page_size)
+    context_zones, context_categories = _scorecard_context_key(zones, categories)
+    return JSONResponse({
+        "items": items,
+        "page": page,
+        "page_size": page_size,
+        "total_items": total_items,
+        "total_pages": total_pages,
+        "search": search.strip(),
+        "sort": sort,
+        "order": order,
+        "filters_applied": {
+            "zones": list(context_zones),
+            "categories": list(context_categories),
+        },
+        "cached_at": model["result"].get("cached_at"),
+    })
+
+
+@app.get("/api/scorecard/summary")
+def get_scorecard_summary(
+    zones: str | None = None,
+    categories: str | None = None,
+    search: str = "",
+):
+    """Return aggregate metrics without individual parent records."""
+    model = _get_scorecard_read_model(zones, categories)
+    filtered = filter_leaderboard(model["leaderboard"], search)
+    summary = summarize_scorecards(
+        filtered,
+        total_parent_count=len(_scored_read_model.get("leaderboard", [])),
+        cached_at=model["result"].get("cached_at"),
     )
-    return JSONResponse(result)
+    context_zones, context_categories = _scorecard_context_key(zones, categories)
+    summary["filters_applied"] = {
+        "zones": list(context_zones),
+        "categories": list(context_categories),
+        "search": search.strip(),
+    }
+    return JSONResponse(summary)
 
 
 @app.get("/api/scorecard/parent")
@@ -868,8 +971,9 @@ def get_scorecard_parent(
     Full drill-down (pillar + per-KPI breakdown) for a single parent supplier.
     Served from cache when no zone/category filter is applied.
     """
-    result = _serve_scorecard(zones, categories, name, include_kpi_breakdown=True, top_n=None)
-    parent = result["scorecards"][0] if result["scorecards"] else None
+    model = _get_scorecard_read_model(zones, categories)
+    result = model["result"]
+    parent = model["parent_index"].get(name)
     return JSONResponse({
         "pillar_weights": result["pillar_weights"],
         "total_expected_kpi_weight": result["total_expected_kpi_weight"],
@@ -879,23 +983,62 @@ def get_scorecard_parent(
     })
 
 
+@app.get("/api/scorecard/parents/search")
+def search_scorecard_parents(
+    q: str = Query(default="", max_length=200),
+    limit: int = Query(default=30, ge=1, le=50),
+    zones: str | None = None,
+    categories: str | None = None,
+):
+    """Return a bounded parent autocomplete list for the active cohort."""
+    query = q.strip()
+    if len(query) < 2:
+        return JSONResponse({"items": [], "query": query, "limit": limit})
+
+    model = _get_scorecard_read_model(zones, categories)
+    matches = filter_leaderboard(model["leaderboard"], query)
+    matches.sort(key=lambda row: row["parentSupplier"].casefold())
+    return JSONResponse({
+        "items": [
+            {
+                "parentSupplier": row["parentSupplier"],
+                "normalized_score": row["normalized_score"],
+                "band": row["band"],
+            }
+            for row in matches[:limit]
+        ],
+        "query": query,
+        "limit": limit,
+    })
+
+
+@app.get("/api/scorecard/export")
+def export_scorecard(
+    zones: str | None = None,
+    categories: str | None = None,
+    search: str = "",
+):
+    """Stream the complete filtered scorecard CSV only when requested."""
+    model = _get_scorecard_read_model(zones, categories)
+    matching_rows = filter_leaderboard(model["leaderboard"], search)
+    matching_parents = {row["parentSupplier"] for row in matching_rows}
+    scorecards = [
+        scorecard
+        for scorecard in model["result"].get("scorecards", [])
+        if scorecard["parentSupplier"] in matching_parents
+    ]
+    filename = f"normalized_scorecard_{datetime.now().date().isoformat()}.csv"
+    return StreamingResponse(
+        iter_scorecard_csv(model["result"], scorecards),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.get("/api/scorecard/filters")
 def get_scorecard_filters():
-    """Distinct zones / categories / parent suppliers across all KPI datasets.
-
-    Zones and categories come from the raw KPI rows (they are used as aggregation
-    filters). Parent suppliers come exclusively from the pre-computed scored cache
-    so the dropdown only shows the parent-level names actually present in the
-    scorecard table — not individual supplier fallbacks from rows where
-    parentSupplier is blank.
-    """
-    opts = list_filter_options(_cache)
-    # Override parents with the actual scored parent names from the cache.
-    if _scored_cache and _scored_cache.get("scorecards"):
-        opts["parents"] = sorted(
-            {s["parentSupplier"] for s in _scored_cache["scorecards"]}
-        )
-    return JSONResponse(opts)
+    """Return precomputed aggregation filters without the 29K parent list."""
+    return JSONResponse(_scorecard_filter_options)
 
 
 @app.get("/api/scorecard/config")

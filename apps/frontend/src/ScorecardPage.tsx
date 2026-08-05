@@ -156,6 +156,7 @@ function ScorecardPage() {
   const [summary, setSummary] = useState<ScorecardSummary | null>(null);
   const [leaderboard, setLeaderboard] = useState<ScorecardLeaderboardResponse | null>(null);
   const [parentSearch, setParentSearch] = useState<ScorecardParentSearchResponse | null>(null);
+  const [parentSearchLoading, setParentSearchLoading] = useState(false);
   const [parentDetail, setParentDetail] = useState<ParentDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -232,9 +233,11 @@ function ScorecardPage() {
   useEffect(() => {
     if (debouncedSearch.length < 2) {
       setParentSearch(null);
+      setParentSearchLoading(false);
       return;
     }
     const controller = new AbortController();
+    setParentSearchLoading(true);
     const params = new URLSearchParams({ q: debouncedSearch, limit: "30" });
     if (selZones.length) params.set("zones", selZones.join(","));
     if (selCategories.length) params.set("categories", selCategories.join(","));
@@ -242,9 +245,15 @@ function ScorecardPage() {
       `${API_BASE}/api/scorecard/parents/search?${params.toString()}`,
       controller.signal,
     )
-      .then(setParentSearch)
+      .then((data) => {
+        setParentSearch(data);
+        setParentSearchLoading(false);
+      })
       .catch((e) => {
-        if (!controller.signal.aborted) setError(String(e));
+        if (!controller.signal.aborted) {
+          setError(String(e));
+          setParentSearchLoading(false);
+        }
       });
     return () => controller.abort();
   }, [selZones, selCategories, debouncedSearch]);
@@ -303,6 +312,14 @@ function ScorecardPage() {
     }
     return names;
   }, [debouncedSearch, parentSearch, leaderboard, selectedParent]);
+
+  const selectSearchedParent = (parentName: string) => {
+    setSelectedParent(parentName);
+    setSearch("");
+    setDebouncedSearch("");
+    setParentSearch(null);
+    setParentSearchLoading(false);
+  };
 
   const selected = parentDetail?.scorecard ?? null;
 
@@ -638,14 +655,56 @@ function ScorecardPage() {
               >
                 <div>
                   <p className="eyebrow">Parent Supplier</p>
-                  <input
-                    type="search"
-                    className="sc-supplier-search"
-                    placeholder="Search suppliers…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    aria-label="Search suppliers"
-                  />
+                  <div className="sc-parent-search">
+                    <input
+                      type="search"
+                      className="sc-supplier-search"
+                      placeholder="Type at least 2 characters"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && parentSearch?.items[0]) {
+                          e.preventDefault();
+                          selectSearchedParent(parentSearch.items[0].parentSupplier);
+                        } else if (e.key === "Escape") {
+                          setParentSearch(null);
+                        }
+                      }}
+                      aria-label="Search parent suppliers"
+                      aria-controls="scorecard-parent-search-results"
+                      aria-expanded={Boolean(parentSearch?.items.length)}
+                      autoComplete="off"
+                    />
+                    {parentSearch?.items.length ? (
+                      <div
+                        id="scorecard-parent-search-results"
+                        className="sc-parent-search-results"
+                        role="listbox"
+                        aria-label="Matching parent suppliers"
+                      >
+                        {parentSearch.items.map((item) => (
+                          <button
+                            type="button"
+                            key={item.parentSupplier}
+                            onClick={() => selectSearchedParent(item.parentSupplier)}
+                            role="option"
+                            aria-selected={item.parentSupplier === selectedParent}
+                          >
+                            <span>{item.parentSupplier}</span>
+                            <small>
+                              Score {item.normalized_score.toFixed(1)} · {item.band}
+                            </small>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {search.trim().length >= 2 && parentSearchLoading ? (
+                      <span className="sc-parent-search-status" role="status">Searching...</span>
+                    ) : null}
+                    {search.trim().length >= 2 && !parentSearchLoading && parentSearch?.items.length === 0 ? (
+                      <span className="sc-parent-search-status" role="status">No matching parent suppliers</span>
+                    ) : null}
+                  </div>
                   <select
                     className="sc-supplier-select"
                     value={selectedParent ?? ""}

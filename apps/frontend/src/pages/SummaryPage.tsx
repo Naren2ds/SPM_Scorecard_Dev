@@ -14,6 +14,44 @@ const KPI_BUDGET = [
   { kpi: "CO\u2082 Reduction Potential", pillar: "Sustainability", input: "Absolute tCO\u2082e value (higher = better)", floor: "Q1 / manual", target: "Q3 / manual", max: 5 },
 ];
 
+const PILLAR_FRAMEWORK = [
+  {
+    pillar: "Service Level",
+    weight: 40,
+    available: 25,
+    availableKpis: "DOT, Supplier Assessment, Supplier Compliance",
+    unavailableKpis: "NPS, Turnover, PO Acceptance (15 points)",
+  },
+  {
+    pillar: "Operational",
+    weight: 20,
+    available: 20,
+    availableKpis: "Price Divergence, Invoice Conformity, IOT",
+    unavailableKpis: "None",
+  },
+  {
+    pillar: "Sustainability",
+    weight: 20,
+    available: 20,
+    availableKpis: "Supplier Maturity, Eclipse, CO₂ Reduction Potential",
+    unavailableKpis: "None",
+  },
+  {
+    pillar: "Value Creation",
+    weight: 20,
+    available: 0,
+    availableKpis: "None in the current build",
+    unavailableKpis: "Cost, Cash, Engagement (20 points)",
+  },
+];
+
+const NORMALIZED_EXAMPLE = [
+  { pillar: "Service Level", weight: "40", earned: "11.20", max: "25.0", score: "44.8%", contribution: "17.92" },
+  { pillar: "Operational", weight: "20", earned: "10.70", max: "20.0", score: "53.5%", contribution: "10.70" },
+  { pillar: "Sustainability", weight: "20", earned: "3.17", max: "20.0", score: "15.9%", contribution: "3.17" },
+  { pillar: "Value Creation", weight: "20", earned: "—", max: "—", score: "N/A", contribution: "0.00" },
+];
+
 const PERCENTILE_EXAMPLE = [
   { supplier: "Supplier A", dot: "95%", rank: 1, p: "100%" },
   { supplier: "Supplier B", dot: "88%", rank: 2, p: "75%" },
@@ -59,9 +97,27 @@ const EDGE_CASES = [
   { situation: "Value below Critical Floor", rule: "Attainment = 0. Earned Score = 0 regardless of percentile." },
   { situation: "Value missing / blank", rule: "Missing Data — excluded from ranking and scoring. Not treated as zero." },
   { situation: "KPI marked Not Applicable", rule: "Excluded from all cohort ranking and rollups. Earned Score = null." },
+  { situation: "No applicable KPI in a pillar", rule: "The pillar is Not Applicable. Its full pillar weight is removed before the Normalized Score is calculated." },
+  { situation: "No-data KPI manually marked Applicable", rule: "Its Max Score enters the pillar denominator with zero earned points. This intentionally lowers the Pillar Score." },
+  { situation: "Framework KPI not yet data-enabled", rule: "Not Applicable by default. It does not reduce normalized performance, but the missing points remain visible through Coverage %." },
 ];
 
 export default function SummaryPage() {
+  const pillarBadgeClass = (pillar: string) => pillar.toLowerCase().replace(/\s+/g, "-");
+
+  const openGuideSection = (primaryId: string, relatedIds: string[] = []) => {
+    [primaryId, ...relatedIds].forEach((id) => {
+      const section = document.getElementById(id);
+      if (section instanceof HTMLDetailsElement) section.open = true;
+    });
+
+    const primarySection = document.getElementById(primaryId);
+    window.history.replaceState(null, "", `#${primaryId}`);
+    requestAnimationFrame(() => {
+      primarySection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   return (
     <div className="summary-page">
 
@@ -70,20 +126,26 @@ export default function SummaryPage() {
         <p className="eyebrow">Methodology Reference</p>
         <h1>Supplier Scorecard — How Scores Are Calculated</h1>
         <p className="summary-lead">
-          Every KPI in this scorecard follows the same three-step formula:
+          Supplier scoring is built in two steps. First, each available KPI produces an
+          official <strong>KPI Earned Score</strong> from its attainment and percentile.
+          Second, those KPI earned scores are rolled into pillar scores and normalized
+          into one final <strong>Supplier Scorecard</strong> result.
         </p>
         <ol className="summary-lead-list">
-          <li>Normalize the raw value into an <strong>Attainment</strong> factor — how well did the supplier perform against the floor and target?</li>
-          <li>Rank peers into a <strong>Percentile</strong> — where does the supplier sit relative to their cohort?</li>
-          <li>Combine both into an <strong>Earned Score</strong> using either Soft Stretch or Strict mode.</li>
+          <li>Turn the raw KPI value into an <strong>Attainment</strong> factor so we can see how the supplier performed against the floor and target.</li>
+          <li>Rank the supplier against its peers to calculate a <strong>Percentile</strong> and keep the score fair within the cohort.</li>
+          <li>Combine <strong>Attainment</strong> and <strong>Percentile</strong> into the official KPI <strong>Earned Score</strong>. Soft Stretch is official; Strict is preview-only.</li>
+          <li>Roll the applicable KPI earned scores into <strong>Pillar Scores</strong>, apply business pillar weights, and normalize the result to a 0–100 score.</li>
         </ol>
         <p className="summary-lead">
-          This page explains why each step exists, what would go wrong without it, and how the numbers are produced.
+          This page explains why each step exists, how KPI Earned Scores are formed, and
+          how those scores become the final Normalized Supplier Score.
         </p>
         <nav className="guide-actions" aria-label="Guide shortcuts">
-          <a href="#scorecard-budget">Explore the scorecard</a>
-          <a href="#scoring-method">See how scoring works</a>
-          <a href="#formula-reference">Formula reference</a>
+          <a href="#scorecard-budget" onClick={(event) => { event.preventDefault(); openGuideSection("scorecard-budget"); }}>Understand the framework</a>
+          <a href="#scoring-method" onClick={(event) => { event.preventDefault(); openGuideSection("scoring-method", ["attainment-guide", "percentile-guide", "soft-stretch-guide"]); }}>Individual KPI scoring</a>
+          <a href="#normalized-scorecard" onClick={(event) => { event.preventDefault(); openGuideSection("normalized-scorecard"); }}>Normalized Scorecard</a>
+          <a href="#formula-reference" onClick={(event) => { event.preventDefault(); openGuideSection("formula-reference"); }}>Formula reference</a>
         </nav>
         <div className="guide-overview" aria-label="Scoring overview">
           <article>
@@ -98,21 +160,66 @@ export default function SummaryPage() {
           </article>
           <article>
             <span>03</span>
-            <strong>Calculate score</strong>
-            <p>Combine absolute delivery with relative performance into a transparent earned score.</p>
+            <strong>Earn KPI points</strong>
+            <p>Combine absolute delivery with relative performance into an official KPI earned score.</p>
+          </article>
+          <article>
+            <span>04</span>
+            <strong>Build the scorecard</strong>
+            <p>Roll applicable KPI points into pillars, apply business weights, and show coverage separately.</p>
           </article>
         </div>
       </section>
 
       {/* ── Score Budget ─────────────────────────────────── */}
-      <details className="summary-section" open>
-        <summary id="scorecard-budget" className="summary-section-summary">1 — Scorecard Budget</summary>
+      <details id="scorecard-budget" className="summary-section" open>
+        <summary className="summary-section-summary">1 — Scorecard Framework and Weighting</summary>
         <p className="summary-body">
-          Each KPI is assigned a maximum score that reflects its strategic weight in the
-          overall supplier evaluation. Operational delivery (DOT) carries the highest weight,
-          followed by quality and sustainability pillars. A supplier's total scorecard is the
-          sum of earned scores across all applicable KPIs.
+          The framework uses two kinds of weight. <strong>KPI max points</strong> determine
+          how KPIs combine inside a pillar. <strong>Pillar weights</strong> determine how much
+          each business pillar contributes to the final score. They are related, but they are
+          not interchangeable, and the final Normalized Score is not a simple sum of KPI points.
         </p>
+        <div className="summary-callout">
+          <strong>Current data coverage:</strong> The complete framework expects 100 KPI
+          points. The current build has data-enabled KPIs worth 65 points. Missing framework
+          KPIs remain visible as Not Applicable placeholders rather than being silently scored
+          as zero.
+        </div>
+
+        <h3 className="summary-subhead">Pillar framework</h3>
+        <div className="table-frame">
+          <table className="data-table summary-table">
+            <thead>
+              <tr>
+                <th>Pillar</th>
+                <th>Pillar Weight</th>
+                <th>Data-Enabled KPI Points</th>
+                <th>Data-Enabled KPIs</th>
+                <th>Not Yet Data-Enabled</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PILLAR_FRAMEWORK.map((row) => (
+                <tr key={row.pillar}>
+                  <td><strong>{row.pillar}</strong></td>
+                  <td className="summary-center"><strong>{row.weight}</strong></td>
+                  <td className="summary-center">{row.available}</td>
+                  <td>{row.availableKpis}</td>
+                  <td>{row.unavailableKpis}</td>
+                </tr>
+              ))}
+              <tr className="summary-total-row">
+                <td><strong>Total</strong></td>
+                <td className="summary-center"><strong>100</strong></td>
+                <td className="summary-center"><strong>65</strong></td>
+                <td colSpan={2}>35 framework points are not yet data-enabled.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 className="summary-subhead">Data-enabled individual KPI budget</h3>
         <div className="table-frame">
           <table className="data-table summary-table">
             <thead>
@@ -130,7 +237,7 @@ export default function SummaryPage() {
                 <tr key={row.kpi}>
                   <td><strong>{row.kpi}</strong></td>
                   <td>
-                    <span className={`summary-pillar-badge summary-pillar-${row.pillar.toLowerCase()}`}>
+                    <span className={`summary-pillar-badge summary-pillar-${pillarBadgeClass(row.pillar)}`}>
                       {row.pillar}
                     </span>
                   </td>
@@ -146,8 +253,8 @@ export default function SummaryPage() {
       </details>
 
       {/* ── Universal Formula ────────────────────────────── */}
-      <details className="summary-section" open>
-        <summary id="scoring-method" className="summary-section-summary">2 — The Universal Earned Score Formula</summary>
+      <details id="scoring-method" className="summary-section" open>
+        <summary className="summary-section-summary">2 — KPI Earned Score</summary>
         <p className="summary-body">
           All nine KPIs use the same formula structure. Only the input value and
           the max score differ between them. Price Divergence uses an inverted attainment
@@ -206,8 +313,8 @@ export default function SummaryPage() {
       </details>
 
       {/* ── Attainment ───────────────────────────────────── */}
-      <details className="summary-section" open>
-        <summary className="summary-section-summary">3 — Why Attainment? The Absolute Performance Gate</summary>
+      <details id="attainment-guide" className="summary-section summary-subsection" open>
+        <summary className="summary-section-summary">2.1 — Attainment: The Absolute Performance Gate</summary>
         <p className="summary-body">
           Percentile alone would let a supplier score well just by being the best in a weak
           group — even if their absolute performance is far below what the business needs.
@@ -304,8 +411,8 @@ export default function SummaryPage() {
       </details>
 
       {/* ── Percentile ───────────────────────────────────── */}
-      <details className="summary-section" open>
-        <summary className="summary-section-summary">4 — Why (N − Rank) / (N − 1) for Percentile?</summary>
+      <details id="percentile-guide" className="summary-section summary-subsection" open>
+        <summary className="summary-section-summary">2.2 — Percentile: Why (N − Rank) / (N − 1)?</summary>
         <p className="summary-body">
           There is a simpler-looking formula often used in textbooks:{" "}
           <strong>P = (n / N) × 100</strong> — "what percentage of the group scored
@@ -383,8 +490,8 @@ export default function SummaryPage() {
       </details>
 
       {/* ── Soft Stretch ─────────────────────────────────── */}
-      <details className="summary-section" open>
-        <summary className="summary-section-summary">5 — Why Soft Stretch: 0.70 + 0.30 × Percentile?</summary>
+      <details id="soft-stretch-guide" className="summary-section summary-subsection" open>
+        <summary className="summary-section-summary">2.3 — Soft Stretch: Why 0.70 + 0.30 × Percentile?</summary>
         <p className="summary-body">
           Strict mode multiplies Max × Percentile × Attainment. This creates a serious
           fairness problem when cohort composition varies.
@@ -486,9 +593,166 @@ export default function SummaryPage() {
         </div>
       </details>
 
+      {/* ── Normalized Scorecard Roll-up ────────────────── */}
+      <details id="normalized-scorecard" className="summary-section summary-section-scorecard" open>
+        <summary className="summary-section-summary">3 — Normalized Scorecard</summary>
+        <p className="summary-body">
+          The Normalized Scorecard starts only after each individual KPI has produced its
+          official Soft Stretch earned points. It then combines KPIs within pillars, applies
+          the agreed business pillar weights, and separates performance from data coverage.
+        </p>
+        <div className="summary-callout">
+          <strong>Why this layer exists:</strong> KPI max points are not evenly distributed
+          across pillars, and not every supplier has every KPI. The roll-up preserves the
+          importance of each business pillar without treating an unavailable KPI as poor
+          performance. Coverage is shown separately so missing data remains visible.
+        </div>
+
+        <h3 className="summary-subhead">The roll-up sequence</h3>
+        <div className="summary-formula-steps">
+          <div className="summary-step">
+            <span className="summary-step-num">Step 1</span>
+            <div>
+              <strong>Start with official individual KPI earned points</strong>
+              <p>Each data-enabled KPI contributes between zero and its fixed Max Score. Strict mode is preview-only and is not written into the Normalized Scorecard.</p>
+            </div>
+          </div>
+          <div className="summary-step-arrow">↓</div>
+          <div className="summary-step">
+            <span className="summary-step-num">Step 2</span>
+            <div>
+              <strong>Decide which KPIs are applicable</strong>
+              <p>An applicable KPI adds both its earned points and its Max Score to the pillar. A Not Applicable KPI adds neither. If a user explicitly marks a no-data KPI as applicable, it adds its Max Score with zero earned points.</p>
+            </div>
+          </div>
+          <div className="summary-step-arrow">↓</div>
+          <div className="summary-step">
+            <span className="summary-step-num">Step 3</span>
+            <div>
+              <strong>Calculate each applicable Pillar Score</strong>
+              <p className="summary-formula-display">Pillar Score % = Earned KPI Points ÷ Applicable KPI Max Points × 100</p>
+              <p>This converts every pillar to a comparable 0–100 performance percentage, even when pillars contain different numbers of KPI points.</p>
+            </div>
+          </div>
+          <div className="summary-step-arrow">↓</div>
+          <div className="summary-step">
+            <span className="summary-step-num">Step 4</span>
+            <div>
+              <strong>Apply the business Pillar Weight</strong>
+              <p className="summary-formula-display">Weighted Contribution = (Pillar Score % ÷ 100) × Pillar Weight</p>
+              <p>Service Level can contribute up to 40 points. Operational, Sustainability, and Value Creation can each contribute up to 20.</p>
+            </div>
+          </div>
+          <div className="summary-step-arrow">↓</div>
+          <div className="summary-step summary-step-final">
+            <span className="summary-step-num">Step 5</span>
+            <div>
+              <strong>Normalize across applicable pillars</strong>
+              <p className="summary-formula-display">Normalized Score = Total Weighted Contribution ÷ Applicable Pillar Weight × 100</p>
+              <p>If a whole pillar has no applicable KPI, its weight is removed from the denominator. The remaining applicable pillar weights are therefore rescaled to a 0–100 result.</p>
+            </div>
+          </div>
+          <div className="summary-step-arrow">↓</div>
+          <div className="summary-step">
+            <span className="summary-step-num">Step 6</span>
+            <div>
+              <strong>Show coverage separately</strong>
+              <p className="summary-formula-display">Coverage % = Available KPI Points ÷ 100</p>
+              <p className="summary-formula-display">Coverage-Adjusted Score = Normalized Score × Coverage %</p>
+              <p>The Normalized Score describes performance where measurement exists. The Coverage-Adjusted Score also reflects how much of the complete framework is currently measurable.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 className="summary-subhead">Worked example: why the final score is 39.74</h3>
+        <p className="summary-body">
+          This is the same example shown on the Normalized Scorecard. KPI values displayed
+          in the application are rounded, while calculations use the full stored precision.
+        </p>
+        <div className="table-frame">
+          <table className="data-table summary-table">
+            <thead>
+              <tr>
+                <th>Pillar</th>
+                <th>Pillar Weight</th>
+                <th>Earned KPI Points</th>
+                <th>Applicable KPI Max</th>
+                <th>Pillar Score</th>
+                <th>Weighted Contribution</th>
+              </tr>
+            </thead>
+            <tbody>
+              {NORMALIZED_EXAMPLE.map((row) => (
+                <tr key={row.pillar}>
+                  <td><strong>{row.pillar}</strong></td>
+                  <td className="summary-center">{row.weight}</td>
+                  <td className="summary-center">{row.earned}</td>
+                  <td className="summary-center">{row.max}</td>
+                  <td className="summary-center"><strong>{row.score}</strong></td>
+                  <td className="summary-center"><strong>{row.contribution}</strong></td>
+                </tr>
+              ))}
+              <tr className="summary-total-row">
+                <td><strong>Applicable totals</strong></td>
+                <td className="summary-center"><strong>80</strong></td>
+                <td className="summary-center"><strong>25.07</strong></td>
+                <td className="summary-center"><strong>65.0</strong></td>
+                <td className="summary-center">—</td>
+                <td className="summary-center"><strong>31.79</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="summary-ref-grid summary-score-results">
+          <div className="summary-ref-card">
+            <span className="summary-ref-label">1. Weighted Contribution</span>
+            <code>17.92 + 10.70 + 3.17 = 31.79</code>
+            <p>The contribution before rescaling the 80 applicable pillar-weight points.</p>
+          </div>
+          <div className="summary-ref-card summary-ref-highlight">
+            <span className="summary-ref-label">2. Normalized Score</span>
+            <code>31.79 ÷ 80 × 100 = 39.74</code>
+            <p>Performance across the applicable pillars, expressed on a 0–100 scale.</p>
+          </div>
+          <div className="summary-ref-card">
+            <span className="summary-ref-label">3. Coverage-Adjusted</span>
+            <code>39.74 × 65% = 25.83</code>
+            <p>The same performance score reduced by the 65% measurable KPI coverage.</p>
+          </div>
+        </div>
+
+        <h3 className="summary-subhead">How to interpret the three numbers</h3>
+        <div className="summary-split summary-interpretation-grid">
+          <div className="summary-split-card">
+            <strong>39.74: Normalized performance</strong>
+            <p>How well did the supplier perform across the pillars that can be scored? The missing Value Creation pillar is not treated as zero.</p>
+          </div>
+          <div className="summary-split-card">
+            <strong>31.79: Contribution before normalization</strong>
+            <p>The weighted points earned before the 80 applicable pillar-weight points are rescaled to 100. It is an intermediate value, not the headline score.</p>
+          </div>
+          <div className="summary-split-card">
+            <strong>65%: Framework coverage</strong>
+            <p>How much of the full 100-point KPI framework currently has data for this supplier. It is a completeness measure, not a performance result.</p>
+          </div>
+          <div className="summary-split-card">
+            <strong>25.8: Coverage-adjusted view</strong>
+            <p>The supplier's normalized performance after also accounting for incomplete framework coverage.</p>
+          </div>
+        </div>
+
+        <div className="summary-callout summary-callout-warning">
+          <strong>Important interpretation:</strong> A Normalized Score of 39.74 does not
+          mean the supplier earned 39.74 of all 100 expected KPI points. It means the
+          supplier achieved 39.74% across applicable pillars after pillar-weight
+          normalization. Read it together with Coverage and the Coverage-Adjusted Score.
+        </div>
+      </details>
+
       {/* ── Edge Cases ───────────────────────────────────── */}
-      <details className="summary-section" open>
-        <summary className="summary-section-summary">6 — Edge Cases &amp; Special Rules</summary>
+      <details id="edge-cases" className="summary-section" open>
+        <summary className="summary-section-summary">4 — Edge Cases &amp; Special Rules</summary>
         <div className="table-frame">
           <table className="data-table summary-table">
             <thead>
@@ -510,8 +774,8 @@ export default function SummaryPage() {
       </details>
 
       {/* ── Quick Reference ──────────────────────────────── */}
-      <details className="summary-section" open>
-        <summary id="formula-reference" className="summary-section-summary">7 — Quick Formula Reference</summary>
+      <details id="formula-reference" className="summary-section" open>
+        <summary className="summary-section-summary">5 — Quick Formula Reference</summary>
         <div className="summary-ref-grid">
           <div className="summary-ref-card">
             <span className="summary-ref-label">Percentile</span>
@@ -531,7 +795,7 @@ export default function SummaryPage() {
           <div className="summary-ref-card">
             <span className="summary-ref-label">Strict</span>
             <code>Max × Percentile × Attainment</code>
-            <p>Rank fully determines score. Last place = near zero.</p>
+            <p>Preview-only. Rank fully determines score. Last place = near zero.</p>
           </div>
           <div className="summary-ref-card">
             <span className="summary-ref-label">Score %</span>
@@ -542,6 +806,31 @@ export default function SummaryPage() {
             <span className="summary-ref-label">Tie handling</span>
             <code>Rank = (startRank + endRank) / 2</code>
             <p>Tied suppliers share the average of their ranks.</p>
+          </div>
+          <div className="summary-ref-card">
+            <span className="summary-ref-label">Pillar Score</span>
+            <code>Earned KPI Points ÷ Applicable KPI Max × 100</code>
+            <p>Converts the applicable KPI result inside each pillar to 0–100%.</p>
+          </div>
+          <div className="summary-ref-card">
+            <span className="summary-ref-label">Weighted Contribution</span>
+            <code>(Pillar Score % ÷ 100) × Pillar Weight</code>
+            <p>Applies the agreed 40/20/20/20 business priority.</p>
+          </div>
+          <div className="summary-ref-card summary-ref-highlight">
+            <span className="summary-ref-label">Normalized Score</span>
+            <code>Total Contribution ÷ Applicable Pillar Weight × 100</code>
+            <p>Rescales applicable pillar performance to a comparable 0–100 score.</p>
+          </div>
+          <div className="summary-ref-card">
+            <span className="summary-ref-label">Coverage</span>
+            <code>Available KPI Points ÷ 100</code>
+            <p>Shows how much of the complete framework is measurable.</p>
+          </div>
+          <div className="summary-ref-card">
+            <span className="summary-ref-label">Coverage-Adjusted</span>
+            <code>Normalized Score × Coverage %</code>
+            <p>Combines measured performance with framework completeness.</p>
           </div>
         </div>
       </details>

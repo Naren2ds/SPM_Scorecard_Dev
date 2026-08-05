@@ -542,34 +542,36 @@ function ScorecardPage() {
   return (
     <>
       {/* ─── Header ────────────────────────────────────────────────────── */}
-      <section className="top-bar kpi-page-heading">
+      <section className="top-bar kpi-page-heading sc-scorecard-heading">
         <div>
-          <p className="eyebrow">Q3 Normalized Framework</p>
+          <p className="eyebrow">Supplier Performance Overview</p>
           <h1>Normalized Supplier Scorecard</h1>
           <p className="kpi-value-note">
-            Score = Σ(Pillar&nbsp;%&nbsp;×&nbsp;Pillar&nbsp;Weight)&nbsp;/&nbsp;Σ(Applicable&nbsp;Pillar&nbsp;Weight)&nbsp;×&nbsp;100
-          </p>
-          <p className="kpi-value-note">
-            Pillar&nbsp;% = Σ(Earned&nbsp;KPI&nbsp;Points)&nbsp;/&nbsp;Σ(Applicable&nbsp;Max&nbsp;Points)
+            Combines applicable KPI results into one weighted supplier performance score. Unavailable KPIs are excluded.
           </p>
           {error && <p className="supporting">Error loading scorecard: {error}</p>}
           {loading && !leaderboard && <p className="supporting">Loading scorecard…</p>}
         </div>
-        <div className="header-actions">
-          <div style={{ textAlign: "right" }}>
+        <div className="header-actions sc-scorecard-header-actions">
+          <div className="sc-scorecard-header-meta">
             {cacheInfo?.cached_at && (
               <p className="supporting" style={{ marginBottom: "4px", fontSize: "0.75rem" }}>
                 Cache built: {new Date(cacheInfo.cached_at).toLocaleString()} &nbsp;|&nbsp; {cacheInfo.parent_count} parents
               </p>
             )}
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={!summary?.filtered_parent_count}
+            >
+              Export CSV
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={exportCsv}
-            disabled={!summary?.filtered_parent_count}
-          >
-            Export CSV
-          </button>
+          <aside className="sc-scorecard-formula-reference" aria-label="Score calculation reference">
+            <span>Calculation Reference</span>
+            <p>Weighted Contribution = (Pillar Score % ÷ 100) × Pillar Weight</p>
+            <p>Final Score = Total Weighted Contribution ÷ Applicable Pillar Weight × 100</p>
+          </aside>
         </div>
       </section>
 
@@ -840,7 +842,7 @@ function ScorecardPage() {
                   <div className="sc-normcalc-row">
                     <div className="sc-normcalc-cell">
                       <div className="sc-normcalc-label">
-                        Σ(Pillar % × Pillar Weight)
+                        Σ(Weighted Contribution)
                       </div>
                       <div className="sc-normcalc-value">
                         {computed.weighted_sum.toFixed(2)}

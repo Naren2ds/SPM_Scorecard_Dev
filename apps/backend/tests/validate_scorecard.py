@@ -21,7 +21,7 @@ Usage
 
 Output
 ------
-    data/scorecard_validation_report.csv   — full row-level detail
+    data/scorecard_validation_report_YYYYMMDD_HHMMSS.xlsx
     Prints a pass/fail summary to the terminal.
 """
 
@@ -31,6 +31,7 @@ import argparse
 import csv
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,11 +54,17 @@ from scorecard import (
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-REPORT_PATH = DATA_DIR / "scorecard_validation_report.xlsx"
+REPORT_FILENAME_PREFIX = "scorecard_validation_report"
 CONFIG_OVERRIDES_PATH = DATA_DIR / "kpi_config_overrides.json"
 
 TOLERANCE       = 0.001   # max allowed absolute difference for KPI-level fields
 TOLERANCE_SCORE = 0.005   # max allowed diff for normalized score (server rounds to 2 dp)
+
+
+def _timestamped_report_path(generated_at: datetime | None = None) -> Path:
+    """Return a locally timestamped path for a validation workbook."""
+    timestamp = generated_at or datetime.now().astimezone()
+    return DATA_DIR / f"{REPORT_FILENAME_PREFIX}_{timestamp:%Y%m%d_%H%M%S}.xlsx"
 
 
 # ── CSV loaders (mirrors server.py _load_csv) ────────────────────────────────
@@ -500,8 +507,10 @@ def run_validation(
     # ── Write Excel report ────────────────────────────────────────────────────
     if report_rows:
         df = pd.DataFrame(report_rows)
-        _write_excel_report(df, REPORT_PATH)
-        print(f"\nDetailed report written to: {REPORT_PATH}")
+        report_path = _timestamped_report_path()
+        print(f"\nWriting detailed report to: {report_path}", flush=True)
+        _write_excel_report(df, report_path)
+        print(f"Detailed report written to: {report_path}")
     else:
         print("\n[WARN] No data to report.")
 

@@ -10,6 +10,7 @@ __pycache__/
 .venv/
 scorecard_preview.png
 apps/backend/data/scorecard_validation_report.csv
+apps/backend/data/scorecard_validation_report_*.xlsx
 # dist and apps/backend/data/ are tracked on this deploy branch
 
 # Other local debugging scripts

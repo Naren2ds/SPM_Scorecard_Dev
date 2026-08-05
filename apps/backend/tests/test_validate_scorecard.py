@@ -36,5 +36,6 @@ def test_all_scorecard_calculations_pass():
     passed = run_validation()
     assert passed, (
         "Scorecard validation FAILED — one or more KPI calculations do not match. "
-        "Check apps/backend/data/scorecard_validation_report.xlsx for details."
+        "Check the newest apps/backend/data/"
+        "scorecard_validation_report_YYYYMMDD_HHMMSS.xlsx file for details."
     )

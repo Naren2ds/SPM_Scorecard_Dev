@@ -39,14 +39,14 @@ sm-36,Bevcan,NAMPAK BEVCAN,AFR,,Applicable,0.070000,2025
 sm-37,Biagi,"Arglass, LLC",NAZ,,Applicable,0.280000,2025
 sm-38,Bing Xin,Bing Xin,APAC,,Applicable,0.040000,2025
 sm-39,Bode / Protec-Pacific,Bode / Protec-Pacific,APAC,,Applicable,0.040000,2025
-sm-40,Bohemia Hop,Bohemia Hop,GHQ,,Applicable,0.130000,2025
-sm-41,Boortmalt,BOORTMALT,EUR,,Applicable,0.660000,2025
-sm-42,Boortmalt,BOORTMALT,MAZ,,Applicable,0.660000,2025
-sm-43,Boortmalt,BOORTMALT,NAZ,,Applicable,0.660000,2025
+sm-40,Bohemia Hop,CHMELARSTVI DRUZSTVO ZATEC,GHQ,,Applicable,0.130000,2025
+sm-41,Boortmalt,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,,Applicable,0.660000,2025
+sm-42,Boortmalt,SOCIETE COOPERATIVE AGRICOLE AXEREAL,MAZ,,Applicable,0.660000,2025
+sm-43,Boortmalt,SOCIETE COOPERATIVE AGRICOLE AXEREAL,NAZ,,Applicable,0.660000,2025
 sm-44,CAEI,CAEI,MAZ,,Applicable,0.310000,2025
 sm-45,CARIBBEAN GLASS INDUSTRY S.A.,CARIBBEAN PALLET,MAZ,,Applicable,0.150000,2025
 sm-46,CCL,CCL LABEL,APAC,,Applicable,0.040000,2025
-sm-47,CCL LABEL,CCL LABEL,NAZ,,Applicable,0.440000,2025
+sm-47,CCL LABEL,CCL Industries Inc,NAZ,,Applicable,0.440000,2025
 sm-48,CMA,CMA,GHQ,,Applicable,0.930000,2025
 sm-49,COFCO - Malt,COFCO,APAC,,Applicable,0.270000,2025
 sm-50,CR ENGLAND,"C.R. England, Inc.",NAZ,,Applicable,0.140000,2025
@@ -93,7 +93,7 @@ sm-90,FERYARROZ CIA LTDA,FERYARROZ CIA LTDA,MAZ,,Applicable,0.150000,2025
 sm-91,Farmers Rice Cooperative,Farmers' Rice Cooperative,NAZ,,Applicable,0.120000,2025
 sm-92,Fevisa,"Fevisa, S.A. de C.V.",MAZ,,Applicable,0.400000,2025
 sm-93,Fevisa,"Fevisa, S.A. de C.V.",NAZ,,Applicable,0.400000,2025
-sm-94,Firmenich,Firmenich,GHQ,,Applicable,1.000000,2025
+sm-94,Firmenich,DSM-Firmenich AG,GHQ,,Applicable,1.000000,2025
 sm-95,Fogel,FOGEL GROUP,MAZ,,Applicable,0.580000,2025
 sm-96,Frigoglass COOLING,FRIGOGLASS,AFR,,Applicable,0.820000,2025
 sm-97,Frigoglass GLASS,FRIGOGLASS,AFR,,Applicable,0.820000,2025
@@ -162,12 +162,12 @@ sm-159,Jing yu,Jing yu,APAC,,Applicable,0.180000,2025
 sm-160,Jinxian,Jinxian,APAC,,Applicable,0.080000,2025
 sm-161,K.K. Industries,K.K. INDUSTRIES,APAC,,Applicable,0.230000,2025
 sm-162,KAISER ALUMINUM WARRICK LLC,KAISER ALUMINUM WARRICK LLC,NAZ,,Applicable,0.270000,2025
-sm-163,Kalsec,Kalsec,GHQ,,Applicable,0.540000,2025
+sm-163,Kalsec,KALAMAZOO HOLDINGS,GHQ,,Applicable,0.540000,2025
 sm-164,Karnataka RoadlinesPvt. Ltd.,KARNATAKA ROADLINES PRIVATE LIMITED,APAC,,Applicable,0.050000,2025
 sm-165,Kennedy rice mills,Kennedy rice mills,NAZ,,Applicable,0.200000,2025
 sm-166,Kerry,Kerry,GHQ,,Applicable,0.940000,2025
 sm-167,Kersia-Sopura,Kersia-Sopura,GHQ,,Applicable,0.540000,2025
-sm-168,Kioo Limited,KIOO LIMITED,AFR,,Applicable,0.360000,2025
+sm-168,Kioo Limited,EMCO TANZANIA LIMITED,AFR,,Applicable,0.360000,2025
 sm-169,Korea Export,Korea Export,APAC,,Applicable,0.040000,2025
 sm-170,Kumbi,Kumbi,APAC,,Applicable,0.510000,2025
 sm-171,Kyungwon,Kyungwon,APAC,,Applicable,0.220000,2025

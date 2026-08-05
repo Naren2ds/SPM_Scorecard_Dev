@@ -36,7 +36,7 @@ sc-33,ACEFLEX DO NORDESTE LTDA - FEIRA DE SANTANA,ACEFLEX DO NORDESTE LTDA,SAZ,B
 sc-34,ACHERNAR S.A. - C.A.B.A,SATO CORPORATION,SAZ,Argentina,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-35,ACSUR SOCIEDAD ANONIMA - BARRIO : PARQUE INDUSTRIAL - RIO G,ACSUR SOCIEDAD ANONIMA,SAZ,Argentina,Packaging Materials,Applicable,Not Approved,0.160000,2026
 sc-36,ACT INDUSTRIA E COMERCIO LTDA - CURITIBA,ACT INDUSTRIA E COMERCIO LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
-sc-37,ACURA TECHNOLOGIES LTDA - EXTREMA,ACURA TECHNOLOGIES LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
+sc-37,ACURA TECHNOLOGIES LTDA - EXTREMA,ASSA ABLOY BRASIL INDUSTRIA E COMERCIO LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
 sc-38,ADAMA SA - CAPITAL FEDERAL,ADAMA SA,SAZ,Argentina,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-39,ADECOAGRO PILAGA FRANCK,Kadesh Hispania S.L.,SAZ,Argentina,Raw Materials,Applicable,Approved,0.830000,2026
 sc-40,ADECOAGRO PILAGA MERCEDES,Kadesh Hispania S.L.,SAZ,Argentina,Raw Materials,Applicable,Approved,0.500000,2026
@@ -92,18 +92,18 @@ sc-89,AQUA GROUP S.A. - Luque - PARAGUAY,AQUA GROUP S.A.,SAZ,Paraguay,Raw Materi
 sc-90,ARANDO - La Paz,ARANDO INDUSTRIAL Y COMERCIAL BOLIVIA,SAZ,Bolivia,Packaging Materials,Applicable,Approved,0.400000,2026
 sc-91,ARDION S.A.,ARDION S.A.,SAZ,Argentina,Raw Materials,Applicable,Approved,0.850000,2026
 sc-92,ARGENTI LEMON SA,ARGENTI LEMON SA,SAZ,Argentina,Raw Materials,Applicable,Approved for Trials,1.000000,2026
-sc-93,ARO EXPORTACAO IMPORTACAO - GUARULHOS,ARO EXPORTACAO IMPORTACAO,SAZ,Brazil,Packaging Materials,Applicable,Potential Supplier,0.710000,2026
+sc-93,ARO EXPORTACAO IMPORTACAO - GUARULHOS,COBANSA CONSTRUTORA BANDEIRANTES,SAZ,Brazil,Packaging Materials,Applicable,Potential Supplier,0.710000,2026
 sc-94,ARQUIMIA S.A. - Fcio Varela,ARQUIMIA S.A.,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
 sc-95,ARROZEIRA PELOTAS INDUSTRIA E - PELOTAS - MATRIZ,ARROZEIRA PELOTAS,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-96,ARROZEIRA PELOTAS INDUSTRIA E - PELOTAS - PLANTA F7,ARROZEIRA PELOTAS,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-97,ART CHIK PRODUTOS PUBLICITARIOS - RIBEIRAO PRETO,ART CHIK PRODUTOS PUBLICITARIOS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-98,ASAHI,"ASAHI TRADING CO., LTD.",MAZ,,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-99,ASHLAND COMERCIO ESPECIALIDADES - SAO PAULO,ASHLAND COMERCIO ESPECIALIDADES,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.600000,2026
+sc-99,ASHLAND COMERCIO ESPECIALIDADES - SAO PAULO,ASHLAND GLOBAL HOLDINGS,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.600000,2026
 sc-100,ASUPACK S.A.,ASUPACK S.A.,SAZ,Paraguay,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-101,AVIENT COLOMBIA,Avient Corporation,MAZ,Colombia,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-102,AVPack Plastic Manufacturers - Isipingo,AVPack Plastic Manufacturers,AFR,South Africa,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-103,AVT Tea Services - Cochin,AVT Tea Services,NAZ,India,Raw Materials,Applicable,Approved,0.750000,2026
-sc-104,AZEPLAST INDUSTRIA E COMERCIO LTDA - CHAPECO,AZEPLAST INDUSTRIA E COMERCIO LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-104,AZEPLAST INDUSTRIA E COMERCIO LTDA - CHAPECO,AZEPLAST INDUSTRIA E COMERCIO,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-105,AZUCARERA DEL LITORAL S A - PAYSANDU,AZUCARERA,SAZ,Uruguay,Raw Materials,Applicable,Approved,0.710000,2026
 sc-106,Aarav Casings - Kolkata,Aarav Casings,APAC,India,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-107,Abstrax (corporate),Abstrax (corporate),NAZ,United States,Raw Materials,Applicable,Approved,1.000000,2026
@@ -303,7 +303,7 @@ sc-298,Arkansas River Rice Mill - Pine Bluff,Arkansas River Rice Mill,NAZ,United
 sc-299,Arkay Plastics - Blantyre,Arkay Plastics,AFR,Mozambique,Packaging Materials,Applicable,Approved,0.500000,2026
 sc-300,Arkema - Serquigny,ARKEMA,EUR,France,Raw Materials,Applicable,Approved,0.000000,2026
 sc-301,Arkema Colombia - Medellin,ARKEMA,MAZ,Colombia,Raw Materials,Applicable,Approved,0.750000,2026
-sc-302,Armazém - Paratibe (Multimodal),Armazém,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-302,Armazém - Paratibe (Multimodal),MULTIMODAL TRANSPORTE E LOGISTICA EIRELI,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-303,Aromatrix Flora - Baddi,Aromatrix Flora,APAC,India,Raw Materials,Applicable,Approved for Trials,0.750000,2026
 sc-304,Arrocera - Cortazar,Arrocera,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
 sc-305,Arrocera - Nayarit,Arrocera,MAZ,Mexico,Raw Materials,Applicable,Not Approved,0.000000,2026
@@ -543,23 +543,23 @@ sc-538,Bolux Group (Pty) Ltd (corporate),Bolux Group (Pty) Ltd (corporate),AFR,B
 sc-539,Bomboki - Corporate,Bomboki,AFR,Nigeria,Broker/Distributor,Applicable,Approved,1.000000,2026
 sc-540,Boortmalt (Joe White Maltings) - Melbourne,BOORTMALT,APAC,Australia,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-541,Boortmalt - Adelaide,BOORTMALT,MAZ,Australia,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-542,Boortmalt - Antwerpen,BOORTMALT,EUR,Belgium,Raw Materials,Applicable,Approved,1.000000,2026
+sc-542,Boortmalt - Antwerpen,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,Belgium,Raw Materials,Applicable,Approved,1.000000,2026
 sc-543,Boortmalt - Bahia Blanca,SOCIETE COOPERATIVE AGRICOLE AXEREAL,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
 sc-544,Boortmalt - Bahia Blanca - Argentina,BOORTMALT,MAZ,Argentina,Raw Materials,Applicable,Approved for Trials,0.500000,2026
 sc-545,Boortmalt - Biggar (Prairie),BOORTMALT,NAZ,Canada,Raw Materials,Applicable,Approved,0.850000,2026
-sc-546,Boortmalt - Bury St Edmunds,BOORTMALT,EUR,United Kingdom,Raw Materials,Applicable,Approved,1.000000,2026
-sc-547,Boortmalt - Bury St Edmunds,BOORTMALT,EUR,United Kingdom,Raw Materials,Applicable,Approved but Inactive,1.000000,2026
-sc-548,Boortmalt - Gembloux,BOORTMALT,EUR,Belgium,Raw Materials,Applicable,Disallowed,0.000000,2026
-sc-549,Boortmalt - Herent,BOORTMALT,EUR,Belgium,Raw Materials,Applicable,Approved,1.000000,2026
-sc-550,Boortmalt - Issoudun,BOORTMALT,EUR,France,Raw Materials,Applicable,Approved,1.000000,2026
-sc-551,Boortmalt - Knapton,BOORTMALT,EUR,United Kingdom,Raw Materials,Applicable,Approved,1.000000,2026
+sc-546,Boortmalt - Bury St Edmunds,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,United Kingdom,Raw Materials,Applicable,Approved,1.000000,2026
+sc-547,Boortmalt - Bury St Edmunds,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,United Kingdom,Raw Materials,Applicable,Approved but Inactive,1.000000,2026
+sc-548,Boortmalt - Gembloux,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,Belgium,Raw Materials,Applicable,Disallowed,0.000000,2026
+sc-549,Boortmalt - Herent,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,Belgium,Raw Materials,Applicable,Approved,1.000000,2026
+sc-550,Boortmalt - Issoudun,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,France,Raw Materials,Applicable,Approved,1.000000,2026
+sc-551,Boortmalt - Knapton,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,United Kingdom,Raw Materials,Applicable,Approved,1.000000,2026
 sc-552,Boortmalt - Perth - Wheat,BOORTMALT,APAC,Australia,Raw Materials,Applicable,Disallowed,0.250000,2026
 sc-553,"Boortmalt - Punta Avelar, Santa Fé",SOCIETE COOPERATIVE AGRICOLE AXEREAL,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
-sc-554,Boortmalt - Salzgitter (Cargill GmbH),BOORTMALT,EUR,Germany,Raw Materials,Applicable,Approved,1.000000,2026
-sc-555,Boortmalt - Strasbourg,BOORTMALT,EUR,France,Raw Materials,Applicable,Approved,1.000000,2026
-sc-556,Boortmalt - Swalmen,BOORTMALT,EUR,Netherlands,Raw Materials,Applicable,Approved,1.000000,2026
+sc-554,Boortmalt - Salzgitter (Cargill GmbH),SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,Germany,Raw Materials,Applicable,Approved,1.000000,2026
+sc-555,Boortmalt - Strasbourg,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,France,Raw Materials,Applicable,Approved,1.000000,2026
+sc-556,Boortmalt - Swalmen,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,Netherlands,Raw Materials,Applicable,Approved,1.000000,2026
 sc-557,Boortmalt - Sydney,BOORTMALT,APAC,Australia,Raw Materials,Applicable,Approved,0.500000,2026
-sc-558,Boortmalt - Villaverde,BOORTMALT,EUR,Spain,Raw Materials,Applicable,Approved for Trials,1.000000,2026
+sc-558,Boortmalt - Villaverde,SOCIETE COOPERATIVE AGRICOLE AXEREAL,EUR,Spain,Raw Materials,Applicable,Approved for Trials,1.000000,2026
 sc-559,Boozios Liquors SAC - Perú,Boozios Liquors SAC,MAZ,Peru,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-560,Boruite-Changzhou,Boruite-Changzhou,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-561,Bostik (Louisville),Bostik (Louisville),MAZ,United States,Packaging Materials,Applicable,Approved,0.000000,2026
@@ -817,14 +817,14 @@ sc-812,CAEL,CAEL,MAZ,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-813,CAMARGO COMPANHIA DE EMBALAGENS - TIETE,CAMARGO COMPANHIA DE EMBALAGENS,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.160000,2026
 sc-814,CARBO UA SOLUTIONS INTERNATIONAL LL - LOS ANGELES,CARBO UA SOLUTIONS INTERNATIONAL LL,SAZ,United States,Raw Materials,Applicable,Approved,1.000000,2026
 sc-815,CARBOKEM SA DE CV,CARBOKEM SA DE CV,MAZ,Mexico,Broker/Distributor,Applicable,Approved,0.750000,2026
-sc-816,CARBOMAN GAS CARBONICO MANAUS LTDA,CARBOMAN GAS CARBONICO MANAUS LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,0.000000,2026
+sc-816,CARBOMAN GAS CARBONICO MANAUS LTDA,CARBOMAN GAS CARBONICO DE MANAUS,SAZ,Brazil,Raw Materials,Applicable,Approved,0.000000,2026
 sc-817,CARBOSYS INDUSTRIA LTDA - CAMPO LARGO,CARBOSYS INDÚSTRIA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-818,CARTOGUA,CARTOGUA,MAZ,Guatemala,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-819,CARTONAGEM CIRCULU'S INDUSTRIA E - FRANCA,CARTONAGEM CIRCULU'S INDUSTRIA E,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-820,CARTONBOL - Oruro,ESTADO PLURINACIONAL DE BOLIVIA,SAZ,Bolivia,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-821,CARTONERA NACIONAL CALI,CARTONERA NACIONAL CALI,MAZ,Colombia,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-822,CARTONES DEL CARIBE,CARTONES DEL CARIBE,MAZ,,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-823,CARTONES YAGUARETE S.A. - SAN LORENZO,CARTONES YAGUARETE S.A.,SAZ,Paraguay,Packaging Materials,Applicable,Not Approved,,2026
+sc-823,CARTONES YAGUARETE S.A. - SAN LORENZO,CARTONES YAGUARETE,SAZ,Paraguay,Packaging Materials,Applicable,Not Approved,,2026
 sc-824,CASA GRANDE - PERÚ,Corporación Azucarera del Perú S.A.,MAZ,Peru,Raw Materials,Applicable,Approved,0.750000,2026
 sc-825,CASABO S.A. - MONTEVIDEO,CASABO S.A.,SAZ,Uruguay,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-826,CAZVI,CAZVI,MAZ,,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -891,7 +891,7 @@ sc-886,COMERCIO DE MADEIRA SERRANA LTDA - SANTA TERESA,OFICIO SOCIAL SERVICOS DE
 sc-887,COMERRSA,COMERRSA,MAZ,Guatemala,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-888,"COMPAZ, S.A. DE C.V.","COMPAZ, S.A. DE C.V.",MAZ,Mexico,Raw Materials,Applicable,Not Approved,0.750000,2026
 sc-889,COMPAÑIA INVERSORA INDUSTRIA - LEALES,COMPAÑIA INVERSORA FERROVIARIA S A I F,SAZ,Argentina,Raw Materials,Applicable,Approved,0.710000,2026
-sc-890,CONDBRAS TEMPEROS E ESPECIARIAS - ARACARIGUAMA,CONDBRAS TEMPEROS E ESPECIARIAS,SAZ,Brazil,Raw Materials,Applicable,Approved,0.750000,2026
+sc-890,CONDBRAS TEMPEROS E ESPECIARIAS - ARACARIGUAMA,CONDBRAS TEMPEROS E ESPECIARIAS LTDA EPP,SAZ,Brazil,Raw Materials,Applicable,Approved,0.750000,2026
 sc-891,CONQUIMICA S.A.,BRENNTAG COLOMBIA S A,MAZ,Colombia,Broker/Distributor,Applicable,Potential Supplier,0.000000,2026
 sc-892,CONSTRUESTIBAS LTDA,CONSTRUESTIBAS LTDA,MAZ,Colombia,Packaging Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-893,CONTINENTAL CHEMICAL CO - Arusha,CONTINENTAL CHEMICAL CO,AFR,Tanzania,Raw Materials,Applicable,Not Approved,0.000000,2026
@@ -924,7 +924,7 @@ sc-919,CSPC Pharma (Redox Distributor in USA) - Shijiazhuang,CSPC Pharma (Redox 
 sc-920,CTP Cartons and Labels - Corporate,CTP Cartons and Labels,AFR,South Africa,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-921,CZARNIKOW - SAN ANTONIO,C CZARNIKOW,MAZ,Colombia,Broker/Distributor,Applicable,Potential Supplier,0.160000,2026
 sc-922,CZARNIKOW GROUP - AZUCAR CASA GRANDE,C CZARNIKOW,MAZ,Colombia,Broker/Distributor,Applicable,Potential Supplier,0.750000,2026
-sc-923,Cabka - IPS - Ieper,Cabka,EUR,Belgium,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-923,Cabka - IPS - Ieper,INNOVA PACKAGING SYSTEMS,EUR,Belgium,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-924,Cajas Colombianas S.A.S - Cali - Corrugated,CAJAS COLOMBIANAS S A S,MAZ,Colombia,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-925,Cajas Colombianas S.A.S - Cali - Folding,CAJAS COLOMBIANAS S A S,MAZ,Colombia,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-926,Cajas y empaques industriales de madera S. A. DE C. V. - Chignahuapan,CAJAS Y EMPAQUES INDUSTRIALES DE MA,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -1054,7 +1054,7 @@ sc-1049,Contrans Transload,Contrans Transload,NAZ,,Raw Materials,Applicable,Appr
 sc-1050,Converplast Embalagens - Guarulhos,CONVERPLAST EMBALAGENS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1051,Cooperativa Agraria - Campos Gerais,COOPERCARGA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1052,Cooperativa Agraria - Entre Rios / Guarapuava,COOPERCARGA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1053,Cooperativa Agraria Agroindu trial - Guarapuava,Cooperativa Agraria Agroindu trial,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1053,Cooperativa Agraria Agroindu trial - Guarapuava,COOPERATIVA AGRARIA AGROINDUSTRIAL,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1054,Cooperativa Pindo Ltda.,COOPERCARGA,SAZ,Paraguay,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1055,Cooperativa Rubiataba Industrial SA,COOPERCARGA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1056,Cormart - Ilupeju,Cormart,AFR,Nigeria,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -1101,8 +1101,8 @@ sc-1096,Crown- Botcherby,Crown- Botcherby,EUR,United Kingdom,Packaging Materials
 sc-1097,Crv Industrial Ltda - Carmo Do Rio Verde,CRV INDUSTRIAL,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1098,Cutwater,Cutwater,NAZ,United States,Raw Materials,Applicable,Approved,,2026
 sc-1099,Czarnikow  - Miami,Czarnikow,AFR,United States,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-1100,Czarnikow Bra il Ltda - Sao Paulo - (USINA CAETÉ - MARITUBA),Czarnikow Bra il Ltda,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1101,Czarnikow Bra il Ltda - Sao Paulo - (USINA SONORA),Czarnikow Bra il Ltda,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1100,Czarnikow Bra il Ltda - Sao Paulo - (USINA CAETÉ - MARITUBA),CZARNIKOW BRASIL LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1101,Czarnikow Bra il Ltda - Sao Paulo - (USINA SONORA),CZARNIKOW BRASIL LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1102,D.D.Williamson(PTY) Ltd - Manzini,D.D.Williamson(PTY) Ltd,AFR,Eswatini,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1103,D.W. Reusables - Bilzen,DS SMITH,EUR,Belgium,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1104,D.W. Reusables - Karlovac,DS SMITH,EUR,Croatia,Packaging Materials,Applicable,Approved for Trials,1.000000,2026
@@ -1134,7 +1134,7 @@ sc-1129,DOHLER - MEXICO,DÖHLER GROUP,MAZ,Mexico,Raw Materials,Applicable,Potent
 sc-1130,DOHLER AMERICA LATINA LTDA - LIMEIRA,DÖHLER GROUP,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1131,DOHLER ANTONIO PRADO LTDA - ANTONIO PRADO,DOHLER ANTONIO PRADO LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1132,DOHLER MEXICO S.A.,DÖHLER GROUP,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1133,DOMINGOS ARAUJO NETO COMERCIO E INDUSTRIA LTDA,DOMINGOS ARAUJO NETO COMERCIO E INDUSTRIA LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
+sc-1133,DOMINGOS ARAUJO NETO COMERCIO E INDUSTRIA LTDA,DOMINGOS ARAÚJO NETO,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1134,DON JULIO - LAMBAYEQUE,DON JULIO,MAZ,Peru,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1135,"DONGGUAN GOOD WAREHOUSING SUPPLIES CO.,LTD.","DONGGUAN GOOD WAREHOUSING SUPPLIES CO.,LTD.",APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1136,DOS ANCLAS S. A - COMPANIA INTRODUCTORA DE BS AS,DOS ANCLAS S. A,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
@@ -1182,7 +1182,7 @@ sc-1177,Darleys - Burton,Darleys,EUR,United Kingdom,Packaging Materials,Applicab
 sc-1178,Daye-Huaxing,Daye-Huaxing,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1179,De Jong Packaging -  Ellesmere Port,De Jong Packaging,EUR,United Kingdom,Packaging Materials,Applicable,Potential Supplier,0.000000,2026
 sc-1180,De Jong Verpakking - De Lier Plant 2,De Jong Verpakking,EUR,Netherlands,Packaging Materials,Applicable,Potential Supplier,0.000000,2026
-sc-1181,De Marchi Industria E Comercio - Jundiai,De Marchi Industria E Comercio,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1181,De Marchi Industria E Comercio - Jundiai,DE MARCHI INDUSTRIA E COMERCIO DE F,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1182,Deco Glas - Montabaur,Deco Glas,EUR,Germany,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-1183,Dehui-Caifu,Dehui-Caifu,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1184,Delbrouck - Menden,WGA GmbH & Co. KG,EUR,Germany,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -1245,8 +1245,8 @@ sc-1240,EL EDEN COOPERATIVA MULTIBolivia,EL EDEN COOPERATIVA MULTIBolivia,MAZ,,R
 sc-1241,ELECTROQUIMICA,ELECTROQUIMICA,MAZ,Central America,Broker/Distributor,Applicable,Approved,1.000000,2026
 sc-1242,ELECTROQUIMICA,ELECTROQUIMICA,MAZ,Central America,Broker/Distributor,Applicable,Not Approved,0.770000,2026
 sc-1243,EMASAL,EMA BARRON,MAZ,Panama,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1244,EMBALATEC INDUSTRIAL LTDA - MOGI DAS CRUZES,EMBALATEC INDUSTRIAL LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
-sc-1245,EMBALATEC INDUSTRIAL LTDA - SALTO,EMBALATEC INDUSTRIAL LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
+sc-1244,EMBALATEC INDUSTRIAL LTDA - MOGI DAS CRUZES,EMBALATEC INDUSTRIAL,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
+sc-1245,EMBALATEC INDUSTRIAL LTDA - SALTO,EMBALATEC INDUSTRIAL,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
 sc-1246,EMBALATEX INDUSTRIA E COMERCIO DE - AGUDOS,EMBALATEX INDUSTRIA E COMERCIO DE,SAZ,Brazil,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-1247,EMBANOR EMBALAGENS LTDA - SALTO,EMBANOR EMBALAGENS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1248,EMERY SILVEIRA COMERCIO E - ILHEUS,EMERY SILVEIRA COMERCIO E,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -1262,7 +1262,7 @@ sc-1257,EMPILHA DO BRASIL LTDA,EMPILHA DO BRASIL LTDA,SAZ,Brazil,Packaging Mater
 sc-1258,ENERQUIMICA S.A.C. - SAN LUIS,ENERQUIMICA S.A.C.,SAZ,Peru,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1259,ENGEPACK EMBALAGENS SAO PAULO SA SIMOES FILHO,ENGEPACK EMBALAGENS SAO PAULO SA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1260,ENVAGREENPACK S DE RL DE CV,ENVAGREENPACK S DE RL DE CV,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1261,ENVASES DO BRASIL INDUSTRIA CABO DE SANTO AGOSTINHO (CRISTALPET),ENVASES DO BRASIL INDUSTRIA CABO DE SANTO AGOSTINHO (CRISTALPET),SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1261,ENVASES DO BRASIL INDUSTRIA CABO DE SANTO AGOSTINHO (CRISTALPET),CRISTALPET,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1262,ENVASES JOHN S.A. - CAPITAL FEDERAL,Envases,SAZ,Argentina,Packaging Materials,Applicable,Approved for Trials,1.000000,2026
 sc-1263,ENVASES PARAGUAYOS S.A. - NEMBY,Envases,SAZ,Paraguay,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1264,EP Minerals - Linbro Park,EP Minerals,AFR,South Africa,Raw Materials,Applicable,Not Approved,0.000000,2026
@@ -1271,7 +1271,7 @@ sc-1266,EP Minerals - Westlake,EP Minerals,AFR,South Africa,Raw Materials,Applic
 sc-1267,ERESUR S.A. - MONTEVIDEO,ERESUR S.A.,SAZ,Uruguay,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1268,ESCALA IMPRESORES,ESCALA IMPRESORES,MAZ,Colombia,Packaging Materials,Applicable,Potential Supplier,0.000000,2026
 sc-1269,ESTABLECIMIENTO LAS MARIAS SACIFA - CAPITAL FEDERAL,ESTABLECIMIENTO GRAFICO IMPRESORES,SAZ,Argentina,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-1270,ETIL RIO INDUSTRIA E COMERCIO LTDA - DUQUE DE CAXIAS,ETIL RIO INDUSTRIA E COMERCIO LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.200000,2026
+sc-1270,ETIL RIO INDUSTRIA E COMERCIO LTDA - DUQUE DE CAXIAS,ETIL RIO INDÚSTRIA E COMÉRCIO LTDA EPP,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.200000,2026
 sc-1271,EUCAMAD EUCALIPTO MADEIRAS LTDA - CATALAO,EUCAMAD EUCALIPTO MADEIRAS,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
 sc-1272,EUCAMAD EUCALIPTO MADEIRAS LTDA - ESTRELA DO SUL,EUCAMAD EUCALIPTO MADEIRAS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1273,EUCAMAD EUCALIPTO MADEIRAS LTDA - SENGES,EUCAMAD EUCALIPTO MADEIRAS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -1311,7 +1311,7 @@ sc-1306,Encirc - Derrylin,VIDRALA,EUR,North Ireland,Packaging Materials,Applicab
 sc-1307,Encirc - Elton,VIDRALA,EUR,United Kingdom,Packaging Materials,Applicable,Approved for Trials,0.710000,2026
 sc-1308,Engelhardt Druck - Nördlingen,Engelhardt Druck,EUR,Germany,Packaging Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-1309,"Enpack Metal Technology(YangZhou)Co.,Ltd","Enpack Metal Technology(YangZhou)Co.,Ltd",APAC,China,Packaging Materials,Applicable,Approved,0.900000,2026
-sc-1310,Enva e Impre o Cordillera SpA (CMPC) - SANTIAGO,Enva e Impre o Cordillera SpA (CMPC),SAZ,Chile,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1310,Enva e Impre o Cordillera SpA (CMPC) - SANTIAGO,Envases,SAZ,Chile,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1311,Envases - Öhringen  (Huberg Group),Envases,EUR,Germany,Packaging Materials,Applicable,Approved but Inactive,1.000000,2026
 sc-1312,Envases Universales - Ball de Panama,Ball,MAZ,Panama,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1313,Envases Universales - Guadalajara - Can,Ball,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -1320,7 +1320,7 @@ sc-1315,Envases Universales - Hidalgo,Ball,MAZ,Mexico,Packaging Materials,Applic
 sc-1316,Envases Universales - Merida,Ball,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1317,Envases Universales - Waco,Envases Universales,NAZ,United States,Packaging Materials,Applicable,Approved,0.600000,2026
 sc-1318,Envases Zacatecas - Calera Víctor Rosales,Envases,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1319,Envibol,Envibol,SAZ,Bolivia,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1319,Envibol,EMPRESA PUBLICA PRODUCTIVA ENVIBOL,SAZ,Bolivia,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1320,Enzyme Development Corporation - Scranton,Enzyme Development Corporation,NAZ,United States,Raw Materials,Applicable,Not Approved,0.750000,2026
 sc-1321,Erbslöh Geisenheim GmbH - Geisenheim,Erbslöh Geisenheim GmbH,EUR,Germany,Broker/Distributor,Applicable,Not Approved,0.000000,2026
 sc-1322,Erfurter Malz - Hamburg,Erfurter Malz,AFR,Germany,Raw Materials,Applicable,Approved,1.000000,2026
@@ -1419,7 +1419,7 @@ sc-1414,Florida Food Products (FFP),Florida Food Products (FFP),NAZ,United State
 sc-1415,Flour Mills of Nigeria(FMN) Plc - Apapa Rd,Flour Mills of Nigeria(FMN) Plc,AFR,Nigeria,Raw Materials,Applicable,Approved,0.000000,2026
 sc-1416,Flowchem - Dusseldorf,Flowchem,EUR,Germany,Raw Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-1417,Food Guys - Wilsonville,Food Guys,NAZ,United States,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-1418,Foods Company S.A. / GOLDEN SEEDS SRL,Foods Company S.A. / GOLDEN SEEDS SRL,SAZ,Bolivia,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1418,Foods Company S.A. / GOLDEN SEEDS SRL,FOODS COMPANY,SAZ,Bolivia,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1419,Foresco Pallets - Diest,Foresco Pallets,EUR,,Packaging Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-1420,Fornecedor Teste,Fornecedor Teste,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,1.000000,2026
 sc-1421,Forrest Farm Comines-Warneton,Forrest Farm Comines-Warneton,EUR,Belgium,Raw Materials,Applicable,Approved,1.000000,2026
@@ -1453,7 +1453,7 @@ sc-1448,Fulltrading - Ecuador,Fulltrading,MAZ,Ecuador,Packaging Materials,Applic
 sc-1449,Fusion y Formas - Guadalajara,Fusion y Formas,NAZ,United States,Co-packer,Applicable,Not Approved,0.000000,2026
 sc-1450,GALAS DE MEXICO S. A.,GRUPO CONVERTIDOR INDUSTRIAL,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1451,GALEWRAP - DOUGLASVILLE,GALEWRAP,NAZ,,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-1452,GAMA PRINT ETIQUETAS ADESIVAS LTDA - SAO PAULO,GAMA PRINT ETIQUETAS ADESIVAS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1452,GAMA PRINT ETIQUETAS ADESIVAS LTDA - SAO PAULO,GAMA PRINT ETIQUETAS ADESIVAS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1453,GARIBALDI,GARIBALDI,MAZ,,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-1454,GASPRO HONES,GASPRO HONES,MAZ,El Salvador,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1455,GESTORA ADMINISTRADORA E INDUSTRIAL - La Paz (Preforsa),GESTORA ADMINISTRADORA E INDUSTRIALIZADORA PREFORMAS,SAZ,Bolivia,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -1470,7 +1470,7 @@ sc-1465,GLOBAL VISION PACK BRASIL LTDA - MOGIGUACU,GLOBAL VISION PACK BRASIL,SAZ
 sc-1466,GLOBAL VISION PACK BRASIL LTDA - SANTA TERESA,GLOBAL VISION PACK BRASIL,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1467,GLOBAL VISION PACK BRASIL LTDA - SIMOES FILHO,GLOBAL VISION PACK BRASIL,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1468,GLOBALFOOD SISTEMAS INGREDIENTES E - ITATIBA,GLOBALFOOD SISTEMAS INGREDIENTES E TECNOLOGIA PARA ALIMENTOS,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-1469,GLUCOVIL ARGENTINA S.A.,GLUCOVIL ARGENTINA S.A.,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1469,GLUCOVIL ARGENTINA S.A.,HILLEBRAND GORI,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1470,GMP PRODUCTOS QUÍMICOS,GMP PRODUCTOS QUÍMICOS,MAZ,Colombia,Broker/Distributor,Applicable,Potential Supplier,0.500000,2026
 sc-1471,GMT Limited - Lagos,GMT Limited,AFR,Nigeria,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1472,GNT (Exberry) - North Carolina,GNT (Exberry),NAZ,United States,Raw Materials,Applicable,Approved,1.000000,2026
@@ -1510,20 +1510,20 @@ sc-1505,GRUPAK CUERNAVACA,GRUPAK CUERNAVACA,MAZ,Mexico,Packaging Materials,Appli
 sc-1506,GRUPAK EMPAQUES DE VALOR,GRUPAK EMPAQUES DE VALOR,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1507,GRUPAK TOLUCA,GRUPAK TOLUCA,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1508,GRUPO ALIMENTICIO S.A. (Molinos),GRUPO ALIMENTICIO S.A. (Molinos),SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1509,GRUPO COANDES S.A.S,GRUPO IMMO,MAZ,Colombia,Broker/Distributor,Applicable,Approved,1.000000,2026
-sc-1510,GRUPO KING SAS,GRUPO IMMO,MAZ,Colombia,Packaging Materials,Applicable,Approved,0.000000,2026
-sc-1511,"GRUPO PADILLA, S.A.",GRUPO IMMO,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1512,GRUPO ROJAS & CO S. A. - ETIQUETA PLASTICA,GRUPO IMMO,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1513,GRUPO ROJAS & CO S. A. - PLASTICO IMPRESO,GRUPO IMMO,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1514,GRUPO ROJAS & CO S. A. - PLASTICO TRANSPARENTE,GRUPO IMMO,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1515,"GRUPO TANYA, S.A. DE C.V.",GRUPO IMMO,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1509,GRUPO COANDES S.A.S,GRUPO COANDES S.A.S,MAZ,Colombia,Broker/Distributor,Applicable,Approved,1.000000,2026
+sc-1510,GRUPO KING SAS,GRUPO KING SAS,MAZ,Colombia,Packaging Materials,Applicable,Approved,0.000000,2026
+sc-1511,"GRUPO PADILLA, S.A.","GRUPO PADILLA, S.A.",MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1512,GRUPO ROJAS & CO S. A. - ETIQUETA PLASTICA,GRUPO ROJAS & CO S. A.,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1513,GRUPO ROJAS & CO S. A. - PLASTICO IMPRESO,GRUPO ROJAS & CO S. A.,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1514,GRUPO ROJAS & CO S. A. - PLASTICO TRANSPARENTE,GRUPO ROJAS & CO S. A.,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1515,"GRUPO TANYA, S.A. DE C.V.","GRUPO TANYA, S.A. DE C.V.",MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1516,GTM CALDIC - SODA CAUSTICA,GTM CALDIC,MAZ,,Broker/Distributor,Applicable,Approved,1.000000,2026
 sc-1517,GTM COLOMBIA SA,GTM Holdings S.A.,MAZ,Colombia,Broker/Distributor,Applicable,Potential Supplier,0.500000,2026
 sc-1518,GTM PANAMA ACIDO FOSFORICO,GTM Holdings S.A.,MAZ,Panama,Broker/Distributor,Applicable,Approved,1.000000,2026
 sc-1519,GUACU S A DE PAPEIS E EMBALAGENS - ESTIVA GERBI,GUACU S A DE PAPEIS E EMBALAGENS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1520,"GUANG DONG JR EOE METAL PACKAGING CO.,LTD",Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Approved for Trials,1.000000,2026
+sc-1520,"GUANG DONG JR EOE METAL PACKAGING CO.,LTD","GUANG DONG JR EOE METAL PACKAGING CO.,LTD",APAC,China,Packaging Materials,Applicable,Approved for Trials,1.000000,2026
 sc-1521,"GUANG YUAN PACKING CO., LTD - Suqian -  Carton","GUANG YUAN PACKING CO., LTD",APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1522,"GUANGDONG MANCHEONG KEYI MATERIALS CO.,LTD.",Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Not Approved,,2026
+sc-1522,"GUANGDONG MANCHEONG KEYI MATERIALS CO.,LTD.","GUANGDONG MANCHEONG KEYI MATERIALS CO.,LTD.",APAC,China,Packaging Materials,Applicable,Not Approved,,2026
 sc-1523,GUASTAVINO MARIA GISELA - El Bolson,GUASTAVINO MARIA GISELA,SAZ,Argentina,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1524,GWC Packaging,GWC Packaging,NAZ,United States,Co-packer,Applicable,Approved,1.000000,2026
 sc-1525,GWK  Depot,GWK  Depot,AFR,,Raw Materials,Applicable,Not Approved,0.000000,2026
@@ -1607,17 +1607,17 @@ sc-1602,Grindrod Logistics - Johannesburg,Grindrod Logistics,AFR,South Africa,Ra
 sc-1603,Groupe Barbier - Cedex,Groupe Barbier,EUR,France,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1604,Grupasa - Daule,Corporacion J.r Cia.ltda,MAZ,Ecuador,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-1605,Grupo Alegria Serviços Lda.  (corporate),Grupo Alegria Serviços Lda.  (corporate),AFR,Mozambique,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1606,Grupo Esperanza del Capricho - Abasolo,GRUPO IMMO,MAZ,Mexico,Raw Materials,Applicable,Not Approved,0.000000,2026
+sc-1606,Grupo Esperanza del Capricho - Abasolo,Grupo Esperanza del Capricho,MAZ,Mexico,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1607,Guala Closures - Paarden Eiland,Guala Closures,AFR,South Africa,Packaging Materials,Applicable,Approved,0.800000,2026
-sc-1608,"Guangdong Fengshuo Rice Industry Co., Ltd",Guangdong Holdings Limited,APAC,China,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1609,"Guangdong Fuzhi Packaging Technology.Co.,Ltd",Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Not Approved,1.000000,2026
-sc-1610,Guangdong Mancheong - Foshan -  Label,Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1611,Guangdong Mancheong - Foshan - Neck Foil,Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1612,"Guangdong Rongjia New Material Technology Co., Ltd.",Guangdong Holdings Limited,APAC,,Packaging Materials,Applicable,Not Approved,,2026
-sc-1613,"Guangdong Rongjia New Materials Technology Co., Ltd",Guangdong Holdings Limited,APAC,,Packaging Materials,Applicable,Not Approved,,2026
-sc-1614,Guangdong Yiyu Printing Package Co.Ltd,Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1615,Guangdong Ziquan Packing - Dongguan -  Crown,Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1616,Guangdong-Huaxing,Guangdong Holdings Limited,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1608,"Guangdong Fengshuo Rice Industry Co., Ltd","Guangdong Fengshuo Rice Industry Co., Ltd",APAC,China,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1609,"Guangdong Fuzhi Packaging Technology.Co.,Ltd","Guangdong Fuzhi Packaging Technology.Co.,Ltd",APAC,China,Packaging Materials,Applicable,Not Approved,1.000000,2026
+sc-1610,Guangdong Mancheong - Foshan -  Label,Guangdong Mancheong,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1611,Guangdong Mancheong - Foshan - Neck Foil,Guangdong Mancheong,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1612,"Guangdong Rongjia New Material Technology Co., Ltd.","Guangdong Rongjia New Material Technology Co., Ltd.",APAC,,Packaging Materials,Applicable,Not Approved,,2026
+sc-1613,"Guangdong Rongjia New Materials Technology Co., Ltd","Guangdong Rongjia New Materials Technology Co., Ltd",APAC,,Packaging Materials,Applicable,Not Approved,,2026
+sc-1614,Guangdong Yiyu Printing Package Co.Ltd,Guangdong Yiyu Printing Package Co.Ltd,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1615,Guangdong Ziquan Packing - Dongguan -  Crown,Guangdong Ziquan Packing,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1616,Guangdong-Huaxing,Guangdong-Huaxing,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1617,Guangxi-Yongyao,Guangxi-Yongyao,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1618,Guangzhou Shuangqiao Company Ltd. - Guangzhou -  Syrup,GUANGZHOU INTELLIGENT EQUIPMENT INDUSTRY GROUP,APAC,China,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1619,Guijara Ambuja Exports Limited - Ahmedabad,Guijara Ambuja Exports Limited,AFR,India,Raw Materials,Applicable,Not Approved,0.000000,2026
@@ -1727,7 +1727,7 @@ sc-1722,Hi-Cone - La Garriga,ILLINOIS TOOL WORKS,EUR,Spain,Packaging Materials,A
 sc-1723,HighPack,HighPack,NAZ,United States,Co-packer,Applicable,Approved,0.000000,2026
 sc-1724,Hill Bros Chemical Co - Los Angeles,Hill Bros Chemical Co,NAZ,United States,Raw Materials,Applicable,Approved,0.000000,2026
 sc-1725,Hmezad - Zalec,HOPSI d.o.o.,EUR,Slovenia,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1726,Holland Malt - Lieshout,Holland Malt,EUR,Netherlands,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1726,Holland Malt - Lieshout,STICHTING ADMINISTRATIEKANTOOR AMBRIG,EUR,Netherlands,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1727,Hollingbery and Son-Yakima (pellets),Hollingbery and Son-Yakima (pellets),NAZ,United States,Raw Materials,Applicable,Approved,0.600000,2026
 sc-1728,Homyeong - Pocheon,Homyeong,APAC,Republic of Korea,Packaging Materials,Applicable,Approved,0.330000,2026
 sc-1729,Hoogerhuis & Smit - Breda,Hoogerhuis & Smit,EUR,Netherlands,Packaging Materials,Applicable,Approved but Inactive,1.000000,2026
@@ -1754,7 +1754,7 @@ sc-1749,I&M PAPEIS E EMBALAGENS LTDA - ITATIBA (ARTIVINCO),IEM PAPEIS E EMBALAGE
 sc-1750,I&M PAPEIS E EMBALAGENS LTDA - SANTA ROSA DE VITERBO (ARTIVINCO),IEM PAPEIS E EMBALAGENS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1751,IALCOM SRL - NUÑEZ,IALCOM SRL,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1752,IB Glass Firozabad,IB Glass Firozabad,APAC,India,Packaging Materials,Applicable,Not Approved,0.500000,2026
-sc-1753,IBERIA INDUSTRIA DE EMBALAGENS - AGUAI,IBERIA INDUSTRIA DE EMBALAGENS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1753,IBERIA INDUSTRIA DE EMBALAGENS - AGUAI,IBÉRIA INDÚSTRIA DE EMBALAGENS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1754,ICAS - San Bernardo d'Ivrea,ICAS,EUR,Italy,Packaging Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-1755,ICL ADITIVOS E INGREDIENTES LTDA - CAJATI,ICL ADITIVOS E INGREDIENTES,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1756,IDE,IDE,MAZ,,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -1778,14 +1778,14 @@ sc-1773,IMPRIMIR - Santa Cruz,BETANCOURT SAENZ JORGE EDUARDO ANTONIO,SAZ,Bolivia
 sc-1774,IMUDESA,IMUDESA,MAZ,Peru,Broker/Distributor,Applicable,Potential Supplier,0.000000,2026
 sc-1775,INDUCARTON,INDUCARTON,MAZ,Colombia,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-1776,INDUPADDY MOLINO VILLAVICENCIO,INDUPADDY MOLINO VILLAVICENCIO,MAZ,Colombia,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1777,INDUSTRIA DE PALETES BARCELONA LTDA - SEARA,TUBACERO,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1778,INDUSTRIA EMBALAGENS CAMPOBASSO - RIO DE JANEIRO,TUBACERO,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-1779,INDUSTRIA PLASTICA DEL NORTE S.A. (PETROPACK),TUBACERO,SAZ,Paraguay,Packaging Materials,Applicable,Approved for Trials,1.000000,2026
-sc-1780,INDUSTRIA QUIMICA CMT LTDA - VARZEA GRANDE,TUBACERO,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1781,INDUSTRIA QUIMICA RIVER EIRELI - GUARULHOS,TUBACERO,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1782,INDUSTRIAS BELEN SRL,TUBACERO,SAZ,Bolivia,Packaging Materials,Applicable,Approved,0.500000,2026
-sc-1783,INDUSTRIAS IKADE SAS,Fotomat S.A.,MAZ,Colombia,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-1784,INDUSTRIAS PLASTICAS POR EXTRUSION (IPESA),TUBACERO,SAZ,Argentina,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1777,INDUSTRIA DE PALETES BARCELONA LTDA - SEARA,INDUSTRIA DE PALETES BARCELONA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1778,INDUSTRIA EMBALAGENS CAMPOBASSO - RIO DE JANEIRO,INDUSTRIA EMBALAGENS CAMPOBASSO,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-1779,INDUSTRIA PLASTICA DEL NORTE S.A. (PETROPACK),INDUSTRIA PLASTICA DEL NORTE S.A. (PETROPACK),SAZ,Paraguay,Packaging Materials,Applicable,Approved for Trials,1.000000,2026
+sc-1780,INDUSTRIA QUIMICA CMT LTDA - VARZEA GRANDE,INDUSTRIA QUIMICA CMT,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1781,INDUSTRIA QUIMICA RIVER EIRELI - GUARULHOS,INDUSTRIA QUIMICA RIVER,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1782,INDUSTRIAS BELEN SRL,INDUSTRIAS BELEN SRL,SAZ,Bolivia,Packaging Materials,Applicable,Approved,0.500000,2026
+sc-1783,INDUSTRIAS IKADE SAS,INDUSTRIAS IKADE SAS,MAZ,Colombia,Raw Materials,Applicable,Not Approved,0.000000,2026
+sc-1784,INDUSTRIAS PLASTICAS POR EXTRUSION (IPESA),RIO CHICO S.A.,SAZ,Argentina,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1785,INDUVIAN S.R.L,INDUVIAN S.R.L,SAZ,Argentina,Packaging Materials,Applicable,Potential Supplier,0.000000,2026
 sc-1786,INGENIO  Dizucar Izalco - EL SALVADOR,INGENIO  Dizucar Izalco,MAZ,El Salvador,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1787,INGENIO AZUNOSA,INGENIO AZUNOSA,MAZ,Honduras,Raw Materials,Applicable,Approved,1.000000,2026
@@ -1813,8 +1813,8 @@ sc-1808,INOXCVA,INOXCVA,APAC,India,Packaging Materials,Applicable,Approved for T
 sc-1809,INPLASA ETIQUETAS PLASTICAS,INPLASA ETIQUETAS PLASTICAS,MAZ,Honduras,Packaging Materials,Applicable,Not Approved,0.660000,2026
 sc-1810,INSUMAQ S.R.L. - Asunción,INSUMAQ S.R.L.,SAZ,Paraguay,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-1811,INTERCOM LTDA. - La Paz,INTERCOM LTDA.,SAZ,Bolivia,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1812,INTERNATIONAL CONSULTING BUREAU S.A - CAPITAL FEDERAL,INTERNATIONAL FLAVORS & FRAGRANCES,SAZ,Argentina,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-1813,INTERNATIONAL PLAYING CARD Y LABEL - GENERAL RODRIGUEZ,INTERNATIONAL FLAVORS & FRAGRANCES,SAZ,Argentina,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1812,INTERNATIONAL CONSULTING BUREAU S.A - CAPITAL FEDERAL,INTERNATIONAL CONSULTING BUREAU S.A,SAZ,Argentina,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-1813,INTERNATIONAL PLAYING CARD Y LABEL - GENERAL RODRIGUEZ,INTERNATIONAL PLAYING CARD Y LABEL,SAZ,Argentina,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1814,INVERSIONES MOLINO PACANDE AGUAZUL,INVERSIONES ZUVE,MAZ,Colombia,Raw Materials,Applicable,Approved but Inactive,0.750000,2026
 sc-1815,INVERSIONES MOLINO PACANDE IBAGUE,INVERSIONES ZUVE,MAZ,Colombia,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1816,INVERSIONES MOLINO PACANDE VILLAVICENCIO,INVERSIONES ZUVE,MAZ,Colombia,Raw Materials,Applicable,Potential Supplier,0.500000,2026
@@ -1859,21 +1859,21 @@ sc-1854,Independent Stave Co.,Independent Stave Co.,NAZ,United States,Co-packer,
 sc-1855,Indiana Sugars - Gary,"Indiana Sugars, Inc.",NAZ,United States,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1856,Indie Hops-Hubbard (pellets),Indie Hops-Hubbard (pellets),NAZ,United States,Raw Materials,Applicable,Approved,0.250000,2026
 sc-1857,Induagrícola Burgos - Ecuador,Induagrícola Burgos,MAZ,Ecuador,Raw Materials,Applicable,Approved,0.250000,2026
-sc-1858,Industria Decoradora de Envase - Tierra Blanca,Fotomat S.A.,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1859,Industria Grafica Latinoamerica - Palmira,Fotomat S.A.,MAZ,Colombia,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1860,Industria Molinera Amazonas - Perú,Fotomat S.A.,MAZ,Peru,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1861,Industria Plástica S. A. de C. V.,Fotomat S.A.,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1862,Industria de Reciclaje Reciclapet - Ecuador,Fotomat S.A.,MAZ,Ecuador,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1858,Industria Decoradora de Envase - Tierra Blanca,Industria Decoradora de Envase,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1859,Industria Grafica Latinoamerica - Palmira,Industria Grafica Latinoamerica,MAZ,Colombia,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1860,Industria Molinera Amazonas - Perú,Industria Molinera Amazonas,MAZ,Peru,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1861,Industria Plástica S. A. de C. V.,Industria Plástica S. A. de C. V.,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1862,Industria de Reciclaje Reciclapet - Ecuador,Industria de Reciclaje Reciclapet,MAZ,Ecuador,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1863,Industrial Chemicals Inc - Richmond,CMC-KUHNKE,NAZ,United States,Cleaning Materials,Applicable,Approved for Trials,0.000000,2026
 sc-1864,Industrial Chemicals Limited - ICL,INDUSTRIAL DOOR HOLDINGS LTD,EUR,United Kingdom,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1865,Industrial Soap Company - St. Louis,CMC-KUHNKE,NAZ,United States,Cleaning Materials,Applicable,Approved for Trials,0.000000,2026
-sc-1866,Industrias Dajahu SAS - Durán,Fotomat S.A.,MAZ,Ecuador,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1867,Industrias Gafica del Caribe,Fotomat S.A.,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1868,Industrias Niko Plastic Cap - Perú,Fotomat S.A.,MAZ,Peru,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-1869,Industrias Plásticas Caute SRL - Perú,Fotomat S.A.,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1870,Industrias del envase - IDE folding carton,Fotomat S.A.,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1871,Industrias del envase - IDE label,Fotomat S.A.,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-1872,Industrias del envase - IDE plastic crate,Fotomat S.A.,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1866,Industrias Dajahu SAS - Durán,Industrias Dajahu SAS,MAZ,Ecuador,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1867,Industrias Gafica del Caribe,Industrias Gafica del Caribe,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1868,Industrias Niko Plastic Cap - Perú,Industrias Niko Plastic Cap,MAZ,Peru,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-1869,Industrias Plásticas Caute SRL - Perú,Industrias Plásticas Caute SRL,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1870,Industrias del envase - IDE folding carton,Industrias del envase,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1871,Industrias del envase - IDE label,Industrias del envase,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-1872,Industrias del envase - IDE plastic crate,Industrias del envase,MAZ,Peru,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1873,Ineos - Runcorn,Ineos,EUR,United Kingdom,Raw Materials,Applicable,Potential Supplier,0.000000,2026
 sc-1874,Infrasal,INFRA,MAZ,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1875,Ingenio Azucarero Guabira S.A.,INGENIO AZUCARERO GUABIRA SOCIEDAD ANOMIMA I A G,SAZ,Bolivia,Raw Materials,Applicable,Approved,0.710000,2026
@@ -1897,12 +1897,12 @@ sc-1892,Insignia Limited (corporate),Insignia Limited (corporate),AFR,Tanzania,P
 sc-1893,Institut Oenologique de Champagne - Mardeuil,Institut Oenologique de Champagne,EUR,France,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1894,Insumagral S.A.S,Insumagral S.A.S,MAZ,Colombia,Broker/Distributor,Applicable,Approved,0.750000,2026
 sc-1895,International Chemical and Feed Materials Limited - Port Harcourt,International Flavors & Fragrances Inc.,AFR,Nigeria,Raw Materials,Applicable,Approved,0.000000,2026
-sc-1896,International Flavors & Fragrances Mexico,INTERNATIONAL PAPER,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
-sc-1897,International Flavors and Fragrances (IFF) - Dayton,INTERNATIONAL PAPER,NAZ,United States,Raw Materials,Applicable,Approved,0.000000,2026
-sc-1898,International Flavors and Fragrances - Colombia,INTERNATIONAL PAPER,MAZ,Colombia,Broker/Distributor,Applicable,Approved,0.750000,2026
+sc-1896,International Flavors & Fragrances Mexico,International Flavors & Fragrances Mexico,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1897,International Flavors and Fragrances (IFF) - Dayton,International Flavors and Fragrances (IFF),NAZ,United States,Raw Materials,Applicable,Approved,0.000000,2026
+sc-1898,International Flavors and Fragrances - Colombia,International Flavors and Fragrances,MAZ,Colombia,Broker/Distributor,Applicable,Approved,0.750000,2026
 sc-1899,International Flavours & Fragrances - Kempton Park,International Flavors & Fragrances Inc.,AFR,South Africa,Raw Materials,Applicable,Approved,0.500000,2026
 sc-1900,International Paper - Carrollton,INTERNATIONAL PAPER,NAZ,United States,Packaging Materials,Applicable,Approved but Inactive,1.000000,2026
-sc-1901,International Paper - Cartonajes Union SL,"Endeavor Group Holdings, Inc.",EUR,Spain,Packaging Materials,Applicable,Approved,0.000000,2026
+sc-1901,International Paper - Cartonajes Union SL,INTERNATIONAL PAPER,EUR,Spain,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-1902,"International Paper - Conway, AR",INTERNATIONAL PAPER,NAZ,United States,Packaging Materials,Applicable,Approved,0.660000,2026
 sc-1903,International Paper - Crawfordsville,INTERNATIONAL PAPER,NAZ,United States,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-1904,"International Paper - Delaware, OH",INTERNATIONAL PAPER,NAZ,United States,Packaging Materials,Applicable,Potential Supplier,1.000000,2026
@@ -1930,7 +1930,7 @@ sc-1925,"International Paper - Tampa, FL",INTERNATIONAL PAPER,NAZ,United States,
 sc-1926,"International Paper - Tracy, CA",INTERNATIONAL PAPER,NAZ,United States,Packaging Materials,Applicable,Approved,0.330000,2026
 sc-1927,International Paper - Wheat Ridge,INTERNATIONAL PAPER,NAZ,United States,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1928,International Paper-Ixtac,INTERNATIONAL PAPER,MAZ,Mexico,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-1929,International Sugars - Woodbridge,INTERNATIONAL PAPER,NAZ,Canada,Raw Materials,Applicable,Approved,0.000000,2026
+sc-1929,International Sugars - Woodbridge,International Sugars,NAZ,Canada,Raw Materials,Applicable,Approved,0.000000,2026
 sc-1930,International chemicals,International Flavors & Fragrances Inc.,AFR,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1931,Interseriglass,Interseriglass,GHQ,Spain,Packaging Materials,Applicable,Approved for Trials,,2026
 sc-1932,Inversiones Ambar- PALET DE MADERA,INVERSIONES ZUVE,MAZ,El Salvador,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -1947,8 +1947,8 @@ sc-1942,Ireks - Meussdorfer,J. Ruckdeschel & Söhne GmbH & Co. KG,EUR,Germany,Ra
 sc-1943,Ireks - Sulzbach,J. Ruckdeschel & Söhne GmbH & Co. KG,EUR,Germany,Raw Materials,Applicable,Approved for Trials,1.000000,2026
 sc-1944,Isanti Glass - Gauteng,Isanti Glass,AFR,South Africa,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-1945,Iscal - Fontenoy,Iscal,APAC,Belgium,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-1946,J FERES INDUSTRIA DE ALCOOL LTDA,J FERES INDUSTRIA DE ALCOOL LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.250000,2026
-sc-1947,J RETTENMAIER LATINOAMERICANA LTDA,J RETTENMAIER LATINOAMERICANA LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-1946,J FERES INDUSTRIA DE ALCOOL LTDA,J FERES ME,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.250000,2026
+sc-1947,J RETTENMAIER LATINOAMERICANA LTDA,JOSEF RETTENMAIER HOLDING,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1948,J. RETTENMAIER & SÖHNE - Rosenberg,Josef Rettenmaier & Söhne Holding GmbH & Co. KG,EUR,Germany,Raw Materials,Applicable,Approved,1.000000,2026
 sc-1949,"JAENICKE, INC","JAENICKE, INC",MAZ,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-1950,JAW PLASTICOS LTDA,JAW PLASTICOS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -2071,7 +2071,7 @@ sc-2066,"Kunming Yiyu Printing and Packaging Co., LTD - Kunming -  Carton","Kunm
 sc-2067,"Kunshan Zhengli Plastic Products Co., Ltd","Kunshan Zhengli Plastic Products Co., Ltd",APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2068,Kurita GmbH - Mannheim,Kurita GmbH,EUR,Germany,Cleaning Materials,Applicable,Approved,1.000000,2026
 sc-2069,Kyungwon Industry - Hwaseong,Kyungwon Industry,APAC,Republic of Korea,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-2070,L EQUIPE MONTEUR S.A. - CORDOBA,L EQUIPE MONTEUR S.A.,SAZ,Argentina,Packaging Materials,Applicable,Approved,0.000000,2026
+sc-2070,L EQUIPE MONTEUR S.A. - CORDOBA,F2J Industry B.V.,SAZ,Argentina,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-2071,L N F LATINO AMERICANA CONSULTORIA,LNF LATINO AMERICANA CONSULTORIA ASSESSORIA E IMPORTAÇÃO,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2072,LA OXIGENA PARAGUAYA S.A.,L'AIR LIQUIDE SOCIETE ANONYME POUR L'ETUDE ET L'EXPLOITATION DES PROCEDES GEORGES CLAUDE,SAZ,Paraguay,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2073,LA PAPELERA S.A.,LA PAPELERA,SAZ,Bolivia,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -2146,7 +2146,7 @@ sc-2141,Linder Representaciones - Lima,Linder Representaciones,MAZ,Peru,Packagin
 sc-2142,Lindum Packaging - Grimsby,WELL ABLE LIMITED,EUR,United Kingdom,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2143,"Linjiang City Xinghui Filter Aid Co., Ltd","Linjiang City Xinghui Filter Aid Co., Ltd",APAC,China,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2144,Linjiang Imerys Diatomite Co - Jilin,Linjiang Imerys Diatomite Co,APAC,China,Raw Materials,Applicable,Approved,1.000000,2026
-sc-2145,Lins Agroindustrial S.A. - Lins,Lins Agroindustrial S.A.,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.160000,2026
+sc-2145,Lins Agroindustrial S.A. - Lins,LINS AGROINDUSTRIAL S.A.,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.160000,2026
 sc-2146,"Linyi Branch of Wuxi Huapeng Closures Co., Ltd.","Linyi Branch of Wuxi Huapeng Closures Co., Ltd.",APAC,China,Packaging Materials,Applicable,Approved but Inactive,0.180000,2026
 sc-2147,Liquid Tannin Marketing PtyLtd - Stellenbosch,Liquid Tannin Marketing PtyLtd,AFR,South Africa,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2148,Litoprint - Bogota,Litoprint,MAZ,Colombia,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -2157,7 +2157,7 @@ sc-2152,Long Thanh Plastic,Long Thanh Plastic,APAC,Vietnam,Packaging Materials,A
 sc-2153,"Longkou  ORG  Packaging  Co.,Ltd","Longkou  ORG  Packaging  Co.,Ltd",APAC,China,Packaging Materials,Applicable,Potential Supplier,0.900000,2026
 sc-2154,Lotus Plastics Ltd - Lagos,Lotus Plastics Ltd,AFR,Nigeria,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2155,Louis Dreyfus Company Sucos Sa - Bebedouro,Louis Dreyfus Company Sucos Sa,SAZ,Brazil,Raw Materials,Applicable,Not Approved,1.000000,2026
-sc-2156,Louis Dreyfus Company Sucos Sa - Matao,Louis Dreyfus Company Sucos Sa,SAZ,Brazil,Raw Materials,Applicable,Not Approved,1.000000,2026
+sc-2156,Louis Dreyfus Company Sucos Sa - Matao,LOUIS DREYFUS HOLDING,SAZ,Brazil,Raw Materials,Applicable,Not Approved,1.000000,2026
 sc-2157,Luhe minerals - Winsen,Luhe B.V.,EUR,Germany,Broker/Distributor,Applicable,Approved,1.000000,2026
 sc-2158,Lupex GMBH Au in der Hallertau,Lupex GMBH Au in der Hallertau,EUR,Germany,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2159,Lupofresh LTD - Maidstone,Lupofresh LTD,EUR,United Kingdom,Raw Materials,Applicable,Approved but Inactive,0.000000,2026
@@ -2218,14 +2218,14 @@ sc-2213,MEGA EMPACK TAPA GARRAFON,"Fomento Corporativo Peninsular, S.A. de C.V."
 sc-2214,MERCASID,Mercasid,MAZ,Republica Dominicana,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2215,MERCICO,MERCICO S A S,MAZ,Colombia,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-2216,MERCK  S. A. COLOMBIA,MERCK KG AUF AKTIEN,MAZ,Colombia,Raw Materials,Applicable,Not Approved,0.750000,2026
-sc-2217,MERCK S/A - COTIA,BRASKEM,SAZ,Brazil,Raw Materials,Applicable,Approved,0.660000,2026
+sc-2217,MERCK S/A - COTIA,MERCK KG AUF AKTIEN,SAZ,Brazil,Raw Materials,Applicable,Approved,0.660000,2026
 sc-2218,MESSER CHILE LTDA,MESSER INDUSTRIES,SAZ,Chile,Raw Materials,Applicable,Approved,0.000000,2026
 sc-2219,METALGRAFICA CEARENSE S/A MECESA - FORTALEZA,METALGRAFICA CEARENSE S/A MECESA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.570000,2026
 sc-2220,METCO,METCO,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2221,MEXICANA DE ARROZ SA DE CV,MEXICANA DE ARROZ SA DE CV,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2222,MGP Ingredients - Atchison,"MGP Ingredients, Inc.",NAZ,United States,Raw Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-2223,MIIKA NACIONAL LTDA - CAETANOPOLIS,MIIKA NACIONAL,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
-sc-2224,MILENIO COMPONENTES PLASTICOS LTDA - DOIS CORREGOS,MILENIO COMPONENTES PLASTICOS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-2224,MILENIO COMPONENTES PLASTICOS LTDA - DOIS CORREGOS,MILENIO COMPONENTES PLASTICOS,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2225,MILHAO INDUSTRIA E COMERCIO - GOIANIRA,Milhao,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2226,MIOLO WINE GROUP VITIVINICULTURA - BENTO GONCALVES,MIOLO WINE GROUP VITIVINICULTURA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.600000,2026
 sc-2227,MIRVI BRASIL LTDA.,MIRVI BRASIL,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.280000,2026
@@ -2240,8 +2240,8 @@ sc-2235,MOINHO REGIO ALIMENTOS SA - CUIABA,MOINHO REGIO ALIMENTOS,SAZ,Brazil,Raw
 sc-2236,MOLDCAM INJECAO E FERRAMENTARIA,MOLDCAM INJECAO E FERRAMENTARIA,SAZ,Brazil,Packaging Materials,Applicable,Potential Supplier,0.000000,2026
 sc-2237,MOLINERA DON JULIO - SAN JUAN,MOLINERA DON JULIO,MAZ,Peru,Raw Materials,Applicable,Approved for Trials,1.000000,2026
 sc-2238,MOLINO ALBERTO CURE VELEZ - Magangué,MOLINO ALBERTO CURE VELEZ,MAZ,Colombia,Raw Materials,Applicable,Approved,1.000000,2026
-sc-2239,MOLINOS RIO DE LA PLATA S A - Victoria,MOLINOS RIO DE LA PLATA S A,SAZ,Argentina,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-2240,MORAIS CASTRO COMERCIO E IMPORTACAO - SALVADOR,MORAIS CASTRO COMERCIO E IMPORTACAO,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
+sc-2239,MOLINOS RIO DE LA PLATA S A - Victoria,SANTA MARGARITA LLC,SAZ,Argentina,Raw Materials,Applicable,Not Approved,0.000000,2026
+sc-2240,MORAIS CASTRO COMERCIO E IMPORTACAO - SALVADOR,MORAIS DE CASTRO COMÉRCIO E IMPORTAÇÃO DE PRODUTOS QUÍMICOS,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2241,MR 3 GRAFICA E EDITORA LTDA - PORTO ALEGRE,MR 3 GRAFICA E EDITORA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2242,MSC Le Harve- Logistics,MSC Le Harve- Logistics,AFR,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2243,MULTICAJAS S A - capital federal,MULTICAJAS S A,SAZ,Argentina,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -2360,7 +2360,7 @@ sc-2355,NAM ENTERPRISES LIMITED (corporate),NAM ENTERPRISES LIMITED (corporate),
 sc-2356,"NANPING TIANYU INDUSTRIAL CO.,LTD - Shaowu -  Glue","NANPING TIANYU INDUSTRIAL CO.,LTD",APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2357,NANSHAN,"Shandong Nanshan Aluminium Co.,ltd.",MAZ,,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2358,NATUREX AG - BISCHOFFSZELL,Givaudan SA,SAZ,Switzerland,Raw Materials,Applicable,Approved,0.000000,2026
-sc-2359,NATUREX INGREDIENTES NATURAIS LTDA,NATUREX INGREDIENTES NATURAIS LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,,2026
+sc-2359,NATUREX INGREDIENTES NATURAIS LTDA,GIVAUDAN,SAZ,Brazil,Raw Materials,Applicable,Not Approved,,2026
 sc-2360,NCP - Meyersdal,NCP,AFR,South Africa,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2361,NCP Chlorchem (corporate),BUDVEST (PTY) LTD,AFR,South Africa,Raw Materials,Applicable,Approved,0.750000,2026
 sc-2362,NDF Azteca Milling Europe SRL - Ceggia VE,NDF Azteca Milling Europe SRL,AFR,Italy,Raw Materials,Applicable,Approved,1.000000,2026
@@ -2368,7 +2368,7 @@ sc-2363,NIFARECO LTDA. - MONTEVIDEO,NIFARECO LTDA.,SAZ,Uruguay,Packaging Materia
 sc-2364,NIPAX SRL - MONTEVIDEO,NIPAX SRL,SAZ,Uruguay,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2365,NORTESUR SA - MONTEVIDEO,NORTESUR SA,SAZ,Uruguay,Raw Materials,Applicable,Approved,0.600000,2026
 sc-2366,"NORTHWEST NATURALS LLC - TREE TOP INC (Prosser, WA)",TREE TOP,NAZ,United States,Raw Materials,Applicable,Approved,,2026
-sc-2367,NOVA AUXILIAR INDUSTRIA DE - SANTA BARBARA D'OESTE,NOVA AUXILIAR INDUSTRIA DE,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.330000,2026
+sc-2367,NOVA AUXILIAR INDUSTRIA DE - SANTA BARBARA D'OESTE,NOVA AUXILIAR INDUSTRIA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.330000,2026
 sc-2368,NOVATEC,NOVATEC PAGANI,MAZ,Mexico,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2369,NOVOZYMES LATIN AMERICA LTDA - ARAUCARIA,Novozymes A/S,SAZ,Brazil,Raw Materials,Applicable,Approved,0.750000,2026
 sc-2370,NPC - Hwasung,NPC,APAC,Republic of Korea,Packaging Materials,Applicable,Approved,0.280000,2026
@@ -2442,7 +2442,7 @@ sc-2437,OA Ouplaas Co-op,OA Ouplaas Co-op,AFR,,Raw Materials,Applicable,Not Appr
 sc-2438,OA Protem Co-op,OA Protem Co-op,AFR,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2439,OA Rietpoel Co-op,OA Rietpoel Co-op,AFR,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2440,OCTOPOL - Legos,OCTOPOL,AFR,Nigeria,Raw Materials,Applicable,Not Approved,,2026
-sc-2441,ONDUNORTE CIA PAPEIS E PAPELAO - IGARASSU,ONDUNORTE CIA PAPEIS E PAPELAO,SAZ,Brazil,Packaging Materials,Applicable,Approved,,2026
+sc-2441,ONDUNORTE CIA PAPEIS E PAPELAO - IGARASSU,PERNAMBUCO PARTICIPACOES SOCIETARIAS,SAZ,Brazil,Packaging Materials,Applicable,Approved,,2026
 sc-2442,"ORANA VIET NAM CO.,LTD","ORANA VIET NAM CO.,LTD",APAC,Vietnam,Raw Materials,Applicable,Approved,0.500000,2026
 sc-2443,ORG - Foshan - Can,ORG,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2444,ORG - Guangdong,ORG,APAC,China,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -2504,7 +2504,7 @@ sc-2499,"Owens-Illinois - Windsor, CO",Owens-Illinois,NAZ,United States,Packagin
 sc-2500,Owens-Illinois - Wingles,Owens-Illinois,EUR,France,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2501,"Owens-Illinois - Winston Salem, NC",Owens-Illinois,NAZ,United States,Packaging Materials,Applicable,Approved,0.850000,2026
 sc-2502,Owens-Illinois - Zhaoqing,Owens-Illinois,APAC,China,Packaging Materials,Applicable,Not Approved,,2026
-sc-2503,Oxford Packaging - Jundiai,Oxford Packaging,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-2503,Oxford Packaging - Jundiai,CLOSURE SYSTEMS INTERNATIONAL HOLDINGS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2504,PACKDUQUE INDUSTRIA DE PLASTICOS LTDA,PACKDUQUE INDUSTRIA DE PLASTICOS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved for Trials,1.000000,2026
 sc-2505,PACKING S.A.S,PACKING S A S,MAZ,Colombia,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2506,PACKSEVEN INDUSTRIA E COMERCIO LTDA - MOGIGUACU,FORWARD EMPREENDIMENTOS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -2542,7 +2542,7 @@ sc-2537,PISMADE - ECUADOR,PISMADE,MAZ,,Packaging Materials,Applicable,Potential 
 sc-2538,PKG DO BRASIL IMPORTACAO E - ALAGOINHAS,HGSJP PARTICIPACOES LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,0.280000,2026
 sc-2539,PLASAL - PRODUCTOS DE MARMOL  Plástico Termoencogible,PLASAL,MAZ,El Salvador,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2540,PLASTEK DO BRASIL INDUSTRIA E - INDAIATUBA,PLASTEK DO BRASIL INDUSTRIA E COMER,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-2541,PLASTIANDINO S A - CUADRO NACIONAL - SAN RAFAEL,PLASTIANDINO S A,SAZ,Argentina,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-2541,PLASTIANDINO S A - CUADRO NACIONAL - SAN RAFAEL,PLASTIANDINO S.A.,SAZ,Argentina,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2542,PLASTIBOL PANAMA - PLASTICO IMPRESO,PLASTIBOL PANAMA,MAZ,Panama,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2543,PLASTIBOL PANAMA - PLASTICO TRANSPARENTE,PLASTIBOL PANAMA,MAZ,Panama,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2544,PLASTIC FILMS INTERNACIONAL S A,PLASTIC FILMS INTERNACIONAL S A,MAZ,Colombia,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -2574,7 +2574,7 @@ sc-2569,PRAKOLAR ROTULOS AUTOADESIVOS LTDA - SAO PAULO,PRAKOLAR ROTULOS AUTOADES
 sc-2570,PRAXAIR ARGENTINA S.R.L.,LINDE PUBLIC LIMITED COMPANY,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2571,PRIMARY PRODUCTS INGREDIENTS - SANTA ROSA DE VITERBO,TATE & LYLE PUBLIC,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2572,PRIME PACKAGE & LABEL - SAINT LOUIS,PRIME PACKAGE & LABEL,NAZ,United States,Packaging Materials,Applicable,Approved,0.500000,2026
-sc-2573,PRISMAPACK INDUSTRIA E COMERCIO (NORPACK) - CAMACARI,PRISMAPACK INDUSTRIA E COMERCIO (NORPACK),SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-2573,PRISMAPACK INDUSTRIA E COMERCIO (NORPACK) - CAMACARI,PACKTEC,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2574,PRIVA S.A.,PRIVA S.A.,SAZ,Argentina,Packaging Materials,Applicable,Approved for Trials,0.000000,2026
 sc-2575,PROBAMEX,PROBAMEX,MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2576,PROMEXA,PROMEXA,MAZ,Mexico,Raw Materials,Applicable,Approved for Trials,1.000000,2026
@@ -2656,7 +2656,7 @@ sc-2651,Portrans Guayaquil Norte - Ecuador,Portrans Guayaquil Norte,MAZ,Ecuador,
 sc-2652,Portrans Guayaquil Sur - Ecuador,Portrans Guayaquil Sur,MAZ,Ecuador,Co-packer,Applicable,Not Approved,0.330000,2026
 sc-2653,Portrans Quito - Ecuador,Portrans Quito,MAZ,Ecuador,Co-packer,Applicable,Approved,1.000000,2026
 sc-2654,PowderPure - The Dalles,PowderPure,NAZ,United States,Raw Materials,Applicable,Approved,0.750000,2026
-sc-2655,Praxair Bolivia S.R.L. - Santa Cruz,Praxair Bolivia S.R.L.,SAZ,Bolivia,Raw Materials,Applicable,Approved,1.000000,2026
+sc-2655,Praxair Bolivia S.R.L. - Santa Cruz,LINDE PUBLIC,SAZ,Bolivia,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2656,Preferred Packaging,Preferred Packaging,NAZ,United States,Co-packer,Applicable,Approved,0.000000,2026
 sc-2657,Premier Magnesia Products LLC - Montgomery,Premier Magnesia Products LLC,NAZ,United States,Raw Materials,Applicable,Approved,0.000000,2026
 sc-2658,Premium Foods - Kumasi,Premium Foods,AFR,Ghana,Raw Materials,Applicable,Not Approved,0.000000,2026
@@ -2754,7 +2754,7 @@ sc-2749,RLCA (Label Products) - Waregem,RLCA (Label Products),EUR,Belgium,Packag
 sc-2750,ROBOTICA Y DISEÑO SA. DE CV.,ROBOTICA Y DISEÑO SA. DE CV.,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2751,ROCSA COLOMBIA S A,ROCSA COLOMBIA,MAZ,Colombia,Broker/Distributor,Applicable,Potential Supplier,0.000000,2026
 sc-2752,RODIVIN S.A. - CABA,RODIVIN S.A.,SAZ,Argentina,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-2753,ROMA COM E SERV LTDA - ANAPOLIS,ROMA COM E SERV LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
+sc-2753,ROMA COM E SERV LTDA - ANAPOLIS,ROMA ASSESSORIA EMPRESARIAL,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2754,RR - FABRICACAO DE PALLETS EIRELI - INHAMBUPE,RR,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2755,RUA El Salvador - BASKETWRAP,RUA El Salvador,MAZ,El Salvador,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-2756,RUA El Salvador - CAJAS,RUA El Salvador,MAZ,El Salvador,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -2874,12 +2874,12 @@ sc-2867,SODISA - Monterrey,SODISA,MAZ,Mexico,Packaging Materials,Applicable,Not 
 sc-2868,SODISA - San Luis Potosí,SODISA,MAZ,Mexico,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2869,SODISA - Veracruz,SODISA,MAZ,Mexico,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2870,SOFT COLOR ETIQUETAS ADESIVAS LTDA - GUARULHOS,SOFT COLOR ETIQUETAS ADESIVAS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.330000,2026
-sc-2871,SOFT COLOR SOLUCOES EM EMBALAGENS LTDA - Cambui,SOFT COLOR SOLUCOES EM EMBALAGENS LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-2871,SOFT COLOR SOLUCOES EM EMBALAGENS LTDA - Cambui,SOFT COLOR SOLUCOES EM EMBALAGENS,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2872,SOL Kohlensäure GmbH - Burgbrohl,SOL Kohlensäure GmbH,EUR,Germany,Raw Materials,Applicable,Approved,0.000000,2026
 sc-2873,SOLPACK - PERU,SOL MARIA,MAZ,Peru,Packaging Materials,Applicable,Potential Supplier,0.000000,2026
-sc-2874,SOLVAY INDUPA SOCIEDAD ANONIMA (UNIPAR) - CIUDAD AUTONOMA DE BUENOS,SOLVAY INDUPA SOCIEDAD ANONIMA (UNIPAR),SAZ,Argentina,Raw Materials,Applicable,Approved,0.000000,2026
+sc-2874,SOLVAY INDUPA SOCIEDAD ANONIMA (UNIPAR) - CIUDAD AUTONOMA DE BUENOS,UNIPAR CARBOCLORO S/A,SAZ,Argentina,Raw Materials,Applicable,Approved,0.000000,2026
 sc-2875,SOPLAST - Bogotá,SOPLAST,MAZ,Colombia,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-2876,SOROPACK IND E COM DE PALETES LTDA - SOROCABA,SOROPACK IND E COM DE PALETES LTDA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-2876,SOROPACK IND E COM DE PALETES LTDA - SOROCABA,SOROPACK INDUSTRIA E COMERCIO DE PA,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-2877,SPDRINKS & FOOD LTDA - VALINHOS,SPDRINKS & FOOD LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2878,SSK Ashton Co-op,SSK Ashton Co-op,AFR,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2879,SSK Depot,SSK Depot,AFR,South Africa,Raw Materials,Applicable,Not Approved,0.000000,2026
@@ -2889,7 +2889,7 @@ sc-2882,SSK Swellendam Co-op,SSK Swellendam Co-op,AFR,,Raw Materials,Applicable,
 sc-2883,STAMPLAS ARTEFATOS DE PLASTICO LTDA - CAMPINAS,STAMPLAS ARTEFATOS DE PLASTICO LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-2884,STEMA - Lingamo,STEMA,AFR,Mozambique,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-2885,STRONG S.A. - MONTEVIDEO,STRONG S.A.,SAZ,Uruguay,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-2886,SUALL INDUSTRIA E COMERCIO LTDA - LAVRINHAS,SUALL INDUSTRIA E COMERCIO LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-2886,SUALL INDUSTRIA E COMERCIO LTDA - LAVRINHAS,SUALL INDÚSTRIA E COMÉRCIO,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2887,SUCROLIQ,"Coprobamex, S.A.P.I. de C.V.",MAZ,Mexico,Raw Materials,Applicable,Approved,1.000000,2026
 sc-2888,SUDAMERICA COMERCIAL S.A. - Santiago,SUDAMERICA COMERCIAL S.A.,SAZ,Chile,Raw Materials,Applicable,Approved,0.000000,2026
 sc-2889,SUEZ Water Technologies & Solutions - Minnetonka,SUEZ Water Technologies & Solutions,NAZ,United States,Cleaning Materials,Applicable,Approved for Trials,0.000000,2026
@@ -3064,7 +3064,7 @@ sc-3057,Smurfit Westrock – Lübeck,SMURFIT KAPPA GROUP,EUR,Germany,Packaging M
 sc-3058,"Smurfitwestrock - Dayton, NJ",SMURFIT WESTROCK PUBLIC LIMITED COMPANY,NAZ,,Packaging Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-3059,Smurtfit Westrock - Fort Worth,Smurtfit Westrock,NAZ,United States,Packaging Materials,Applicable,Potential Supplier,1.000000,2026
 sc-3060,Soberana S.A.S,Soberana S.A.S,MAZ,Colombia,Raw Materials,Applicable,Potential Supplier,0.000000,2026
-sc-3061,Social Consultoria Greencap Ltda - SANTIAGO CENTRO,Social Consultoria Greencap Ltda,SAZ,Chile,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-3061,Social Consultoria Greencap Ltda - SANTIAGO CENTRO,SOCIAL CONSULTORIA GREENCAP LTDA,SAZ,Chile,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-3062,Sociedad Agricola e Industrial San Carlos - Guayaquil,SOCIEDAD AGROPECUARIA H5 S P R DE R,MAZ,Ecuador,Raw Materials,Applicable,Approved,1.000000,2026
 sc-3063,Sociedad Importadora Liplata LTDA - QUILICURA,SOC IMPORTADORA Y COMERCIAL,SAZ,Chile,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-3064,Sociedad Portuaria Mardique S.A.,Sociedad Portuaria Mardique S.A.,MAZ,Colombia,Raw Materials,Applicable,Approved for Trials,1.000000,2026
@@ -3132,7 +3132,7 @@ sc-3125,Sugar Services LLC (Sucro) - Memphis,Sugar Services LLC (Sucro),NAZ,Unit
 sc-3126,Sugaright,Sugaright,NAZ,United States,Raw Materials,Applicable,Potential Supplier,,2026
 sc-3127,Sugherificio Molinas SPA - Sardegna,Sugherificio Molinas SPA,APAC,Italy,Packaging Materials,Applicable,Approved,0.200000,2026
 sc-3128,Sukjith Ltd. - Phagwara,Sukjith Ltd.,AFR,India,Raw Materials,Applicable,Not Approved,0.000000,2026
-sc-3129,Sumabras Do Brasil - Industria E - Vacaria,Sumabras Do Brasil,SAZ,Brazil,Raw Materials,Applicable,Not Approved,1.000000,2026
+sc-3129,Sumabras Do Brasil - Industria E - Vacaria,SUMABRAS DO BRASIL - INDUSTRIA E,SAZ,Brazil,Raw Materials,Applicable,Not Approved,1.000000,2026
 sc-3130,SunFoods LLC,SunFoods LLC,NAZ,United States,Raw Materials,Applicable,Not Approved,0.500000,2026
 sc-3131,SunWest Milling Co - Biggs,SunWest Milling Co,NAZ,United States,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-3132,Sungkwang - Ansan,Sungkwang,APAC,Republic of Korea,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -3166,7 +3166,7 @@ sc-3159,"TAPON SPAIN, S.L.U. - LEGANES",CAN PACK,SAZ,Spain,Packaging Materials,A
 sc-3160,TAPÓN CORONA S. A. DE C. V.,TAPÓN CORONA S. A. DE C. V.,MAZ,Mexico,Packaging Materials,Applicable,Not Approved,1.000000,2026
 sc-3161,TARIMERA DE ZACATECAS S. A. DE C. V.,TARIMERA DE ZACATECAS,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3162,TARIVIVE,TARIVIVE,MAZ,Mexico,Packaging Materials,Applicable,Approved,1.000000,2026
-sc-3163,TATE & LYLE SOLUTIONS BRASIL LTDA - MAUA,TATE & LYLE SOLUTIONS BRASIL LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.200000,2026
+sc-3163,TATE & LYLE SOLUTIONS BRASIL LTDA - MAUA,TATE & LYLE PUBLIC,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.200000,2026
 sc-3164,TBC-BALL Beverage Can Vietnam Limited,TBC-BALL Beverage Can Vietnam Limited,APAC,Vietnam,Packaging Materials,Applicable,Not Approved,,2026
 sc-3165,TECHNOCOAT ARTEFATOS DE PAPEL LTDA - ARAUCARIA,TECHNOCOAT ARTEFATOS DE PAPEL LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3166,TECHNOFILMS - Guatemala,TECHNOFILMS,MAZ,Guatemala,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -3213,7 +3213,7 @@ sc-3206,Tate & Lyle South Africa Pty  Ltd - Johannesburg,Tate & Lyle South Afric
 sc-3207,Tazpack - Corporate,Tazpack,AFR,Tanzania,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3208,Tecnovin Do Brasil Ltda - Bento Goncalves,TECNOVIN DO BRASIL LTDA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-3209,Temas Industriales Sa,Temas Industriales Sa,SAZ,Argentina,Raw Materials,Applicable,Approved,1.000000,2026
-sc-3210,Tereo Acucar E Energia Bra il Sa - Colina São Jo é (Armazem),Tereo Acucar E Energia Bra il Sa,SAZ,Brazil,Raw Materials,Applicable,Approved,0.500000,2026
+sc-3210,Tereo Acucar E Energia Bra il Sa - Colina São Jo é (Armazem),TEREOS,SAZ,Brazil,Raw Materials,Applicable,Approved,0.500000,2026
 sc-3211,Tereos Acucar E Energia Brasil Sa - Olimpia (Cruz Alta),TEREOS,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-3212,Tereos Acucar E Energia Brasil Sa - Pitangueiras (Andrade),TEREOS,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.660000,2026
 sc-3213,Tereos Acucar E Energia Brasil Sa - Severinia,TEREOS,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.500000,2026
@@ -3274,7 +3274,7 @@ sc-3267,"Técnicos y Asociados de Promexsa, S.A.de C.V.","Técnicos y Asociados 
 sc-3268,Töpfer Kulmbach GmbH - Kulmbach,Töpfer Kulmbach GmbH,EUR,Germany,Packaging Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-3269,UB Plastics Ltd - Burton upon Trent,UB Plastics Ltd,EUR,United Kingdom,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3270,UD Chemie GmbH - Wörrstadt,UD Chemie GmbH,EUR,Germany,Raw Materials,Applicable,Approved but Inactive,0.500000,2026
-sc-3271,UNIKA INDUSTRIA E COMERCIO LTDA - SOROCABA,UNIKA INDUSTRIA E COMERCIO LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-3271,UNIKA INDUSTRIA E COMERCIO LTDA - SOROCABA,UNIKA INDÚSTRIA E COMÉRCIO DE EMBALAGENS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3272,UNION AGROINDUSTRIAL DE CANEROS,Union Agroindustrial de Caneros S.A.,SAZ,Bolivia,Raw Materials,Applicable,Potential Supplier,0.000000,2026
 sc-3273,UNIONPLAST S.A.,UNIONPLAST S.A.,SAZ,Peru,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-3274,UNIVAR BRASIL LTDA - OSASCO,UNIVAR SOLUTIONS,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
@@ -3284,7 +3284,7 @@ sc-3277,URSA  - Kibaha,URSA,AFR,Tanzania,Raw Materials,Applicable,Approved,1.000
 sc-3278,URUFONT S.A. - DR. FRANCISCO SOCA,URUFONT S.A.,SAZ,Uruguay,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-3279,US Sweeteners,US Sweeteners,NAZ,United States,Raw Materials,Applicable,Approved,0.000000,2026
 sc-3280,USINA ALTO ALEGRE S/A - ACUCAR E ALCOOL,USINA ALTO ALEGRE S/A - ACUCAR E ALCOOL,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.420000,2026
-sc-3281,USINA SERRA GRANDE SA - SAO JOSE DA LAJE,USINA SERRA GRANDE SA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
+sc-3281,USINA SERRA GRANDE SA - SAO JOSE DA LAJE,USINA SERRA GRANDE,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-3282,Ultimate Flexipack - Haridwar,Ultimate Flexipack,APAC,India,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3283,Unigrain,Unigrain,AFR,,Raw Materials,Applicable,Not Approved,0.000000,2026
 sc-3284,Unipack Paletten-Vertriebs GmbH - Dortmund,UNIPACK PALETTEN-VERTRIEBS-GMBH,EUR,Germany,Packaging Materials,Applicable,Approved,1.000000,2026
@@ -3298,11 +3298,11 @@ sc-3291,Univar Solutions - Plaquemine,Univar Solutions,NAZ,United States,Raw Mat
 sc-3292,Unión de Arroceros molino Espinal,Unión de Arroceros molino Espinal,MAZ,Colombia,Raw Materials,Applicable,Potential Supplier,0.750000,2026
 sc-3293,Unión de Arroceros molino Ibague,Unión de Arroceros molino Ibague,MAZ,Colombia,Raw Materials,Applicable,Potential Supplier,0.500000,2026
 sc-3294,Unión de Arroceros molino Nunchia,Unión de Arroceros molino Nunchia,MAZ,Colombia,Raw Materials,Applicable,Potential Supplier,0.750000,2026
-sc-3295,Usina Batatais Sa Acucar E Alcool - Batatais,Usina Batatais Sa Acucar E Alcool,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.330000,2026
+sc-3295,Usina Batatais Sa Acucar E Alcool - Batatais,USINA BATATAIS SA ACUCAR E ALCOOL,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.330000,2026
 sc-3296,Usina Central Olho D Agua Sa - Camutanga,USINA CENTRAL OLHO D AGUA,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-3297,Usina Petribu Sa - Lagoa Do Itaenga,Usina Petribu Sa,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.850000,2026
 sc-3298,Usina Sao Francisco S/A - Guarulhos,Usina Sao Francisco S/A,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.710000,2026
-sc-3299,Usina Sao Francisco S/A - Ribeirao Preto,Usina Sao Francisco S/A,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.710000,2026
+sc-3299,Usina Sao Francisco S/A - Ribeirao Preto,USINA SAO FRANCISCO S/A,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.710000,2026
 sc-3300,Usina Sao Francisco S/A - Sertãozinho,Usina Sao Francisco S/A,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.710000,2026
 sc-3301,Usina Sao Jose S/A - Igarassu,USINA SAO JOSE,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-3302,VALDER,VALDER,MAZ,,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -3319,14 +3319,14 @@ sc-3312,VALGROUP SP - Filme,VALGROUP,SAZ,Brazil,Packaging Materials,Applicable,N
 sc-3313,VALGROUP SP - Rótulos,VALGROUP,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.400000,2026
 sc-3314,VALIENTE FERNANDEZ,VALIENTE FERNANDEZ,MAZ,Republica Dominicana,Packaging Materials,Applicable,Approved but Inactive,0.000000,2026
 sc-3315,VEGATI,VEGATI,MAZ,Zacatecas,Packaging Materials,Applicable,Not Approved,0.000000,2026
-sc-3316,VEMATE VERDINHA INDUSTRIA DO MATE - XANXERE,VEMATE VERDINHA INDUSTRIA DO MATE,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
-sc-3317,VENETO MERCANTIL IMPORTADORA LTDA - FLORES DA CUNHA,VENETO MERCANTIL IMPORTADORA LTDA,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.800000,2026
-sc-3318,VERA Y GIANNINI IMPRESORES S.A - Santiago,VERA Y GIANNINI IMPRESORES S.A,SAZ,Chile,Packaging Materials,Applicable,Not Approved,0.000000,2026
+sc-3316,VEMATE VERDINHA INDUSTRIA DO MATE - XANXERE,VEMATE VERDINHA INDUSTRIA DO MATE L,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
+sc-3317,VENETO MERCANTIL IMPORTADORA LTDA - FLORES DA CUNHA,asesorias y consultorias en materia,SAZ,Brazil,Raw Materials,Applicable,Not Approved,0.800000,2026
+sc-3318,VERA Y GIANNINI IMPRESORES S.A - Santiago,VERA Y GIANNINI IMPRESORES,SAZ,Chile,Packaging Materials,Applicable,Not Approved,0.000000,2026
 sc-3319,VESGA MOLINO AGUACHICA,VESGA MOLINO AGUACHICA,MAZ,Colombia,Raw Materials,Applicable,Approved,0.750000,2026
-sc-3320,VIBRANTZ MATERIAIS E CORES LTDA - AMERICANA,VIBRANTZ MATERIAIS E CORES LTDA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-3320,VIBRANTZ MATERIAIS E CORES LTDA - AMERICANA,ASP PRINCE PARENT HOLDINGS,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3321,VICAL - Costa Rica,VICAL,MAZ,Costa Rica,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3322,VICAL - Guatemala,VICAL,MAZ,Guatemala,Packaging Materials,Applicable,Approved,0.800000,2026
-sc-3323,VICENTE SCAVONE Y CIA. S.A.E. - San Lorenzo,VICENTE SCAVONE Y CIA. S.A.E.,SAZ,Paraguay,Raw Materials,Applicable,Approved,1.000000,2026
+sc-3323,VICENTE SCAVONE Y CIA. S.A.E. - San Lorenzo,VICENTE SCAVONE & CIA C E I,SAZ,Paraguay,Raw Materials,Applicable,Approved,1.000000,2026
 sc-3324,VIDEOLAR INNOVA SA - MANAUS,VIDEOLAR-INNOVA,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3325,VIRMEGRAF S.R.L. - Cochabamba,VIRMEGRAF S.R.L.,SAZ,Bolivia,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-3326,VITORIA INDUSTRIA E COMERCIO DE - UBERLANDIA,VITORIA INDUSTRIA E COMERCIO DE,SAZ,Brazil,Packaging Materials,Applicable,Not Approved,0.000000,2026
@@ -3385,7 +3385,7 @@ sc-3378,W. Gröning GmbH - Rheine,Kölling-Gröning Beteiligungskommanditgesells
 sc-3379,WALLERSTEIN INDUSTRIAL E COMERCIAL - BARUERI,WALLERSTEIN INDUSTRIAL E COMERCIAL,SAZ,Brazil,Raw Materials,Applicable,Approved,1.000000,2026
 sc-3380,WESTROCK ARGENTINA S.A. - CAPITAL FEDERAL,SMURFIT WESTROCK PUBLIC LIMITED COMPANY,SAZ,Argentina,Packaging Materials,Applicable,Approved,0.000000,2026
 sc-3381,WESTROCK CHILE LIMITADA - LAS CONDES,SMURFIT WESTROCK PUBLIC LIMITED COMPANY,SAZ,Chile,Packaging Materials,Applicable,Approved,0.000000,2026
-sc-3382,WESTROCK DO NORDESTE INDUSTRIA DE - PACAJUS,WESTROCK DO NORDESTE INDUSTRIA DE,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
+sc-3382,WESTROCK DO NORDESTE INDUSTRIA DE - PACAJUS,SMURFIT WESTROCK PUBLIC LIMITED COMPANY,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3383,"WESTROCK, CELULOSE, PAPEL E EMBALAG - PORTO FELIZ",SMURFIT WESTROCK PUBLIC LIMITED COMPANY,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3384,"WESTROCK, CELULOSE, PAPEL E EMBALAG - SAO PAULO",SMURFIT WESTROCK PUBLIC LIMITED COMPANY,SAZ,Brazil,Packaging Materials,Applicable,Approved,1.000000,2026
 sc-3385,WET CHEMICAL BOLIVIA S.R.L. - Santa Cruz,WET CHEMICAL BOLIVIA S.R.L.,SAZ,Bolivia,Raw Materials,Applicable,Approved for Trials,0.660000,2026

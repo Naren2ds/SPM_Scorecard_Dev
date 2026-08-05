@@ -1,26 +1,26 @@
 {
-  "refreshed_at_utc": "2026-08-03T13:34:16.005794+00:00",
+  "refreshed_at_utc": "2026-08-05T06:33:41.985057+00:00",
   "dataset_count": 9,
   "datasets": {
     "dot": {
-      "previous_rows": 29967,
-      "refreshed_rows": 201225,
-      "row_ratio": 6.714886
+      "previous_rows": 201906,
+      "refreshed_rows": 201906,
+      "row_ratio": 1.0
     },
     "iot": {
-      "previous_rows": 25331,
-      "refreshed_rows": 206620,
-      "row_ratio": 8.156804
+      "previous_rows": 207272,
+      "refreshed_rows": 207272,
+      "row_ratio": 1.0
     },
     "supplier_assessment": {
-      "previous_rows": 3547,
+      "previous_rows": 3548,
       "refreshed_rows": 3544,
-      "row_ratio": 0.999154
+      "row_ratio": 0.998873
     },
     "supplier_compliance": {
-      "previous_rows": 3547,
+      "previous_rows": 3548,
       "refreshed_rows": 3544,
-      "row_ratio": 0.999154
+      "row_ratio": 0.998873
     },
     "supplier_maturity": {
       "previous_rows": 291,
@@ -38,14 +38,14 @@
       "row_ratio": 1.0
     },
     "invoice_conformity": {
-      "previous_rows": 5784,
-      "refreshed_rows": 5784,
+      "previous_rows": 9240,
+      "refreshed_rows": 9240,
       "row_ratio": 1.0
     },
     "price_divergence": {
-      "previous_rows": 31136,
-      "refreshed_rows": 175874,
-      "row_ratio": 5.648574
+      "previous_rows": 176476,
+      "refreshed_rows": 176476,
+      "row_ratio": 1.0
     }
   }
 }

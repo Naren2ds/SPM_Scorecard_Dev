@@ -260,7 +260,10 @@ function ScorecardPage() {
 
   // Use the leading compact row only when there is no persisted selection.
   useEffect(() => {
-    if (!leaderboard || leaderboard.items.length === 0) {
+    // A tab change remounts this page. Do not erase the persisted selection
+    // while the leaderboard request is still in flight.
+    if (!leaderboard) return;
+    if (leaderboard.items.length === 0) {
       setSelectedParent(null);
       return;
     }
@@ -691,9 +694,6 @@ function ScorecardPage() {
                             aria-selected={item.parentSupplier === selectedParent}
                           >
                             <span>{item.parentSupplier}</span>
-                            <small>
-                              Score {item.normalized_score.toFixed(1)} · {item.band}
-                            </small>
                           </button>
                         ))}
                       </div>

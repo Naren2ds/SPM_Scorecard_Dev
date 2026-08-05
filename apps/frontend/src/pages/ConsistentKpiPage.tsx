@@ -1,5 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { FixedMaxScore, ScoringConfigHeading } from "../shared/ScoringConfig";
 import {
   KPI_SPECS,
   buildResults,
@@ -193,7 +194,7 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
   const configErrors = validateConfig(draftConfig);
   const hasDraftChanges = JSON.stringify(draftConfig) !== JSON.stringify(savedConfig);
 
-  const updateConfig = (field: "maxScore" | "criticalFloor" | "target", value: string, percentField = false) => {
+  const updateConfig = (field: "criticalFloor" | "target", value: string, percentField = false) => {
     setDraftConfig((current) => ({
       ...current,
       [field]: value === "" ? Number.NaN : Number(value) / (percentField ? 100 : 1),
@@ -203,7 +204,7 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
 
   const runPreview = () => {
     if (configErrors.length) return;
-    setPreviewConfig({ ...draftConfig });
+    setPreviewConfig({ ...draftConfig, maxScore: savedConfig.maxScore });
     setPage(1);
     setMessage("Temporary preview is active. Official scorecard settings are unchanged.");
   };
@@ -227,11 +228,10 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
           kpiId,
           floor: draftConfig.criticalFloor,
           target: draftConfig.target,
-          maxScore: draftConfig.maxScore,
         }),
       });
       if (!response.ok) throw new Error(`Apply failed (${response.status})`);
-      const applied = { ...draftConfig, formulaMode: "softStretch" as FormulaMode };
+      const applied = { ...draftConfig, maxScore: savedConfig.maxScore, formulaMode: "softStretch" as FormulaMode };
       setSavedConfig(applied);
       setDraftConfig(applied);
       setPreviewConfig(null);
@@ -296,11 +296,12 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
       </section>
 
       <section className="config-bar dot-scenario-config">
-        <label><span>Max Score</span><input type="number" min="0" step="0.5" value={Number.isFinite(draftConfig.maxScore) ? draftConfig.maxScore : ""} onChange={(event) => updateConfig("maxScore", event.target.value)} /></label>
+        <ScoringConfigHeading />
+        <FixedMaxScore value={savedConfig.maxScore} />
         <label><span>{spec.autoQuartiles ? "Critical Floor (Q1)" : "Critical Floor %"}</span><input type="number" min="0" step="0.1" value={Number.isFinite(draftConfig.criticalFloor) ? Number((draftConfig.criticalFloor * (spec.unit === "percent" ? 100 : 1)).toFixed(4)) : ""} onChange={(event) => updateConfig("criticalFloor", event.target.value, spec.unit === "percent")} disabled={spec.autoQuartiles} /></label>
         <label><span>{spec.autoQuartiles ? "Target (Q3)" : "Target %"}</span><input type="number" min="0" step="0.1" value={Number.isFinite(draftConfig.target) ? Number((draftConfig.target * (spec.unit === "percent" ? 100 : 1)).toFixed(4)) : ""} onChange={(event) => updateConfig("target", event.target.value, spec.unit === "percent")} disabled={spec.autoQuartiles} /></label>
         <label><span>Formula Mode</span><select value={draftConfig.formulaMode} onChange={(event) => { setDraftConfig((current) => ({ ...current, formulaMode: event.target.value as FormulaMode })); setMessage(""); }}><option value="softStretch">Soft Stretch (official)</option><option value="strict">Strict (preview only)</option></select></label>
-        <div className="dot-scenario-actions"><button type="button" onClick={runPreview} disabled={applying || configErrors.length > 0}>Preview</button>{!spec.autoQuartiles && <button type="button" onClick={applyPreview} disabled={applying || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply Soft Stretch</button>}{previewConfig && <button type="button" className="ghost-button" onClick={discardPreview} disabled={applying}>Discard</button>}</div>
+        <div className="dot-scenario-actions"><button type="button" onClick={runPreview} disabled={applying || configErrors.length > 0}>Preview</button>{!spec.autoQuartiles && <button type="button" onClick={applyPreview} disabled={applying || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply to Scorecard</button>}{previewConfig && <button type="button" className="ghost-button" onClick={discardPreview} disabled={applying}>Discard</button>}</div>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((item) => <p key={item}>{item}</p>)}</div>}
       </section>
 

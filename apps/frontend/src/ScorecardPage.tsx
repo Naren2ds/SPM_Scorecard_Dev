@@ -591,15 +591,6 @@ function ScorecardPage() {
         <button type="button" onClick={clearFilters}>Clear filters</button>
         <div className="filter-summary">
           <strong>{summary?.filtered_parent_count ?? 0}</strong> suppliers
-          {(summary?.filtered_parent_count ?? 0) > 0 && summary && (
-            <>
-              &nbsp;·&nbsp;Avg&nbsp;<strong>{summary.average_normalized_score.toFixed(1)}</strong>
-              &nbsp;·&nbsp;
-              <span className="sc-band-chip green">{summary.band_counts.Green}&thinsp;G</span>{" "}
-              <span className="sc-band-chip amber">{summary.band_counts.Amber}&thinsp;A</span>{" "}
-              <span className="sc-band-chip red">{summary.band_counts.Red}&thinsp;R</span>
-            </>
-          )}
         </div>
       </section>
 

@@ -1,5 +1,6 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { MultiSelectDropdown } from "../shared/MultiSelectDropdown";
+import { FixedMaxScore, ScoringConfigHeading } from "../shared/ScoringConfig";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
@@ -276,7 +277,7 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
     return () => controller.abort();
   }, [deferredSupplierQuery, cohortSignature, sharedParent, activePreviewId]);
 
-  const updateConfigNumber = (field: "maxScore" | "criticalFloor" | "target", value: string, scale = 1) => {
+  const updateConfigNumber = (field: "criticalFloor" | "target", value: string, scale = 1) => {
     setDraftConfig((current) => ({ ...current, [field]: value === "" ? Number.NaN : Number(value) / scale }));
     setMessage("");
   };
@@ -290,7 +291,7 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
       const response = await fetchJson<{ previewId: string }>(`${API_BASE}/api/dot/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...draftConfig, filters: { categories, years, months, countries, zones } }),
+        body: JSON.stringify({ ...draftConfig, maxScore: savedConfig.maxScore, filters: { categories, years, months, countries, zones } }),
       });
       setPreview({ id: response.previewId, cohortSignature, configSignature: draftSignature });
       setPage(1);
@@ -320,9 +321,9 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
       await fetchJson(`${API_BASE}/api/scorecard/config`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kpiId: "DOT", floor: draftConfig.criticalFloor, target: draftConfig.target, maxScore: draftConfig.maxScore }),
+        body: JSON.stringify({ kpiId: "DOT", floor: draftConfig.criticalFloor, target: draftConfig.target }),
       });
-      const applied = { ...draftConfig, formulaMode: "softStretch" as const };
+      const applied = { ...draftConfig, maxScore: savedConfig.maxScore, formulaMode: "softStretch" as const };
       setSavedConfig(applied);
       setDraftConfig(applied);
       setPreview(null);
@@ -398,7 +399,8 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
       </section>
 
       <section className="config-bar dot-scenario-config">
-        <label><span>Max Score</span><input type="number" min="0" step="0.5" value={Number.isFinite(draftConfig.maxScore) ? draftConfig.maxScore : ""} onChange={(event) => updateConfigNumber("maxScore", event.target.value)} /></label>
+        <ScoringConfigHeading />
+        <FixedMaxScore value={savedConfig.maxScore} />
         <label><span>Critical Floor %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.criticalFloor) ? Number((draftConfig.criticalFloor * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("criticalFloor", event.target.value, 100)} /></label>
         <label><span>Target %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.target) ? Number((draftConfig.target * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("target", event.target.value, 100)} /></label>
         <label>
@@ -410,7 +412,7 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
         </label>
         <div className="dot-scenario-actions">
           <button type="button" onClick={runPreview} disabled={scenarioBusy || configErrors.length > 0}>Preview</button>
-          <button type="button" onClick={applyPreview} disabled={scenarioBusy || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply Soft Stretch</button>
+          <button type="button" onClick={applyPreview} disabled={scenarioBusy || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply to Scorecard</button>
           {preview && <button type="button" className="ghost-button" onClick={discardPreview} disabled={scenarioBusy}>Discard</button>}
         </div>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((item) => <p key={item}>{item}</p>)}</div>}

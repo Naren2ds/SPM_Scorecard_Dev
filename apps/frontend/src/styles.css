@@ -1410,6 +1410,37 @@ details.summary-section:not([open]) > .summary-section-summary {
   margin-top: 12px;
 }
 
+.scoring-config-heading {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 9px;
+}
+
+.scoring-config-heading strong {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.scoring-config-heading span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.config-bar input.fixed-config-value {
+  border-color: var(--line);
+  background: var(--panel-soft);
+  color: var(--ink);
+  cursor: default;
+  font-weight: 700;
+}
+
 .dot-scenario-actions {
   display: flex;
   align-items: end;
@@ -1745,35 +1776,6 @@ details.summary-section:not([open]) > .summary-section-summary {
   font-size: 1.7rem;
   font-weight: 700;
   color: var(--ink);
-}
-
-.sc-band-line {
-  display: flex;
-  gap: 6px;
-  font-size: 0.9rem;
-}
-
-.sc-band-chip {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.sc-band-chip.green {
-  background: #e6f7ea;
-  color: #146c2e;
-}
-
-.sc-band-chip.amber {
-  background: #fff4d6;
-  color: #8a5a00;
-}
-
-.sc-band-chip.red {
-  background: #ffe5e1;
-  color: #a4271c;
 }
 
 /* Full-width body */

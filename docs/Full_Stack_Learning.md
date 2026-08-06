@@ -64,7 +64,7 @@ function App() {
 ```
 Browser loads index.html
   → main.tsx boots → injects <App /> into <div id="root">
-    → App.tsx x1renders tab bar + the active KPI page
+    → App.tsx renders tab bar + the active KPI page
       → User clicks "DOT" → DotKpiPage.tsx renders
 ```
 

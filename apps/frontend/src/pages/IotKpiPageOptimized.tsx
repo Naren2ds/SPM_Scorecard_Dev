@@ -384,15 +384,14 @@ function IotKpiPageOptimized({ sharedParent, onParentChange }: IotKpiPageProps) 
         <FixedMaxScore value={savedConfig.maxScore} />
         <label><span>Critical Floor %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.criticalFloor) ? Number((draftConfig.criticalFloor * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("criticalFloor", event.target.value, 100)} /></label>
         <label><span>Target %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.target) ? Number((draftConfig.target * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("target", event.target.value, 100)} /></label>
-        <label><span>Formula Mode</span><select value={draftConfig.formulaMode} onChange={(event) => { setDraftConfig((current) => ({ ...current, formulaMode: event.target.value as FormulaMode })); setMessage(""); }}><option value="softStretch">Soft Stretch (official)</option><option value="strict">Strict (preview only)</option></select></label>
+        <label><span>Formula Mode</span><input className="fixed-config-value" type="text" value="Soft Stretch (official)" readOnly aria-readonly="true" /></label>
         <div className="dot-scenario-actions"><button type="button" onClick={runPreview} disabled={scenarioBusy || configErrors.length > 0}>Preview</button><button type="button" onClick={applyPreview} disabled={scenarioBusy || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply to Scorecard</button>{preview && <button type="button" className="ghost-button" onClick={discardPreview} disabled={scenarioBusy}>Discard</button>}</div>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((item) => <p key={item}>{item}</p>)}</div>}
       </section>
 
       <section className={`dot-scenario-banner ${previewIsActive ? "is-preview" : "is-saved"}`}>
         <strong>{previewIsActive ? "Temporary preview" : "Official saved results"}</strong>
-        <span>{previewIsActive ? `${draftConfig.formulaMode === "strict" ? "Strict" : "Soft Stretch"} scenario is active. Nothing has been saved.` : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : "Soft Stretch is the production IOT formula."}</span>
-        {draftConfig.formulaMode === "strict" && <span>Strict can be reviewed but cannot be applied.</span>}
+        <span>{previewIsActive ? "Soft Stretch scenario is active. Nothing has been saved." : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : "Soft Stretch is the production IOT formula."}</span>
         {message && <span>{message}</span>}
       </section>
 
@@ -408,7 +407,7 @@ function IotKpiPageOptimized({ sharedParent, onParentChange }: IotKpiPageProps) 
       <details className="formula-panel collapsible-section">
         <summary>How IOT Earned Score Is Calculated</summary>
         <div className="formula-ribbon"><div><span>IOT</span><strong>Invoice On-Time Count / Total PO Lines</strong></div><div><span>Attainment</span><strong>(IOT - Floor) / (Target - Floor), limited to 0-1</strong></div><div><span>Official earned score</span><strong>Max x Attainment x (70% + 30% x Percentile)</strong></div></div>
-        <p>Rollups use summed invoice counts, not an average of supplier percentages. Strict preview uses Max x Percentile x Attainment.</p>
+        <p>Rollups use summed invoice counts, not an average of supplier percentages. Soft Stretch uses Max x Attainment x (70% + 30% x Percentile).</p>
       </details>
 
       <section className="results-panel">
@@ -438,3 +437,6 @@ const rowClass = (status: string) => status === "Missing Data" ? "invalid-row" :
 const statusClass = (status: string) => status === "Missing Data" ? "status-invalid" : status === "Not Applicable" ? "status-na" : status === "Below critical floor" ? "status-floor" : "status-valid";
 
 export default IotKpiPageOptimized;
+
+
+

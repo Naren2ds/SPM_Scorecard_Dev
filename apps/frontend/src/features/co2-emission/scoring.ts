@@ -478,9 +478,7 @@ export function calculateZoneRollup(
 }
 
 export const formulaModeLabel = (mode: Co2Config["formulaMode"]) =>
-  mode === "softStretch"
-    ? "Softer Percentile Stretch"
-    : "Strict Percentile x Attainment";
+  mode === "softStretch" ? "Soft Stretch (official)" : "Soft Stretch (official)";
 
 // ─── CSV export helper ─────────────────────────────────────────────────────
 

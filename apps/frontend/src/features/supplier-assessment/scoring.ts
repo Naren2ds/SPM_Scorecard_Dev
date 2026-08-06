@@ -577,9 +577,7 @@ export function calculateCountryRollup(
 }
 
 export const formulaModeLabel = (mode: AssessmentConfig["formulaMode"]) =>
-  mode === "softStretch"
-    ? "Softer Percentile Stretch"
-    : "Strict Percentile x Attainment";
+  mode === "softStretch" ? "Soft Stretch (official)" : "Soft Stretch (official)";
 
 // ─── CSV export helper (reused from DOT) ───────────────────────────────────
 

@@ -499,9 +499,7 @@ export function calculateCountryRollup(
 }
 
 export const formulaModeLabel = (mode: ComplianceConfig["formulaMode"]) =>
-  mode === "softStretch"
-    ? "Softer Percentile Stretch"
-    : "Strict Percentile x Attainment";
+  mode === "softStretch" ? "Soft Stretch (official)" : "Soft Stretch (official)";
 
 // ─── CSV export helper ─────────────────────────────────────────────────────
 

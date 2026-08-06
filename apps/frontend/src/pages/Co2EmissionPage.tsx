@@ -326,16 +326,7 @@ function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent
             onChange={(e) => updateNumericConfig("target", e.target.value)}
           />
         </label>
-        <label>
-          <span>Formula Mode</span>
-          <select
-            value={config.formulaMode}
-            onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as Co2FormulaMode }))}
-          >
-            <option value="softStretch">Softer Percentile Stretch</option>
-            <option value="strict">Strict Percentile &times; Attainment</option>
-          </select>
-        </label>
+        <label><span>Formula Mode</span><input className="fixed-config-value" type="text" value="Soft Stretch (official)" readOnly aria-readonly="true" /></label>
         <label className="checkbox-inline">
           <input
             type="checkbox"
@@ -377,11 +368,7 @@ function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent
         <div className="formula-ribbon" aria-label="CO2 Emission formula summary">
           <div>
             <span>1. Earned Score</span>
-            <strong>
-              {config.formulaMode === "strict"
-                ? "Max Score × Percentile × Attainment"
-                : "Max Score × Attainment × (70% + 30% × Percentile)"}
-            </strong>
+            <strong>Max Score × Attainment × (70% + 30% × Percentile)</strong>
           </div>
           <div>
             <span>2. Attainment</span>
@@ -394,9 +381,7 @@ function Co2EmissionPage({ sharedParent: selParent, onParentChange: setSelParent
         </div>
         <div className="formula-callout">
           <strong>Selected formula:</strong>{" "}
-          {config.formulaMode === "softStretch"
-            ? "Softer Percentile Stretch — Earned Score = Max Score × Attainment × (70% + 30% × Percentile)"
-            : "Strict Percentile × Attainment — Earned Score = Max Score × Percentile × Attainment"}
+          Soft Stretch (official) — Earned Score = Max Score × Attainment × (70% + 30% × Percentile)
         </div>
         <details className="formula-details">
           <summary>Show short explanation</summary>
@@ -562,3 +547,4 @@ const statusClass = (status: string) => {
 };
 
 export default Co2EmissionPage;
+

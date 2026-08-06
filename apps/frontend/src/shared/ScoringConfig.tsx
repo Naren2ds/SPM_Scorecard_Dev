@@ -2,7 +2,7 @@ export function ScoringConfigHeading() {
   return (
     <div className="scoring-config-heading">
       <strong>KPI Scoring Configuration</strong>
-      <span>Max Score is fixed. Preview changes to the floor, target, or formula before applying.</span>
+      <span>Max Score is fixed. Preview changes to the floor or target before applying.</span>
     </div>
   );
 }

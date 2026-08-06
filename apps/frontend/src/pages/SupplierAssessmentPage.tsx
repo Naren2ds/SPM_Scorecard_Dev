@@ -312,13 +312,7 @@ function SupplierAssessmentPage({ sharedParent: selParent, onParentChange: setSe
           <span>Target %</span>
           <input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.target) ? Number((config.target * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("target", e.target.value, 100)} />
         </label>
-        <label>
-          <span>Formula Mode</span>
-          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as AssessmentFormulaMode }))}>
-            <option value="softStretch">Softer Percentile Stretch</option>
-            <option value="strict">Strict Percentile &times; Attainment</option>
-          </select>
-        </label>
+        <label><span>Formula Mode</span><input className="fixed-config-value" type="text" value="Soft Stretch (official)" readOnly aria-readonly="true" /></label>
         <label>
           <span>Red Score Cap</span>
           <input type="text" readOnly value="Disabled" title="Disabled to match Normalized Scorecard" style={{cursor: "not-allowed", background: "#f5f5f5", color: "#666"}} />
@@ -351,11 +345,7 @@ function SupplierAssessmentPage({ sharedParent: selParent, onParentChange: setSe
         <div className="formula-ribbon" aria-label="Supplier Assessment formula summary">
           <div>
             <span>1. Earned Score</span>
-            <strong>
-              {config.formulaMode === "strict"
-                ? "Max Score × Percentile × Attainment"
-                : "Max Score × Attainment × (70% + 30% × Percentile)"}
-            </strong>
+            <strong>Max Score × Attainment × (70% + 30% × Percentile)</strong>
           </div>
           <div>
             <span>2. Attainment</span>
@@ -368,9 +358,7 @@ function SupplierAssessmentPage({ sharedParent: selParent, onParentChange: setSe
         </div>
         <div className="formula-callout">
           <strong>Selected formula:</strong>{" "}
-          {config.formulaMode === "softStretch"
-            ? "Softer Percentile Stretch — Earned Score = Max Score × Attainment × (70% + 30% × Percentile)"
-            : "Strict Percentile × Attainment — Earned Score = Max Score × Percentile × Attainment"}
+          "Soft Stretch (official) — Earned Score = Max Score × Attainment × (70% + 30% × Percentile)"
         </div>
         <details className="formula-details">
           <summary>Show short explanation</summary>
@@ -567,3 +555,4 @@ const statusClass = (status: string) => {
 };
 
 export default SupplierAssessmentPage;
+

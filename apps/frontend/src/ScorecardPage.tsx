@@ -1,13 +1,5 @@
-// ---------------------------------------------------------------------------
-// Normalized Supplier Scorecard — consolidates all 9 KPI earned scores into
-// Pillar Scores and an overall Normalized Score per Parent Supplier.
-//
-// Framework: docs/Supplier_Performance_Normalized_Scorecard_Framework_Report.pdf
-//            §5 Recommended Framework · §6 Methodology · §7 Coverage Layer
-// Mapping:   docs/Score_Card_Calculation_Proposed.xlsx  sheet "Mapping"
-// ---------------------------------------------------------------------------
-
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { usePersistedState } from "./shared/usePersistedState";
 import "./styles.css";
 import type {
@@ -19,18 +11,7 @@ import type {
   ScorecardSummary,
 } from "./scorecardTypes";
 
-// ─── Number-format helpers ──────────────────────────────────────────────────
-
-const fmtCurrencyShort = (v: number) => {
-  if (!Number.isFinite(v)) return "—";
-  const abs = Math.abs(v);
-  if (abs >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`;
-  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
-  return v.toFixed(0);
-};
-
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
 async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, { signal });
@@ -40,21 +21,20 @@ async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-// ─── Formatting helpers ────────────────────────────────────────────────────
+const fmtPct = (value: number | null, digits = 1) =>
+  value === null || !Number.isFinite(value) ? "N/A" : `${(value * 100).toFixed(digits)}%`;
 
-const fmtPct = (v: number | null, digits = 1) =>
-  v === null || !Number.isFinite(v) ? "—" : `${(v * 100).toFixed(digits)}%`;
-
-const bandStyles: Record<
-  ParentScorecard["band"],
-  { bg: string; fg: string; label: string }
-> = {
-  Green: { bg: "#e6f7ea", fg: "#146c2e", label: "Green" },
-  Amber: { bg: "#fff4d6", fg: "#8a5a00", label: "Amber" },
+const bandStyles: Record<ParentScorecard["band"], { bg: string; fg: string; label: string }> = {
+  Green: { bg: "#e7f6ed", fg: "#146c2e", label: "Green" },
+  Amber: { bg: "#fff6df", fg: "#8a5a00", label: "Amber" },
   Red: { bg: "#ffe5e1", fg: "#a4271c", label: "Red" },
 };
 
-// ─── Multi-select dropdown (same UX as the KPI pages) ──────────────────────
+function bandFor(score: number): ParentScorecard["band"] {
+  if (score >= 80) return "Green";
+  if (score >= 60) return "Amber";
+  return "Red";
+}
 
 function MultiSelectDropdown({
   label,
@@ -74,8 +54,10 @@ function MultiSelectDropdown({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const handler = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -84,25 +66,24 @@ function MultiSelectDropdown({
   const filtered = useMemo(() => {
     if (!searchable || !query.trim()) return options;
     const q = query.trim().toLowerCase();
-    return options.filter((o) => o.toLowerCase().includes(q));
+    return options.filter((option) => option.toLowerCase().includes(q));
   }, [options, query, searchable]);
 
-  const toggleValue = (val: string) => {
-    if (selected.includes(val)) onChange(selected.filter((v) => v !== val));
-    else onChange([...selected, val]);
+  const toggleValue = (value: string) => {
+    if (selected.includes(value)) {
+      onChange(selected.filter((item) => item !== value));
+    } else {
+      onChange([...selected, value]);
+    }
   };
 
   const displayLabel =
-    selected.length === 0
-      ? "All"
-      : selected.length === 1
-        ? selected[0]
-        : `${selected.length} selected`;
+    selected.length === 0 ? "All" : selected.length === 1 ? selected[0] : `${selected.length} selected`;
 
   return (
     <div className="ms-dropdown" ref={ref}>
       <span className="ms-label">{label}</span>
-      <button type="button" className="ms-trigger" onClick={() => setOpen(!open)}>
+      <button type="button" className="ms-trigger" onClick={() => setOpen((prev) => !prev)}>
         {displayLabel} <span className="ms-arrow">{open ? "▲" : "▼"}</span>
       </button>
       {open && (
@@ -111,28 +92,24 @@ function MultiSelectDropdown({
             <input
               type="text"
               className="ms-search"
-              placeholder="Search…"
+              placeholder="Search..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
             />
           )}
           <label className="ms-item">
-            <input
-              type="checkbox"
-              checked={selected.length === 0}
-              onChange={() => onChange([])}
-            />
+            <input type="checkbox" checked={selected.length === 0} onChange={() => onChange([])} />
             All ({options.length})
           </label>
           <div className="ms-list">
-            {filtered.map((opt) => (
-              <label key={opt} className="ms-item">
+            {filtered.map((option) => (
+              <label key={option} className="ms-item">
                 <input
                   type="checkbox"
-                  checked={selected.includes(opt)}
-                  onChange={() => toggleValue(opt)}
+                  checked={selected.includes(option)}
+                  onChange={() => toggleValue(option)}
                 />
-                {opt}
+                {option}
               </label>
             ))}
           </div>
@@ -142,8 +119,6 @@ function MultiSelectDropdown({
   );
 }
 
-// ─── Main page ─────────────────────────────────────────────────────────────
-
 function ScorecardPage() {
   const [filters, setFilters] = useState<ScorecardFilterOptions>({
     zones: [],
@@ -152,7 +127,6 @@ function ScorecardPage() {
   });
   const [selZones, setSelZones] = usePersistedState<string[]>("sc-sel-zones", []);
   const [selCategories, setSelCategories] = usePersistedState<string[]>("sc-sel-categories", []);
-
   const [summary, setSummary] = useState<ScorecardSummary | null>(null);
   const [leaderboard, setLeaderboard] = useState<ScorecardLeaderboardResponse | null>(null);
   const [parentSearch, setParentSearch] = useState<ScorecardParentSearchResponse | null>(null);
@@ -165,27 +139,25 @@ function ScorecardPage() {
   const [search, setSearch] = usePersistedState<string>("sc-search", "");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [cacheInfo, setCacheInfo] = useState<{ cached_at: string | null; parent_count: number } | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, Record<string, boolean>>>({});
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => window.clearTimeout(timeoutId);
   }, [search]);
 
-  // Load cache status once on mount
   useEffect(() => {
     fetchJson<{ cached_at: string | null; parent_count: number }>(`${API_BASE}/api/scorecard/cache-status`)
       .then((data) => setCacheInfo(data))
       .catch(() => {});
   }, []);
 
-  // Load filter options once
   useEffect(() => {
     fetchJson<ScorecardFilterOptions>(`${API_BASE}/api/scorecard/filters`)
-      .then((data: ScorecardFilterOptions) => setFilters(data))
-      .catch((e) => setError(String(e)));
+      .then((data) => setFilters(data))
+      .catch((err) => setError(String(err)));
   }, []);
 
-  // Load scorecard whenever filters change
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -197,19 +169,18 @@ function ScorecardPage() {
     params.set("page_size", "100");
     params.set("sort", "normalized_score");
     params.set("order", "desc");
-    fetchJson<ScorecardLeaderboardResponse>(
-      `${API_BASE}/api/scorecard/leaderboard?${params.toString()}`,
-      controller.signal,
-    )
+
+    fetchJson<ScorecardLeaderboardResponse>(`${API_BASE}/api/scorecard/leaderboard?${params.toString()}`, controller.signal)
       .then((data) => {
         setLeaderboard(data);
         setLoading(false);
       })
-      .catch((e) => {
+      .catch((err) => {
         if (controller.signal.aborted) return;
-        setError(String(e));
+        setError(String(err));
         setLoading(false);
       });
+
     return () => controller.abort();
   }, [selZones, selCategories]);
 
@@ -219,14 +190,13 @@ function ScorecardPage() {
     if (selZones.length) params.set("zones", selZones.join(","));
     if (selCategories.length) params.set("categories", selCategories.join(","));
     if (debouncedSearch) params.set("search", debouncedSearch);
-    fetchJson<ScorecardSummary>(
-      `${API_BASE}/api/scorecard/summary?${params.toString()}`,
-      controller.signal,
-    )
+
+    fetchJson<ScorecardSummary>(`${API_BASE}/api/scorecard/summary?${params.toString()}`, controller.signal)
       .then(setSummary)
-      .catch((e) => {
-        if (!controller.signal.aborted) setError(String(e));
+      .catch((err) => {
+        if (!controller.signal.aborted) setError(String(err));
       });
+
     return () => controller.abort();
   }, [selZones, selCategories, debouncedSearch]);
 
@@ -236,60 +206,52 @@ function ScorecardPage() {
       setParentSearchLoading(false);
       return;
     }
+
     const controller = new AbortController();
     setParentSearchLoading(true);
     const params = new URLSearchParams({ q: debouncedSearch, limit: "30" });
     if (selZones.length) params.set("zones", selZones.join(","));
     if (selCategories.length) params.set("categories", selCategories.join(","));
-    fetchJson<ScorecardParentSearchResponse>(
-      `${API_BASE}/api/scorecard/parents/search?${params.toString()}`,
-      controller.signal,
-    )
+
+    fetchJson<ScorecardParentSearchResponse>(`${API_BASE}/api/scorecard/parents/search?${params.toString()}`, controller.signal)
       .then((data) => {
         setParentSearch(data);
         setParentSearchLoading(false);
       })
-      .catch((e) => {
+      .catch((err) => {
         if (!controller.signal.aborted) {
-          setError(String(e));
+          setError(String(err));
           setParentSearchLoading(false);
         }
       });
+
     return () => controller.abort();
   }, [selZones, selCategories, debouncedSearch]);
 
-  // Use the leading compact row only when there is no persisted selection.
   useEffect(() => {
-    // A tab change remounts this page. Do not erase the persisted selection
-    // while the leaderboard request is still in flight.
     if (!leaderboard) return;
     if (leaderboard.items.length === 0) {
       setSelectedParent(null);
       return;
     }
-    setSelectedParent((prev) => {
-      if (prev) {
-        return prev;
-      }
-      return leaderboard.items[0].parentSupplier;
-    });
-  }, [leaderboard]);
+    setSelectedParent((previous) => previous ?? leaderboard.items[0].parentSupplier);
+  }, [leaderboard, setSelectedParent]);
 
   useEffect(() => {
     if (!selectedParent) {
       setParentDetail(null);
       return;
     }
+
     const controller = new AbortController();
     setParentDetail(null);
     setDetailLoading(true);
+
     const params = new URLSearchParams({ name: selectedParent });
     if (selZones.length) params.set("zones", selZones.join(","));
     if (selCategories.length) params.set("categories", selCategories.join(","));
-    fetchJson<ParentDetailResponse>(
-      `${API_BASE}/api/scorecard/parent?${params.toString()}`,
-      controller.signal,
-    )
+
+    fetchJson<ParentDetailResponse>(`${API_BASE}/api/scorecard/parent?${params.toString()}`, controller.signal)
       .then((data) => {
         setParentDetail(data);
         if (!data.scorecard) {
@@ -298,18 +260,21 @@ function ScorecardPage() {
         }
         setDetailLoading(false);
       })
-      .catch((e) => {
+      .catch((err) => {
         if (controller.signal.aborted) return;
-        setError(String(e));
+        setError(String(err));
         setDetailLoading(false);
       });
+
     return () => controller.abort();
-  }, [selectedParent, selZones, selCategories, leaderboard]);
+  }, [selectedParent, selZones, selCategories, leaderboard, setSelectedParent]);
 
   const parentOptionNames = useMemo(() => {
-    const names = debouncedSearch.length >= 2
-      ? (parentSearch?.items.map((item) => item.parentSupplier) ?? [])
-      : (leaderboard?.items.map((item) => item.parentSupplier) ?? []);
+    const names =
+      debouncedSearch.length >= 2
+        ? parentSearch?.items.map((item) => item.parentSupplier) ?? []
+        : leaderboard?.items.map((item) => item.parentSupplier) ?? [];
+
     if (selectedParent && !names.includes(selectedParent)) {
       return [selectedParent, ...names];
     }
@@ -325,61 +290,7 @@ function ScorecardPage() {
   };
 
   const selected = parentDetail?.scorecard ?? null;
-
-  // ─── User applicability overrides (per KPI, per parent) ─────────────────
-  //
-  // Value semantics for `overrides[kpiId]`:
-  //   undefined → use the server-computed default (applicable iff data exists)
-  //   true      → force "Applicable" (counts in denominator; earned = data or 0)
-  //   false     → force "Not Applicable" (excluded from denominator + coverage)
-  //
-  // Overrides are keyed by the currently selected parent so switching rows
-  // does not carry over decisions between suppliers.
-  const [overrides, setOverrides] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
-
-  const parentOverrides = selectedParent
-    ? (overrides[selectedParent] ?? {})
-    : {};
-
-  const setKpiOverride = (kpiId: string, applicable: boolean | undefined) => {
-    if (!selectedParent) return;
-    setOverrides((prev) => {
-      const cur = { ...(prev[selectedParent] ?? {}) };
-      if (applicable === undefined) {
-        delete cur[kpiId];
-      } else {
-        cur[kpiId] = applicable;
-      }
-      return { ...prev, [selectedParent]: cur };
-    });
-  };
-
-  const resetParentOverrides = () => {
-    if (!selectedParent) return;
-    setOverrides((prev) => {
-      const copy = { ...prev };
-      delete copy[selectedParent];
-      return copy;
-    });
-  };
-
-  // ─── Recompute the whole scorecard live using overrides ─────────────────
-  //
-  // Framework §7 semantics that this implements:
-  //   - "Not Applicable" KPIs are excluded from BOTH the pillar denominator
-  //     AND the coverage denominator numerator.
-  //   - "Applicable but no data" (Missing Applicable) counts in the pillar
-  //     denominator with earned=0 (drags the pillar score down) AND does not
-  //     contribute to the coverage numerator (drags coverage % down too).
-  //   - Total Expected KPI Weight = SUM(max_score) across ALL KPIs.
-  //
-  // Because every KPI ships in the response, the whole calculation can run
-  // client-side, giving instant feedback when the user flips a dropdown.
-  const totalExpectedKpiWeight =
-    parentDetail?.total_expected_kpi_weight ??
-    (parentDetail?.kpis.reduce((s, k) => s + k.max_score, 0) ?? 0);
+  const totalExpectedKpiWeight = parentDetail?.total_expected_kpi_weight ?? 0;
 
   type ComputedKpi = {
     id: string;
@@ -388,8 +299,8 @@ function ScorecardPage() {
     max_score: number;
     raw: number | null;
     attainment: number | null;
-    earned: number | null; // original earned (null if no data)
-    effective_earned: number; // 0 if applicable but missing data
+    earned: number | null;
+    effective_earned: number;
     has_data: boolean;
     default_applicable: boolean;
     user_override: boolean | undefined;
@@ -410,7 +321,7 @@ function ScorecardPage() {
   type ComputedScorecard = {
     parentSupplier: string;
     invoice_value: number;
-    band: "Green" | "Amber" | "Red";
+    band: ParentScorecard["band"];
     pillars: ComputedPillar[];
     weighted_sum: number;
     applicable_pillar_weight: number;
@@ -422,106 +333,92 @@ function ScorecardPage() {
     total_applicable_max: number;
   } | null;
 
-  const bandFor = (score: number): "Green" | "Amber" | "Red" =>
-    score >= 80 ? "Green" : score >= 60 ? "Amber" : "Red";
-
   const computed: ComputedScorecard = useMemo(() => {
     if (!selected || !parentDetail) return null;
 
-    const pillars: ComputedPillar[] = selected.pillars.map((p) => {
+    const pillars: ComputedPillar[] = selected.pillars.map((pillar) => {
       let earnedSum = 0;
       let maxSum = 0;
 
-      const kpis: ComputedKpi[] = p.kpis.map((k) => {
-        const hasData = k.earned !== null && k.earned !== undefined;
-        const defaultApplicable = k.applicable;
-        const userOverride = parentOverrides[k.id];
-        const effApplicable = userOverride ?? defaultApplicable;
-        const effectiveEarned = effApplicable ? (hasData ? (k.earned ?? 0) : 0) : 0;
+      const kpis: ComputedKpi[] = pillar.kpis.map((kpi) => {
+        const hasData = kpi.earned !== null && kpi.earned !== undefined;
+        const defaultApplicable = kpi.applicable;
+        const userOverride = selectedParent ? (overrides[selectedParent]?.[kpi.id] as boolean | undefined) : undefined;
+        const effectivelyApplicable = userOverride ?? defaultApplicable;
+        const effectiveEarned = effectivelyApplicable ? (hasData ? (kpi.earned ?? 0) : 0) : 0;
 
-        if (effApplicable) {
+        if (effectivelyApplicable) {
           earnedSum += effectiveEarned;
-          maxSum += k.max_score;
+          maxSum += kpi.max_score;
         }
 
         return {
-          id: k.id,
-          name: k.name,
-          pillar: p.pillar,
-          max_score: k.max_score,
-          raw: k.raw,
-          attainment: k.attainment,
-          earned: k.earned,
+          id: kpi.id,
+          name: kpi.name,
+          pillar: pillar.pillar,
+          max_score: kpi.max_score,
+          raw: kpi.raw,
+          attainment: kpi.attainment,
+          earned: kpi.earned,
           effective_earned: effectiveEarned,
           has_data: hasData,
           default_applicable: defaultApplicable,
           user_override: userOverride,
-          effectively_applicable: effApplicable,
+          effectively_applicable: effectivelyApplicable,
         };
       });
 
       const pillarPct = maxSum > 0 ? earnedSum / maxSum : null;
+
       return {
-        pillar: p.pillar,
-        weight: p.weight,
+        pillar: pillar.pillar,
+        weight: pillar.weight,
         earned_points: earnedSum,
         applicable_max_points: maxSum,
         pillar_pct: pillarPct,
-        weighted_contribution: pillarPct === null ? 0 : pillarPct * p.weight,
+        weighted_contribution: pillarPct === null ? 0 : pillarPct * pillar.weight,
         status: maxSum > 0 ? "applicable" : "not_applicable",
         kpis,
       };
     });
 
-    const weightedSum = pillars.reduce(
-      (s, p) => s + p.weighted_contribution,
-      0,
-    );
+    const weightedSum = pillars.reduce((sum, pillar) => sum + pillar.weighted_contribution, 0);
     const applicablePillarWeight = pillars.reduce(
-      (s, p) => (p.status === "applicable" ? s + p.weight : s),
+      (sum, pillar) => (pillar.status === "applicable" ? sum + pillar.weight : sum),
       0,
     );
-    const normalized =
-      applicablePillarWeight > 0
-        ? (weightedSum / applicablePillarWeight) * 100
-        : 0;
+    const normalizedScore = applicablePillarWeight > 0 ? (weightedSum / applicablePillarWeight) * 100 : 0;
     const availableKpiWeight = pillars.reduce(
-      (s, p) =>
-        s +
-        p.kpis.reduce(
-          (ks, k) =>
-            k.effectively_applicable && k.has_data ? ks + k.max_score : ks,
+      (sum, pillar) =>
+        sum +
+        pillar.kpis.reduce(
+          (kpiSum, kpi) =>
+            kpi.effectively_applicable && kpi.has_data ? kpiSum + kpi.max_score : kpiSum,
           0,
         ),
       0,
     );
-    const coverage =
-      totalExpectedKpiWeight > 0
-        ? availableKpiWeight / totalExpectedKpiWeight
-        : 0;
-    const totalEarned = pillars.reduce((s, p) => s + p.earned_points, 0);
-    const totalApplicableMax = pillars.reduce(
-      (s, p) => s + p.applicable_max_points,
-      0,
-    );
+    const coverage = totalExpectedKpiWeight > 0 ? availableKpiWeight / totalExpectedKpiWeight : 0;
+    const totalEarned = pillars.reduce((sum, pillar) => sum + pillar.earned_points, 0);
+    const totalApplicableMax = pillars.reduce((sum, pillar) => sum + pillar.applicable_max_points, 0);
 
     return {
       parentSupplier: selected.parentSupplier,
       invoice_value: selected.invoice_value,
-      band: bandFor(normalized),
+      band: bandFor(normalizedScore),
       pillars,
       weighted_sum: weightedSum,
       applicable_pillar_weight: applicablePillarWeight,
-      normalized_score: normalized,
+      normalized_score: normalizedScore,
       available_kpi_weight: availableKpiWeight,
       coverage_pct: coverage,
-      coverage_adjusted_score: normalized * coverage,
+      coverage_adjusted_score: normalizedScore * coverage,
       total_earned: totalEarned,
       total_applicable_max: totalApplicableMax,
     };
-  }, [selected, parentDetail, parentOverrides, totalExpectedKpiWeight]);
+  }, [selected, parentDetail, overrides, selectedParent, totalExpectedKpiWeight]);
 
-  const overrideCount = Object.keys(parentOverrides).length;
+  const overrideCount = selectedParent ? Object.keys(overrides[selectedParent] ?? {}).length : 0;
 
   const clearFilters = () => {
     setSelZones([]);
@@ -529,524 +426,545 @@ function ScorecardPage() {
     setSearch("");
   };
 
+  const resetParentOverrides = () => {
+    if (!selectedParent) return;
+    setOverrides((previous) => {
+      const copy = { ...previous };
+      delete copy[selectedParent];
+      return copy;
+    });
+  };
+
   const exportCsv = () => {
     const params = new URLSearchParams();
     if (selZones.length) params.set("zones", selZones.join(","));
     if (selCategories.length) params.set("categories", selCategories.join(","));
     if (debouncedSearch) params.set("search", debouncedSearch);
-    const a = document.createElement("a");
-    a.href = `${API_BASE}/api/scorecard/export?${params.toString()}`;
-    a.click();
+    const anchor = document.createElement("a");
+    anchor.href = `${API_BASE}/api/scorecard/export?${params.toString()}`;
+    anchor.click();
   };
 
+  const normalizedScoreText = computed ? computed.normalized_score.toFixed(2) : "0.00";
+  const coverageText = computed ? fmtPct(computed.coverage_pct, 1) : "N/A";
+  const coverageAdjustedText = computed ? computed.coverage_adjusted_score.toFixed(2) : "0.00";
+  const applicablePillarWeightText = computed ? computed.applicable_pillar_weight.toFixed(1) : "0.0";
+  const availableKpiWeightText = computed ? computed.available_kpi_weight.toFixed(1) : "0.0";
+  const weightedContributionText = computed ? computed.weighted_sum.toFixed(2) : "0.00";
+
+  const bannerText =
+    selZones.length > 0 || selCategories.length > 0
+      ? "Filtered view - scores are recomputed from the selected filters only. Remove the filters to return to the global ranking."
+      : `Global view - scores from cache. Percentile ranks computed across all ${cacheInfo?.parent_count ?? "..."} parent suppliers.`;
+
   return (
-    <>
-      {/* ─── Header ────────────────────────────────────────────────────── */}
-      <section className="top-bar kpi-page-heading sc-scorecard-heading">
-        <div>
-          <p className="eyebrow">Supplier Performance Overview</p>
+    <div className="scorecard-page">
+      <section className="scorecard-hero">
+        <div className="scorecard-hero-copy">
+          <p className="scorecard-eyebrow">Supplier performance overview</p>
           <h1>Normalized Supplier Scorecard</h1>
-          <p className="kpi-value-note">
-            Combines applicable KPI results into one weighted supplier performance score. Unavailable KPIs are excluded.
+          <p className="scorecard-lead">
+            Combines applicable KPI results into one weighted supplier performance score. Unavailable KPIs remain visible in the breakdown, but they stay outside the normalized denominator.
           </p>
-          {error && <p className="supporting">Error loading scorecard: {error}</p>}
-          {loading && !leaderboard && <p className="supporting">Loading scorecard…</p>}
+          <div className="scorecard-definition-row">
+            <div className="scorecard-definition-chip">
+              <strong>Normalized Score</strong>
+              <span>performance across applicable pillars</span>
+            </div>
+            <div className="scorecard-definition-chip">
+              <strong>Coverage</strong>
+              <span>completeness of the score</span>
+            </div>
+            <div className="scorecard-definition-chip">
+              <strong>Coverage-Adjusted Score</strong>
+              <span>normalized score after accounting for missing coverage</span>
+            </div>
+          </div>
+          {error && <p className="scorecard-inline-status scorecard-inline-error">Error loading scorecard: {error}</p>}
+          {loading && !leaderboard && <p className="scorecard-inline-status">Loading scorecard...</p>}
         </div>
-        <div className="header-actions sc-scorecard-header-actions">
-          <div className="sc-scorecard-header-meta">
-            {cacheInfo?.cached_at && (
-              <p className="supporting" style={{ marginBottom: "4px", fontSize: "0.75rem" }}>
-                Cache built: {new Date(cacheInfo.cached_at).toLocaleString()} &nbsp;|&nbsp; {cacheInfo.parent_count} parents
-              </p>
-            )}
+
+        <div className="scorecard-hero-panel">
+          <div className="scorecard-hero-metric">
+            <span className="scorecard-hero-metric-label">Current normalized score</span>
+            <strong
+              className="scorecard-hero-score"
+              style={computed ? { color: bandStyles[computed.band].fg } : undefined}
+            >
+              {normalizedScoreText}
+            </strong>
+            <span className="scorecard-hero-scale">/100</span>
+          </div>
+          <div className="scorecard-hero-actions">
             <button
               type="button"
+              className="scorecard-primary-action"
               onClick={exportCsv}
               disabled={!summary?.filtered_parent_count}
             >
               Export CSV
             </button>
+            {cacheInfo?.cached_at && (
+              <p className="scorecard-cache-note">
+                Cache built {new Date(cacheInfo.cached_at).toLocaleString()} - {cacheInfo.parent_count} parents
+              </p>
+            )}
           </div>
-          <aside className="sc-scorecard-formula-reference" aria-label="Score calculation reference">
-            <span>Calculation Reference</span>
-            <p>Weighted Contribution = (Pillar Score % ÷ 100) × Pillar Weight</p>
-            <p>Final Score = Total Weighted Contribution ÷ Applicable Pillar Weight × 100</p>
-          </aside>
+          <div className="scorecard-hero-reference">
+            <span>Calculation reference</span>
+            <p>Normalized Score = Total Weighted Contribution / Applicable Pillar Weight x 100</p>
+            <p>Coverage-Adjusted Score = Normalized Score x Coverage</p>
+          </div>
         </div>
       </section>
 
-      {/* ─── Filters & summary ──────────────────────────────────────────── */}
-      <section className="config-bar">
-        <MultiSelectDropdown
-          label="Zone"
-          options={filters.zones}
-          selected={selZones}
-          onChange={setSelZones}
-        />
-        <MultiSelectDropdown
-          label="Category"
-          options={filters.categories}
-          selected={selCategories}
-          onChange={setSelCategories}
-          searchable
-        />
-        <button type="button" onClick={clearFilters}>Clear filters</button>
-        <div className="filter-summary">
-          <strong>{summary?.filtered_parent_count ?? 0}</strong> suppliers
+      <section className="scorecard-toolbar">
+        <div className="scorecard-toolbar-filters">
+          <MultiSelectDropdown
+            label="Zone"
+            options={filters.zones}
+            selected={selZones}
+            onChange={setSelZones}
+          />
+          <MultiSelectDropdown
+            label="Category"
+            options={filters.categories}
+            selected={selCategories}
+            onChange={setSelCategories}
+            searchable
+          />
+          <button type="button" onClick={clearFilters}>
+            Clear filters
+          </button>
+        </div>
+        <div className="scorecard-toolbar-meta">
+          <div className="scorecard-filter-summary">
+            <strong>{summary?.filtered_parent_count ?? 0}</strong> suppliers
+          </div>
         </div>
       </section>
 
-      {/* ─── Score mode banner ──────────────────────────────────────────── */}
-      {(selZones.length > 0 || selCategories.length > 0) ? (
-        <div style={{
-          background: "#fff7e6",
-          border: "1px solid #f5a623",
-          borderRadius: "6px",
-          padding: "8px 16px",
-          margin: "0 0 8px 0",
-          fontSize: "0.85rem",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}>
-          <span style={{ fontSize: "1rem" }}>⚠️</span>
-          <span>
-            <strong>Regional view — live scores.</strong>{" "}
-            Scores are computed from{" "}
-            {selZones.length > 0 && <><strong>{selZones.join(", ")}</strong> zone{selZones.length > 1 ? "s" : ""}</>}
-            {selZones.length > 0 && selCategories.length > 0 && " · "}
-            {selCategories.length > 0 && <><strong>{selCategories.join(", ")}</strong> categor{selCategories.length > 1 ? "ies" : "y"}</>}
-            {" "}data only — not the global ranking. Remove zone/category filters to return to global scores.
-          </span>
-        </div>
-      ) : (
-        <div style={{
-          background: "#f0f9f0",
-          border: "1px solid #4caf50",
-          borderRadius: "6px",
-          padding: "8px 16px",
-          margin: "0 0 8px 0",
-          fontSize: "0.85rem",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}>
-          <span style={{ fontSize: "1rem" }}>✅</span>
-          <span>
-            <strong>Global view — scores from cache.</strong>{" "}
-            Percentile ranks computed across all {cacheInfo?.parent_count ?? "…"} parent suppliers.
-            {cacheInfo?.cached_at && <> Last built: {new Date(cacheInfo.cached_at).toLocaleString()}.</>}
-          </span>
-        </div>
-      )}
-
-      {/* ─── Drill-down ─────────────────────────────────────────────────── */}
-      <div className="sc-body">
-        <div className="sc-detail">
-          {selected && computed ? (
+      <div
+        className={`scorecard-banner ${selZones.length > 0 || selCategories.length > 0 ? "is-warning" : "is-success"}`}
+      >
+        <strong>{selZones.length > 0 || selCategories.length > 0 ? "Filtered view - live scores." : "Global view - scores from cache."}</strong>
+        <span>
+          {bannerText}
+          {selZones.length > 0 && (
             <>
-              <div
-                className="sc-detail-header"
-                style={{ borderTopColor: bandStyles[computed.band].fg }}
-              >
-                <div>
-                  <p className="eyebrow">Parent Supplier</p>
-                  <div className="sc-parent-search">
-                    <input
-                      type="search"
-                      className="sc-supplier-search"
-                      placeholder="Type at least 2 characters"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && parentSearch?.items[0]) {
-                          e.preventDefault();
-                          selectSearchedParent(parentSearch.items[0].parentSupplier);
-                        } else if (e.key === "Escape") {
-                          setParentSearch(null);
-                        }
-                      }}
-                      aria-label="Search parent suppliers"
-                      aria-controls="scorecard-parent-search-results"
-                      aria-expanded={Boolean(parentSearch?.items.length)}
-                      autoComplete="off"
-                    />
-                    {parentSearch?.items.length ? (
-                      <div
-                        id="scorecard-parent-search-results"
-                        className="sc-parent-search-results"
-                        role="listbox"
-                        aria-label="Matching parent suppliers"
-                      >
-                        {parentSearch.items.map((item) => (
-                          <button
-                            type="button"
-                            key={item.parentSupplier}
-                            onClick={() => selectSearchedParent(item.parentSupplier)}
-                            role="option"
-                            aria-selected={item.parentSupplier === selectedParent}
-                          >
-                            <span>{item.parentSupplier}</span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                    {search.trim().length >= 2 && parentSearchLoading ? (
-                      <span className="sc-parent-search-status" role="status">Searching...</span>
-                    ) : null}
-                    {search.trim().length >= 2 && !parentSearchLoading && parentSearch?.items.length === 0 ? (
-                      <span className="sc-parent-search-status" role="status">No matching parent suppliers</span>
-                    ) : null}
-                  </div>
-                  <select
-                    className="sc-supplier-select"
-                    value={selectedParent ?? ""}
-                    onChange={(e) => setSelectedParent(e.target.value)}
-                  >
-                    {parentOptionNames.map((parentName) => (
-                      <option key={parentName} value={parentName}>
-                        {parentName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div
-                  className="sc-detail-score"
-                  style={{ color: bandStyles[computed.band].fg }}
-                >
-                  {computed.normalized_score.toFixed(1)}
-                  <span className="sc-detail-scale">/100</span>
-                </div>
-              </div>
-
-              <div className="sc-metric-row">
-                <div className="sc-metric">
-                  <div className="sc-metric-label">Coverage</div>
-                  <div className="sc-metric-value">
-                    {fmtPct(computed.coverage_pct, 1)}
-                  </div>
-                </div>
-                <div className="sc-metric">
-                  <div className="sc-metric-label">Coverage-Adjusted</div>
-                  <div className="sc-metric-value">
-                    {computed.coverage_adjusted_score.toFixed(1)}
-                  </div>
-                </div>
-                <div className="sc-metric">
-                  <div className="sc-metric-label">Applicable Pillar Weight</div>
-                  <div className="sc-metric-value">
-                    {computed.applicable_pillar_weight.toFixed(0)}
-                    <span className="sc-metric-scale"> / 100</span>
-                  </div>
-                </div>
-                <div className="sc-metric">
-                  <div className="sc-metric-label">Available KPI Weight</div>
-                  <div className="sc-metric-value">
-                    {computed.available_kpi_weight.toFixed(0)}
-                    <span className="sc-metric-scale">
-                      {" / "}
-                      {totalExpectedKpiWeight.toFixed(0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sc-section">
-                <div className="sc-section-title">
-                  Pillar Roll-up · Earned Points → Pillar % → Weighted Contribution
-                </div>
-                <table className="sc-pillar-table">
-                  <thead>
-                    <tr>
-                      <th>Pillar</th>
-                      <th className="num">Pillar Weight</th>
-                      <th className="num">Earned KPI Points</th>
-                      <th className="num">Applicable KPI Max Points</th>
-                      <th className="num">Pillar Score %</th>
-                      <th className="num">Weighted Contribution</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {computed.pillars.map((p) => {
-                      const pctColor =
-                        p.pillar_pct === null
-                          ? "#f4f4ef"
-                          : p.pillar_pct >= 0.8
-                            ? "#e6f7ea"
-                            : p.pillar_pct >= 0.6
-                              ? "#fff8dc"
-                              : p.pillar_pct >= 0.3
-                                ? "#fff1d6"
-                                : "#ffe5e1";
-                      return (
-                        <tr
-                          key={p.pillar}
-                          className={
-                            p.status === "not_applicable" ? "sc-row-muted" : ""
-                          }
-                        >
-                          <td className="name">{p.pillar}</td>
-                          <td className="num">{p.weight.toFixed(1)}</td>
-                          <td className="num">
-                            {p.status === "applicable"
-                              ? p.earned_points.toFixed(2)
-                              : "—"}
-                          </td>
-                          <td className="num">
-                            {p.status === "applicable"
-                              ? p.applicable_max_points.toFixed(1)
-                              : "—"}
-                          </td>
-                          <td
-                            className="num"
-                            style={{ background: pctColor, fontWeight: 700 }}
-                          >
-                            {p.pillar_pct === null
-                              ? "N/A"
-                              : fmtPct(p.pillar_pct, 1)}
-                          </td>
-                          <td className="num strong">
-                            {p.status === "applicable"
-                              ? p.weighted_contribution.toFixed(2)
-                              : "0.00"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td className="name">Totals (applicable only)</td>
-                      <td className="num strong">
-                        {computed.applicable_pillar_weight.toFixed(1)}
-                      </td>
-                      <td className="num strong">
-                        {computed.total_earned.toFixed(2)}
-                      </td>
-                      <td className="num strong">
-                        {computed.total_applicable_max.toFixed(1)}
-                      </td>
-                      <td className="num">—</td>
-                      <td className="num strong">
-                        {computed.weighted_sum.toFixed(2)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-
-                {/* Overall Normalized Score derivation strip */}
-                <div className="sc-normcalc">
-                  <div className="sc-normcalc-title">
-                    Overall Normalized Supplier Score
-                  </div>
-                  <div className="sc-normcalc-row">
-                    <div className="sc-normcalc-cell">
-                      <div className="sc-normcalc-label">
-                        Σ(Weighted Contribution)
-                      </div>
-                      <div className="sc-normcalc-value">
-                        {computed.weighted_sum.toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="sc-normcalc-op">÷</div>
-                    <div className="sc-normcalc-cell">
-                      <div className="sc-normcalc-label">
-                        Σ(Applicable Pillar Weight)
-                      </div>
-                      <div className="sc-normcalc-value">
-                        {computed.applicable_pillar_weight.toFixed(1)}
-                      </div>
-                    </div>
-                    <div className="sc-normcalc-op">×</div>
-                    <div className="sc-normcalc-cell">
-                      <div className="sc-normcalc-label">Scale</div>
-                      <div className="sc-normcalc-value">100</div>
-                    </div>
-                    <div className="sc-normcalc-op">=</div>
-                    <div
-                      className="sc-normcalc-cell final"
-                      style={{ color: bandStyles[computed.band].fg }}
-                    >
-                      <div className="sc-normcalc-label">Final Score</div>
-                      <div className="sc-normcalc-value">
-                        {computed.normalized_score.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Coverage derivation strip */}
-                <div className="sc-normcalc sc-normcalc-coverage">
-                  <div className="sc-normcalc-title sc-cov-title">
-                    Coverage &amp; Coverage-Adjusted Score
-                  </div>
-                  <div className="sc-normcalc-row">
-                    <div className="sc-normcalc-cell">
-                      <div className="sc-normcalc-label">
-                        Available KPI Weight
-                      </div>
-                      <div className="sc-normcalc-value">
-                        {computed.available_kpi_weight.toFixed(1)}
-                      </div>
-                    </div>
-                    <div className="sc-normcalc-op">÷</div>
-                    <div className="sc-normcalc-cell">
-                      <div className="sc-normcalc-label">
-                        Total Expected KPI Weight
-                      </div>
-                      <div className="sc-normcalc-value">
-                        {totalExpectedKpiWeight.toFixed(1)}
-                      </div>
-                    </div>
-                    <div className="sc-normcalc-op">=</div>
-                    <div className="sc-normcalc-cell">
-                      <div className="sc-normcalc-label">Coverage %</div>
-                      <div className="sc-normcalc-value">
-                        {fmtPct(computed.coverage_pct, 1)}
-                      </div>
-                    </div>
-                    <div className="sc-normcalc-op">×</div>
-                    <div className="sc-normcalc-cell">
-                      <div className="sc-normcalc-label">Normalized Score</div>
-                      <div className="sc-normcalc-value">
-                        {computed.normalized_score.toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="sc-normcalc-op">=</div>
-                    <div className="sc-normcalc-cell final">
-                      <div className="sc-normcalc-label">Coverage-Adjusted</div>
-                      <div className="sc-normcalc-value">
-                        {computed.coverage_adjusted_score.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sc-section">
-                <div className="sc-section-title sc-kpi-title-row">
-                  <span>KPI Breakdown · Toggle Applicable? to see live impact</span>
-                  {overrideCount > 0 && (
-                    <button
-                      type="button"
-                      className="sc-btn ghost sc-reset-btn"
-                      onClick={resetParentOverrides}
-                    >
-                      Reset overrides ({overrideCount})
-                    </button>
-                  )}
-                </div>
-                <table className="sc-kpi-table">
-                  <thead>
-                    <tr>
-                      <th>Pillar</th>
-                      <th>KPI</th>
-                      <th className="num">KPI Max Points</th>
-                      <th className="num">KPI Earned Points</th>
-                      <th>Applicable?</th>
-                      <th className="num">KPI Score %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {computed.pillars.flatMap((p) =>
-                      p.kpis.map((k) => {
-                        const kpiPct =
-                          k.effectively_applicable && k.max_score > 0
-                            ? k.effective_earned / k.max_score
-                            : null;
-                        const isOverridden = k.user_override !== undefined;
-                        const isMissingApplicable =
-                          k.effectively_applicable && !k.has_data;
-                        const rowClass = !k.effectively_applicable
-                          ? "sc-row-muted"
-                          : isMissingApplicable
-                            ? "sc-row-warn"
-                            : "";
-                        return (
-                          <tr key={`${p.pillar}-${k.id}`} className={rowClass}>
-                            <td>{p.pillar}</td>
-                            <td className="name">
-                              {k.name}
-                              {isMissingApplicable && (
-                                <span
-                                  className="sc-tag missing"
-                                  title="Marked Applicable but no source data — earned = 0, hurts pillar score and coverage."
-                                >
-                                  Missing data
-                                </span>
-                              )}
-                              {isOverridden && (
-                                <span
-                                  className="sc-tag override"
-                                  title="You overrode the default applicability for this KPI."
-                                >
-                                  Overridden
-                                </span>
-                              )}
-                            </td>
-                            <td className="num">{k.max_score.toFixed(0)}</td>
-                            <td className="num strong">
-                              {k.effectively_applicable
-                                ? k.effective_earned.toFixed(2)
-                                : "—"}
-                            </td>
-                            <td>
-                              <select
-                                className="sc-applicable-select"
-                                value={k.effectively_applicable ? "yes" : "no"}
-                                onChange={(e) => {
-                                  const next = e.target.value === "yes";
-                                  // If user picks the default value, clear
-                                  // the override so it tracks defaults again.
-                                  if (next === k.default_applicable) {
-                                    setKpiOverride(k.id, undefined);
-                                  } else {
-                                    setKpiOverride(k.id, next);
-                                  }
-                                }}
-                              >
-                                <option value="yes">Yes</option>
-                                <option value="no">No</option>
-                              </select>
-                            </td>
-                            <td className="num">
-                              {k.effectively_applicable
-                                ? fmtPct(kpiPct, 0)
-                                : "—"}
-                            </td>
-                          </tr>
-                        );
-                      }),
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {" "}
+              Zone filter: <strong>{selZones.join(", ")}</strong>.
             </>
-          ) : (
-            <div className="sc-detail-empty">
-              <p>{detailLoading ? "Loading parent scorecard..." : "Search for and select a parent supplier to see the pillar-by-pillar breakdown."}</p>
+          )}
+          {selCategories.length > 0 && (
+            <>
+              {" "}
+              Category filter: <strong>{selCategories.join(", ")}</strong>.
+            </>
+          )}
+          {cacheInfo?.cached_at ? ` Last built ${new Date(cacheInfo.cached_at).toLocaleString()}.` : ""}
+        </span>
+      </div>
+
+      <section className="scorecard-selector">
+        <div className="scorecard-selector-copy">
+          <p className="scorecard-eyebrow">Parent supplier selector</p>
+          <h2>{selectedParent ?? "Choose a parent supplier"}</h2>
+          <p>
+            Search by name, then confirm the supplier below. The selected row drives the pillar roll-up, the normalized score, and the coverage view.
+          </p>
+          {selected && computed && (
+            <div className="scorecard-selector-meta">
+              <span className="scorecard-band" style={{ background: bandStyles[computed.band].fg, color: "#ffffff" }}>
+                {bandStyles[computed.band].label}
+              </span>
+              <span>{selected.pillars.length} pillars</span>
+              <span>{overrideCount} KPI overrides</span>
             </div>
           )}
         </div>
-      </div>
 
-      {/* ─── Framework footer ────────────────────────────────────────────── */}
-      <section className="config-bar">
-        <div className="filter-summary">
-          <strong>Pillar Weights:</strong>{" "}
-          {parentDetail
-            ? Object.entries(parentDetail.pillar_weights)
-                .map(([p, w]) => `${p} ${w}`)
-                .join(" · ")
-            : "—"}
-          &nbsp;·&nbsp;
-          <strong>Coverage %</strong> = Available KPI Weight / Total Expected KPI Weight ({parentDetail ? parentDetail.total_expected_kpi_weight : 0})
-          &nbsp;·&nbsp;
-          <strong>Coverage-Adjusted</strong> = Normalized × Coverage %
+        <div className="scorecard-selector-controls">
+          <label className="scorecard-control">
+            <span>Search supplier</span>
+            <input
+              type="search"
+              className="sc-supplier-search"
+              placeholder="Type at least 2 characters"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && parentSearch?.items[0]) {
+                  event.preventDefault();
+                  selectSearchedParent(parentSearch.items[0].parentSupplier);
+                } else if (event.key === "Escape") {
+                  setParentSearch(null);
+                }
+              }}
+              aria-label="Search parent suppliers"
+              aria-controls="scorecard-parent-search-results"
+              aria-expanded={Boolean(parentSearch?.items.length)}
+              autoComplete="off"
+            />
+            {parentSearch?.items.length ? (
+              <div
+                id="scorecard-parent-search-results"
+                className="sc-parent-search-results"
+                role="listbox"
+                aria-label="Matching parent suppliers"
+              >
+                {parentSearch.items.map((item) => (
+                  <button
+                    type="button"
+                    key={item.parentSupplier}
+                    onClick={() => selectSearchedParent(item.parentSupplier)}
+                    role="option"
+                    aria-selected={item.parentSupplier === selectedParent}
+                  >
+                    <span>{item.parentSupplier}</span>
+                    <strong>{item.normalized_score.toFixed(1)}</strong>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {search.trim().length >= 2 && parentSearchLoading ? (
+              <span className="sc-parent-search-status" role="status">
+                Searching...
+              </span>
+            ) : null}
+            {search.trim().length >= 2 && !parentSearchLoading && parentSearch?.items.length === 0 ? (
+              <span className="sc-parent-search-status" role="status">
+                No matching parent suppliers
+              </span>
+            ) : null}
+          </label>
+
+          <label className="scorecard-control">
+            <span>Parent supplier</span>
+            <select
+              className="sc-supplier-select"
+              value={selectedParent ?? ""}
+              onChange={(event) => setSelectedParent(event.target.value)}
+            >
+              {parentOptionNames.map((parentName) => (
+                <option key={parentName} value={parentName}>
+                  {parentName}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="scorecard-selector-score">
+          <span>Normalized score</span>
+          <strong style={computed ? { color: bandStyles[computed.band].fg } : undefined}>{normalizedScoreText}</strong>
+          <p>Performance only. Coverage stays separate.</p>
         </div>
       </section>
-    </>
+
+      <section className="scorecard-summary-grid" aria-label="Summary metrics">
+        <div className="scorecard-summary-card">
+          <span>Coverage</span>
+          <strong>{coverageText}</strong>
+          <p>Completeness of the score.</p>
+        </div>
+        <div className="scorecard-summary-card">
+          <span>Coverage-adjusted score</span>
+          <strong>{coverageAdjustedText}</strong>
+          <p>Normalized score after missing coverage is applied.</p>
+        </div>
+        <div className="scorecard-summary-card">
+          <span>Applicable pillar weight</span>
+          <strong>{applicablePillarWeightText} / 100</strong>
+          <p>Official denominator for the normalized score.</p>
+        </div>
+        <div className="scorecard-summary-card">
+          <span>Available KPI weight</span>
+          <strong>
+            {availableKpiWeightText} / {totalExpectedKpiWeight.toFixed(1)}
+          </strong>
+          <p>Weight currently represented by applicable KPI data.</p>
+        </div>
+      </section>
+
+      <section className="scorecard-section">
+        <div className="scorecard-section-heading">
+          <div>
+            <p className="scorecard-eyebrow">Pillar roll-up</p>
+            <h2>Earned points - pillar % - weighted contribution</h2>
+          </div>
+          <p className="scorecard-section-note">
+            The official normalized score denominator remains applicable pillar weight.
+          </p>
+        </div>
+        <div className="scorecard-table-frame">
+          <table className="scorecard-table scorecard-pillar-table">
+            <thead>
+              <tr>
+                <Th>Pillar</Th>
+                <Th align="right">Pillar Weight</Th>
+                <Th align="right">Earned KPI Points</Th>
+                <Th align="right">Applicable KPI Max Points</Th>
+                <Th align="right">Pillar Score %</Th>
+                <Th align="right">Weighted Contribution</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {computed ? (
+                computed.pillars.map((pillar) => {
+                  const tone =
+                    pillar.pillar_pct === null
+                      ? "is-neutral"
+                      : pillar.pillar_pct >= 0.8
+                        ? "is-good"
+                        : pillar.pillar_pct >= 0.6
+                          ? "is-warm"
+                          : pillar.pillar_pct >= 0.3
+                            ? "is-low"
+                            : "is-critical";
+
+                  return (
+                    <tr key={pillar.pillar} className={pillar.status === "not_applicable" ? "is-muted" : ""}>
+                      <Td>{pillar.pillar}</Td>
+                      <Td align="right">{pillar.weight.toFixed(1)}</Td>
+                      <Td align="right">{pillar.status === "applicable" ? pillar.earned_points.toFixed(2) : "N/A"}</Td>
+                      <Td align="right">{pillar.status === "applicable" ? pillar.applicable_max_points.toFixed(1) : "N/A"}</Td>
+                      <Td align="right">
+                        <span className={`scorecard-pill ${tone}`}>
+                          {pillar.pillar_pct === null ? "N/A" : fmtPct(pillar.pillar_pct, 1)}
+                        </span>
+                      </Td>
+                      <Td align="right">{pillar.status === "applicable" ? pillar.weighted_contribution.toFixed(2) : "0.00"}</Td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={6} className="scorecard-empty-cell">
+                    {detailLoading
+                      ? "Loading parent scorecard..."
+                      : "Search for and select a parent supplier to see the pillar-by-pillar breakdown."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            {computed && (
+              <tfoot>
+                <tr>
+                  <td>Totals (applicable only)</td>
+                  <td align="right">{computed.applicable_pillar_weight.toFixed(1)}</td>
+                  <td align="right">{computed.total_earned.toFixed(2)}</td>
+                  <td align="right">{computed.total_applicable_max.toFixed(1)}</td>
+                  <td align="right">N/A</td>
+                  <td align="right">{weightedContributionText}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </section>
+
+      <section className="scorecard-strip scorecard-strip-normalized">
+        <div className="scorecard-strip-heading">
+          <p className="scorecard-eyebrow">Formula strip</p>
+          <h2>Normalized score calculation</h2>
+        </div>
+        <div className="scorecard-strip-row">
+          <MiniBox label="Weighted Contribution" value={weightedContributionText} />
+          <div className="scorecard-strip-op">/</div>
+          <MiniBox label="Applicable Pillar Weight" value={applicablePillarWeightText} />
+          <div className="scorecard-strip-op">x</div>
+          <MiniBox label="Scale" value="100" />
+          <div className="scorecard-strip-op">=</div>
+          <MiniBox label="Normalized Score" value={normalizedScoreText} highlighted />
+        </div>
+      </section>
+
+      <section className="scorecard-strip scorecard-strip-coverage">
+        <div className="scorecard-strip-heading">
+          <p className="scorecard-eyebrow">Coverage strip</p>
+          <h2>Coverage and coverage-adjusted score</h2>
+        </div>
+        <div className="scorecard-strip-row">
+          <MiniBox label="Available KPI Weight" value={availableKpiWeightText} />
+          <div className="scorecard-strip-op">/</div>
+          <MiniBox label="Total Expected KPI Weight" value={totalExpectedKpiWeight.toFixed(1)} />
+          <div className="scorecard-strip-op">=</div>
+          <MiniBox label="Coverage" value={coverageText} />
+          <div className="scorecard-strip-op">x</div>
+          <MiniBox label="Normalized Score" value={normalizedScoreText} />
+          <div className="scorecard-strip-op">=</div>
+          <MiniBox label="Coverage-Adjusted Score" value={coverageAdjustedText} highlighted />
+        </div>
+      </section>
+
+      <section className="scorecard-callout">
+        <strong>Read the score in two layers.</strong>
+        <span>
+          Normalized score measures performance across applicable pillars. Coverage measures completeness. Coverage-adjusted score shows the normalized score after missing coverage is accounted for.
+        </span>
+      </section>
+
+      <section className="scorecard-section">
+        <div className="scorecard-section-heading scorecard-section-heading-row">
+          <div>
+            <p className="scorecard-eyebrow">KPI breakdown</p>
+            <h2>Toggle Applicable? to see the live impact</h2>
+          </div>
+          {overrideCount > 0 && (
+            <button type="button" className="scorecard-secondary-action" onClick={resetParentOverrides}>
+              Reset overrides ({overrideCount})
+            </button>
+          )}
+        </div>
+        <div className="scorecard-table-frame">
+          <table className="scorecard-table scorecard-kpi-table">
+            <thead>
+              <tr>
+                <Th>Pillar</Th>
+                <Th>KPI</Th>
+                <Th align="right">KPI Max Points</Th>
+                <Th align="right">KPI Earned Points</Th>
+                <Th align="center">Applicable?</Th>
+                <Th align="right">KPI Score %</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {computed ? (
+                computed.pillars.flatMap((pillar) =>
+                  pillar.kpis.map((kpi) => {
+                    const kpiPct =
+                      kpi.effectively_applicable && kpi.max_score > 0
+                        ? kpi.effective_earned / kpi.max_score
+                        : null;
+                    const isOverridden = kpi.user_override !== undefined;
+                    const isMissingApplicable = kpi.effectively_applicable && !kpi.has_data;
+                    const rowClass = !kpi.effectively_applicable
+                      ? "is-muted"
+                      : isMissingApplicable
+                        ? "is-warning"
+                        : "";
+
+                    return (
+                      <tr key={`${pillar.pillar}-${kpi.id}`} className={rowClass}>
+                        <Td>{pillar.pillar}</Td>
+                        <Td>
+                          <span className="scorecard-kpi-name">{kpi.name}</span>
+                          {isMissingApplicable && <span className="scorecard-tag missing">Missing data</span>}
+                          {isOverridden && <span className="scorecard-tag override">Overridden</span>}
+                        </Td>
+                        <Td align="right">{kpi.max_score.toFixed(0)}</Td>
+                        <Td align="right">{kpi.effectively_applicable ? kpi.effective_earned.toFixed(2) : "N/A"}</Td>
+                        <Td align="center">
+                          <select
+                            className="sc-applicable-select"
+                            value={kpi.effectively_applicable ? "yes" : "no"}
+                            onChange={(event) => {
+                              const next = event.target.value === "yes";
+                              if (next === kpi.default_applicable) {
+                                if (!selectedParent) return;
+                                setOverrides((previous) => {
+                                  const current = { ...(previous[selectedParent] ?? {}) };
+                                  delete current[kpi.id];
+                                  return { ...previous, [selectedParent]: current };
+                                });
+                              } else if (selectedParent) {
+                                setOverrides((previous) => {
+                                  const current = { ...(previous[selectedParent] ?? {}) };
+                                  current[kpi.id] = next;
+                                  return { ...previous, [selectedParent]: current };
+                                });
+                              }
+                            }}
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        </Td>
+                        <Td align="right">{kpi.effectively_applicable ? fmtPct(kpiPct, 0) : "N/A"}</Td>
+                      </tr>
+                    );
+                  }),
+                )
+              ) : (
+                <tr>
+                  <td colSpan={6} className="scorecard-empty-cell">
+                    Select a parent supplier to see the KPI breakdown.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="scorecard-footer-note">
+        <strong>Pillar weights</strong>
+        <span>
+          {parentDetail
+            ? Object.entries(parentDetail.pillar_weights)
+                .map(([pillar, weight]) => `${pillar} ${weight}`)
+                .join(" · ")
+            : "N/A"}
+        </span>
+        <span>
+          Coverage = Available KPI Weight / Total Expected KPI Weight ({parentDetail ? parentDetail.total_expected_kpi_weight : 0})
+        </span>
+      </section>
+    </div>
   );
+}
+
+function SummaryCard({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="summary-card">
+      <div className="summary-card-title">{title}</div>
+      <div className="summary-card-value">{value}</div>
+    </div>
+  );
+}
+
+function MiniBox({
+  label,
+  value,
+  highlighted = false,
+}: {
+  label: string;
+  value: string;
+  highlighted?: boolean;
+}) {
+  return (
+    <div className={`mini-box ${highlighted ? "is-highlighted" : ""}`}>
+      <div className="mini-box-label">{label}</div>
+      <div className="mini-box-value">{value}</div>
+    </div>
+  );
+}
+
+function Th({
+  children,
+  align = "left",
+}: {
+  children: ReactNode;
+  align?: "left" | "right" | "center";
+}) {
+  return <th className={`table-head ${alignClass(align)}`}>{children}</th>;
+}
+
+function Td({
+  children,
+  align = "left",
+}: {
+  children: ReactNode;
+  align?: "left" | "right" | "center";
+}) {
+  return <td className={`table-cell ${alignClass(align)}`}>{children}</td>;
+}
+
+function alignClass(align: "left" | "right" | "center") {
+  if (align === "right") return "is-right";
+  if (align === "center") return "is-center";
+  return "is-left";
 }
 
 export default ScorecardPage;

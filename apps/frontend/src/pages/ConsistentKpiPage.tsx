@@ -300,14 +300,14 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
         <FixedMaxScore value={savedConfig.maxScore} />
         <label><span>{spec.autoQuartiles ? "Critical Floor (Q1)" : "Critical Floor %"}</span><input type="number" min="0" step="0.1" value={Number.isFinite(draftConfig.criticalFloor) ? Number((draftConfig.criticalFloor * (spec.unit === "percent" ? 100 : 1)).toFixed(4)) : ""} onChange={(event) => updateConfig("criticalFloor", event.target.value, spec.unit === "percent")} disabled={spec.autoQuartiles} /></label>
         <label><span>{spec.autoQuartiles ? "Target (Q3)" : "Target %"}</span><input type="number" min="0" step="0.1" value={Number.isFinite(draftConfig.target) ? Number((draftConfig.target * (spec.unit === "percent" ? 100 : 1)).toFixed(4)) : ""} onChange={(event) => updateConfig("target", event.target.value, spec.unit === "percent")} disabled={spec.autoQuartiles} /></label>
-        <label><span>Formula Mode</span><select value={draftConfig.formulaMode} onChange={(event) => { setDraftConfig((current) => ({ ...current, formulaMode: event.target.value as FormulaMode })); setMessage(""); }}><option value="softStretch">Soft Stretch (official)</option><option value="strict">Strict (preview only)</option></select></label>
+        <label><span>Formula Mode</span><input className="fixed-config-value" type="text" value="Soft Stretch (official)" readOnly aria-readonly="true" /></label>
         <div className="dot-scenario-actions"><button type="button" onClick={runPreview} disabled={applying || configErrors.length > 0}>Preview</button>{!spec.autoQuartiles && <button type="button" onClick={applyPreview} disabled={applying || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply to Scorecard</button>}{previewConfig && <button type="button" className="ghost-button" onClick={discardPreview} disabled={applying}>Discard</button>}</div>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((item) => <p key={item}>{item}</p>)}</div>}
       </section>
 
       <section className={`dot-scenario-banner ${previewIsActive ? "is-preview" : "is-saved"}`}>
         <strong>{previewIsActive ? "Temporary preview" : "Official saved results"}</strong>
-        <span>{previewIsActive ? `${draftConfig.formulaMode === "strict" ? "Strict" : "Soft Stretch"} scenario is active. Nothing has been saved.` : spec.autoQuartiles ? "Floor and Target automatically follow Q1 and Q3 of the top-filter cohort." : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : `Soft Stretch is the production ${spec.title} formula.`}</span>
+        <span>{previewIsActive ? "Soft Stretch scenario is active. Nothing has been saved." : spec.autoQuartiles ? "Floor and Target automatically follow Q1 and Q3 of the top-filter cohort." : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : `Soft Stretch is the production ${spec.title} formula.`}</span>
         {message && <span>{message}</span>}
       </section>
 
@@ -323,7 +323,7 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
       <details className="formula-panel collapsible-section">
         <summary>How {spec.title} Earned Score Is Calculated</summary>
         <div className="formula-ribbon"><div><span>{spec.metricShortLabel}</span><strong>{spec.formula}</strong></div><div><span>Rollup</span><strong>{spec.rollupFormula}</strong></div><div><span>Official earned score</span><strong>Max x Attainment x (70% + 30% x Percentile)</strong></div></div>
-        <p>Strict preview uses Max x Percentile x Attainment. Parent selection never changes the global Parent or Supplier rank.</p>
+        <p>Soft Stretch uses Max x Attainment x (70% + 30% x Percentile). Parent selection never changes the global Parent or Supplier rank.</p>
       </details>
 
       <section className="results-panel">
@@ -412,3 +412,6 @@ const rowClass = (status: string) => status === "Missing Data" ? "invalid-row" :
 const statusClass = (status: string) => status === "Missing Data" ? "status-invalid" : status === "Not Applicable" ? "status-na" : status === "Below critical floor" ? "status-floor" : "status-valid";
 
 export default ConsistentKpiPage;
+
+
+

@@ -374,12 +374,7 @@ function InvoiceConformityPage({ sharedParent: selParentSupplier, onParentChange
         <label><span>Max Score</span><input type="number" min="0" step="0.5" value={Number.isFinite(config.maxScore) ? config.maxScore : ""} onChange={(e) => updateNumericConfig("maxScore", e.target.value)} /></label>
         <label><span>Critical Floor %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.criticalFloor) ? Number((config.criticalFloor * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("criticalFloor", e.target.value, 100)} /></label>
         <label><span>Target %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(config.target) ? Number((config.target * 100).toFixed(4)) : ""} onChange={(e) => updateNumericConfig("target", e.target.value, 100)} /></label>
-        <label><span>Formula Mode</span>
-          <select value={config.formulaMode} onChange={(e) => setConfig((c) => ({ ...c, formulaMode: e.target.value as "softStretch" | "strict" }))}>
-            <option value="softStretch">Softer Percentile Stretch</option>
-            <option value="strict">Strict Percentile &times; Attainment</option>
-          </select>
-        </label>
+        <label><span>Formula Mode</span><input className="fixed-config-value" type="text" value="Soft Stretch (official)" readOnly aria-readonly="true" /></label>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((e) => <p key={e}>{e}</p>)}</div>}
         <ApplyScorecardButton kpiId="IC" floor={config.criticalFloor} target={config.target} maxScore={config.maxScore} apiBase={API_BASE} />
       </section>
@@ -518,3 +513,4 @@ function RollupTable({ rows, label, config }: { rows: InvoiceRollupRow[]; label:
 }
 
 export default InvoiceConformityPage;
+

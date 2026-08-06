@@ -465,9 +465,7 @@ export function calculateCategoryRollup(
 }
 
 export const formulaModeLabel = (mode: MaturityConfig["formulaMode"]) =>
-  mode === "softStretch"
-    ? "Softer Percentile Stretch"
-    : "Strict Percentile x Attainment";
+  mode === "softStretch" ? "Soft Stretch (official)" : "Soft Stretch (official)";
 
 // ─── CSV export helper ─────────────────────────────────────────────────────
 

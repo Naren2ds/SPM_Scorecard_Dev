@@ -403,13 +403,7 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
         <FixedMaxScore value={savedConfig.maxScore} />
         <label><span>Critical Floor %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.criticalFloor) ? Number((draftConfig.criticalFloor * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("criticalFloor", event.target.value, 100)} /></label>
         <label><span>Target %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.target) ? Number((draftConfig.target * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("target", event.target.value, 100)} /></label>
-        <label>
-          <span>Formula Mode</span>
-          <select value={draftConfig.formulaMode} onChange={(event) => { setDraftConfig((current) => ({ ...current, formulaMode: event.target.value as FormulaMode })); setMessage(""); }}>
-            <option value="softStretch">Soft Stretch (official)</option>
-            <option value="strict">Strict (preview only)</option>
-          </select>
-        </label>
+        <label><span>Formula Mode</span><input className="fixed-config-value" type="text" value="Soft Stretch (official)" readOnly aria-readonly="true" /></label>
         <div className="dot-scenario-actions">
           <button type="button" onClick={runPreview} disabled={scenarioBusy || configErrors.length > 0}>Preview</button>
           <button type="button" onClick={applyPreview} disabled={scenarioBusy || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply to Scorecard</button>
@@ -420,10 +414,7 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
 
       <section className={`dot-scenario-banner ${previewIsActive ? "is-preview" : "is-saved"}`}>
         <strong>{previewIsActive ? "Temporary preview" : "Official saved results"}</strong>
-        <span>{previewIsActive
-          ? `${draftConfig.formulaMode === "strict" ? "Strict" : "Soft Stretch"} scenario is active. Nothing has been saved.`
-          : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : "Soft Stretch is the production scorecard formula."}</span>
-        {draftConfig.formulaMode === "strict" && <span>Strict can be reviewed but cannot be applied.</span>}
+        <span>{previewIsActive ? "Soft Stretch scenario is active. Nothing has been saved." : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : "Soft Stretch is the production scorecard formula."}</span>
         {message && <span>{message}</span>}
       </section>
 
@@ -443,7 +434,7 @@ function DotKpiPageOptimized({ sharedParent, onParentChange }: DotKpiPageProps) 
           <div><span>Attainment</span><strong>(DOT - Floor) / (Target - Floor), limited to 0-1</strong></div>
           <div><span>Official earned score</span><strong>Max x Attainment x (70% + 30% x Percentile)</strong></div>
         </div>
-        <p>Strict preview uses Max x Percentile x Attainment. Not Applicable and invalid rows are excluded rather than treated as zero.</p>
+        <p>Soft Stretch uses Max x Attainment x (70% + 30% x Percentile). Not Applicable and invalid rows are excluded rather than treated as zero.</p>
       </details>
 
       <section className="results-panel">
@@ -538,3 +529,6 @@ const statusClass = (status: string) => {
 };
 
 export default DotKpiPageOptimized;
+
+
+

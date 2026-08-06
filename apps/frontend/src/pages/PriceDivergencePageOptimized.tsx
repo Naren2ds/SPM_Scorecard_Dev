@@ -387,15 +387,14 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
         <FixedMaxScore value={savedConfig.maxScore} />
         <label><span>Critical Floor %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.criticalFloor) ? Number((draftConfig.criticalFloor * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("criticalFloor", event.target.value, 100)} /></label>
         <label><span>Target %</span><input type="number" min="0" max="100" step="0.1" value={Number.isFinite(draftConfig.target) ? Number((draftConfig.target * 100).toFixed(4)) : ""} onChange={(event) => updateConfigNumber("target", event.target.value, 100)} /></label>
-        <label><span>Formula Mode</span><select value={draftConfig.formulaMode} onChange={(event) => { setDraftConfig((current) => ({ ...current, formulaMode: event.target.value as FormulaMode })); setMessage(""); }}><option value="softStretch">Soft Stretch (official)</option><option value="strict">Strict (preview only)</option></select></label>
+        <label><span>Formula Mode</span><input className="fixed-config-value" type="text" value="Soft Stretch (official)" readOnly aria-readonly="true" /></label>
         <div className="dot-scenario-actions"><button type="button" onClick={runPreview} disabled={scenarioBusy || configErrors.length > 0}>Preview</button><button type="button" onClick={applyPreview} disabled={scenarioBusy || !previewIsActive || !hasDraftChanges || draftConfig.formulaMode !== "softStretch"}>Apply to Scorecard</button>{preview && <button type="button" className="ghost-button" onClick={discardPreview} disabled={scenarioBusy}>Discard</button>}</div>
         {configErrors.length > 0 && <div className="validation-box config-bar-errors">{configErrors.map((item) => <p key={item}>{item}</p>)}</div>}
       </section>
 
       <section className={`dot-scenario-banner ${previewIsActive ? "is-preview" : "is-saved"}`}>
         <strong>{previewIsActive ? "Temporary preview" : "Official saved results"}</strong>
-        <span>{previewIsActive ? `${draftConfig.formulaMode === "strict" ? "Strict" : "Soft Stretch"} scenario is active. Nothing has been saved.` : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : "Soft Stretch is the production Price Divergence formula."}</span>
-        {draftConfig.formulaMode === "strict" && <span>Strict can be reviewed but cannot be applied.</span>}
+        <span>{previewIsActive ? "Soft Stretch scenario is active. Nothing has been saved." : hasDraftChanges ? "Configuration was edited. Run Preview to recalculate; the table still shows saved results." : "Soft Stretch is the production Price Divergence formula."}</span>
         {message && <span>{message}</span>}
       </section>
 
@@ -411,7 +410,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
       <details className="formula-panel collapsible-section">
         <summary>How Price Divergence Earned Score Is Calculated</summary>
         <div className="formula-ribbon"><div><span>Production divergence</span><strong>Sum of ABS(Invoice Value - PO Value) / Sum of PO Value</strong></div><div><span>Inverted attainment</span><strong>(Floor - Divergence) / (Floor - Target), limited to 0-1</strong></div><div><span>Official earned score</span><strong>Max x Attainment x (70% + 30% x Percentile)</strong></div></div>
-        <p>Lower divergence ranks better. Rollups preserve the current Normalized Scorecard formula and do not average row percentages. Strict preview uses Max x Percentile x Attainment.</p>
+        <p>Lower divergence ranks better. Rollups preserve the current Normalized Scorecard formula and do not average row percentages. Soft Stretch uses Max x Attainment x (70% + 30% x Percentile).</p>
       </details>
 
       <section className="results-panel">
@@ -441,3 +440,6 @@ const rowClass = (status: string) => status === "Missing Data" ? "invalid-row" :
 const statusClass = (status: string) => status === "Missing Data" ? "status-invalid" : status === "Not Applicable" ? "status-na" : status === "Below critical floor" ? "status-floor" : "status-valid";
 
 export default PriceDivergencePageOptimized;
+
+
+

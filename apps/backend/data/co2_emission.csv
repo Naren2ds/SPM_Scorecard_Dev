@@ -1,31 +1,31 @@
-id,supplier,parentSupplier,zone,category,kpiApplicability,co2Emission,year
-co2-0,AMCOR,AMCOR,MAZ,,Applicable,215.500000,2025
-co2-1,AMCOR,AMCOR,SAZ,,Applicable,215.500000,2025
-co2-2,Arrozeira Pelotas,ARROZEIRA PELOTAS,SAZ,,Applicable,0.000000,2025
-co2-3,Ball,Ball,EUR,,Applicable,17967.000000,2025
-co2-4,Ball,Ball,MAZ,,Applicable,17967.000000,2025
-co2-5,Ball,Ball,NAZ,,Applicable,17967.000000,2025
-co2-6,Ball,Ball,SAZ,,Applicable,17967.000000,2025
-co2-7,Canpack,CAN PACK,EUR,,Applicable,0.000000,2025
-co2-8,Canpack,CAN PACK,MAZ,,Applicable,0.000000,2025
-co2-9,Cargill,Cargill,GHQ,,Applicable,0.000000,2025
-co2-10,Cofco,COFCO,APAC,,Applicable,8767.045354,2025
-co2-11,Coleus,COLEUS PACKAGING PTY,AFR,,Applicable,0.000000,2025
-co2-12,Cristalpet,CRISTALPET,SAZ,,Applicable,0.000000,2025
-co2-13,Engepack,ENGEPACK EMBALAGENS SAO PAULO SA,SAZ,,Applicable,0.000000,2025
-co2-14,Fogel,FOGEL GROUP,MAZ,,Applicable,0.000000,2025
-co2-15,GZI,GZ Industries Limited,AFR,,Applicable,0.000000,2025
-co2-16,Hua Xing,Hua Xing,APAC,,Applicable,28.919455,2025
-co2-17,Ingredion,INGREDION,APAC,,Applicable,0.000000,2025
-co2-18,Ingredion,INGREDION,MAZ,,Applicable,0.000000,2025
-co2-19,Ingredion,INGREDION,NAZ,,Applicable,0.000000,2025
-co2-20,Ingredion,INGREDION,SAZ,,Applicable,0.000000,2025
-co2-21,Metalfrio,METALFRIO SOLUTIONS,EUR,,Applicable,0.000000,2025
-co2-22,Metalfrio,METALFRIO SOLUTIONS,MAZ,,Applicable,0.000000,2025
-co2-23,Metalfrio,METALFRIO SOLUTIONS,SAZ,,Applicable,0.000000,2025
-co2-24,Novelis,NOVELIS,SAZ,,Applicable,0.000000,2025
-co2-25,ORG,HUBEI ORG PACKAGING,APAC,,Applicable,7092.217695,2025
-co2-26,Rahr,Rahr Corporation,NAZ,,Applicable,9460.000000,2025
-co2-27,SLY,SLY,APAC,,Applicable,13.534144,2025
-co2-28,Tereos,TEREOS,SAZ,,Applicable,0.000000,2025
-co2-29,Vidroporto,VIDROPORTO,SAZ,,Applicable,0.000000,2025
+id,supplier,parentSupplier,zone,category,scorecard_category,kpiApplicability,co2Emission,year
+co2-0,AMCOR,AMCOR,MAZ,,DIRECT,Applicable,215.500000,2025
+co2-1,AMCOR,AMCOR,SAZ,,DIRECT,Applicable,215.500000,2025
+co2-2,Arrozeira Pelotas,ARROZEIRA PELOTAS,SAZ,,DIRECT,Applicable,0.000000,2025
+co2-3,Ball,Ball,EUR,,DIRECT,Applicable,17967.000000,2025
+co2-4,Ball,Ball,MAZ,,DIRECT,Applicable,17967.000000,2025
+co2-5,Ball,Ball,NAZ,,DIRECT,Applicable,17967.000000,2025
+co2-6,Ball,Ball,SAZ,,DIRECT,Applicable,17967.000000,2025
+co2-7,Canpack,CAN PACK,EUR,,DIRECT,Applicable,0.000000,2025
+co2-8,Canpack,CAN PACK,MAZ,,DIRECT,Applicable,0.000000,2025
+co2-9,Cargill,Cargill,GHQ,,DIRECT,Applicable,0.000000,2025
+co2-10,Cofco,COFCO,APAC,,DIRECT,Applicable,8767.045354,2025
+co2-11,Coleus,COLEUS PACKAGING PTY,AFR,,DIRECT,Applicable,0.000000,2025
+co2-12,Cristalpet,CRISTALPET,SAZ,,DIRECT,Applicable,0.000000,2025
+co2-13,Engepack,ENGEPACK EMBALAGENS SAO PAULO SA,SAZ,,DIRECT,Applicable,0.000000,2025
+co2-14,Fogel,FOGEL GROUP,MAZ,,CAPEX,Applicable,0.000000,2025
+co2-15,GZI,GZ Industries Limited,AFR,,DIRECT,Applicable,0.000000,2025
+co2-16,Hua Xing,Hua Xing,APAC,,DIRECT,Applicable,28.919455,2025
+co2-17,Ingredion,INGREDION,APAC,,DIRECT,Applicable,0.000000,2025
+co2-18,Ingredion,INGREDION,MAZ,,DIRECT,Applicable,0.000000,2025
+co2-19,Ingredion,INGREDION,NAZ,,DIRECT,Applicable,0.000000,2025
+co2-20,Ingredion,INGREDION,SAZ,,DIRECT,Applicable,0.000000,2025
+co2-21,Metalfrio,METALFRIO SOLUTIONS,EUR,,CAPEX,Applicable,0.000000,2025
+co2-22,Metalfrio,METALFRIO SOLUTIONS,MAZ,,CAPEX,Applicable,0.000000,2025
+co2-23,Metalfrio,METALFRIO SOLUTIONS,SAZ,,CAPEX,Applicable,0.000000,2025
+co2-24,Novelis,NOVELIS,SAZ,,DIRECT,Applicable,0.000000,2025
+co2-25,ORG,HUBEI ORG PACKAGING,APAC,,DIRECT,Applicable,7092.217695,2025
+co2-26,Rahr,Rahr Corporation,NAZ,,DIRECT,Applicable,9460.000000,2025
+co2-27,SLY,SLY,APAC,,DIRECT,Applicable,13.534144,2025
+co2-28,Tereos,TEREOS,SAZ,,DIRECT,Applicable,0.000000,2025
+co2-29,Vidroporto,VIDROPORTO,SAZ,,DIRECT,Applicable,0.000000,2025

@@ -87,6 +87,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "zone": col_text("zone"),
         "country": col_text("country"),
         "category": col_text("gpo_category"),
+        "scorecard_category": col_text("scorecard_category"),
         "missingPo": col_numeric("missing_po"),
         "wrongPo": col_numeric("wrong_po"),
         "wrongInvoice": col_numeric("wrong_invoice"),
@@ -96,7 +97,15 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     mapped["kpiApplicability"] = "Applicable"
 
     # Aggregate: sum raw counts per supplier/dimension
-    group_cols = ["supplier", "parentSupplier", "zone", "country", "category", "kpiApplicability"]
+    group_cols = [
+        "supplier",
+        "parentSupplier",
+        "zone",
+        "country",
+        "category",
+        "scorecard_category",
+        "kpiApplicability",
+    ]
     num_cols = ["missingPo", "wrongPo", "wrongInvoice", "totalInvoices"]
     agg = mapped.groupby(group_cols, as_index=False)[num_cols].sum()
 
@@ -113,7 +122,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         agg[col] = agg[col].astype(int).astype(str)
 
     output_cols = [
-        "id", "supplier", "parentSupplier", "zone", "country", "category",
+        "id", "supplier", "parentSupplier", "zone", "country", "category", "scorecard_category",
         "kpiApplicability", "conformityPct",
         "missingPo", "wrongPo", "wrongInvoice", "totalInvoices", "mismatchCount",
     ]

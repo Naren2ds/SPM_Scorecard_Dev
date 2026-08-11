@@ -6,6 +6,7 @@ import csv
 import io
 import math
 import threading
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator
 
@@ -84,6 +85,7 @@ class DotSupplierResult:
 class DotRollupResult:
     level: str
     label: str
+    scorecard_category: str
     country: str
     is_applicable: bool
     normalized_dot: float | None
@@ -113,6 +115,7 @@ class _RollupAccumulator:
     delayed: float = 0.0
     early: float = 0.0
     countries: set[str] = field(default_factory=set)
+    scorecard_categories: Counter[str] = field(default_factory=Counter)
 
 
 @dataclass(slots=True)
@@ -432,6 +435,7 @@ def serialize_dot_result(
             "zone": _text(row.get("zone")),
             "country": _text(row.get("country")),
             "category": _text(row.get("category")),
+            "scorecardCategory": _scorecard_category(row),
             "year": _text(row.get("year")),
             "month": _text(row.get("month")),
             "dotRawInput": assessment.dot_raw_input,
@@ -481,6 +485,7 @@ def serialize_dot_result(
         "parentSupplier": result.label if result.level == "parent" else "All parents",
         "zone": result.label if result.level == "zone" else "All zones",
         "country": result.country,
+        "scorecardCategory": result.scorecard_category,
         "dotRawInput": result.dot_raw_input,
         "onTimePoLines": raw.on_time if raw else None,
         "totalDeliveredPoLines": raw.total_delivered if raw else None,
@@ -543,6 +548,7 @@ def iter_dot_csv(
         "Zone",
         "Country",
         "Category",
+        "Scorecard Category",
         "DOT %",
         "Rank",
         "Percentile",
@@ -560,6 +566,7 @@ def iter_dot_csv(
             row["zone"],
             row["country"],
             row["category"],
+            row["scorecardCategory"],
             _format_percent(row["normalizedDot"], 2),
             _format_rank(row["rankDescending"]),
             _format_percent(row["percentile"], 2),
@@ -654,8 +661,19 @@ def _assess_row(row: dict[str, Any], row_number: int) -> DotAssessment:
 
 
 def _score_suppliers(assessments: list[DotAssessment], config: DotConfig) -> list[DotSupplierResult]:
-    valid = [(index, row.normalized_dot) for index, row in enumerate(assessments) if row.is_applicable and row.is_valid and row.normalized_dot is not None]
-    ranks = _percentile_ranks(valid, config.target)
+    grouped_valid: dict[str, list[tuple[int, float]]] = {}
+    for index, assessment in enumerate(assessments):
+        if not assessment.is_applicable or not assessment.is_valid or assessment.normalized_dot is None:
+            continue
+        key = _scorecard_category(assessment.row)
+        grouped_valid.setdefault(key, []).append((index, assessment.normalized_dot))
+
+    ranks_by_index: dict[int, tuple[float, float, str]] = {}
+    for values in grouped_valid.values():
+        ranks = _percentile_ranks([(local_index, value) for local_index, (_, value) in enumerate(values)], config.target)
+        for local_index, (original_index, _) in enumerate(values):
+            ranks_by_index[original_index] = ranks[local_index]
+
     results: list[DotSupplierResult] = []
     for index, assessment in enumerate(assessments):
         if not assessment.is_applicable:
@@ -664,7 +682,7 @@ def _score_suppliers(assessments: list[DotAssessment], config: DotConfig) -> lis
         if not assessment.is_valid or assessment.normalized_dot is None:
             results.append(DotSupplierResult(assessment, None, None, None, None, None, "Invalid DOT"))
             continue
-        rank, percentile, note = ranks[index]
+        rank, percentile, note = ranks_by_index[index]
         attainment = _attainment(assessment.normalized_dot, config)
         earned = _earned(config, percentile, attainment)
         status = _score_status(assessment.normalized_dot, attainment, note, config)
@@ -682,6 +700,7 @@ def _build_rollups(
         label = _rollup_label(assessment.row, level)
         accumulator = groups.setdefault(label, _RollupAccumulator())
         accumulator.total_rows += 1
+        accumulator.scorecard_categories[_scorecard_category(assessment.row)] += 1
         country = _text(assessment.row.get("country"))
         if country:
             accumulator.countries.add(country)
@@ -748,6 +767,7 @@ def _build_rollups(
         results.append(DotRollupResult(
             level=level,
             label=label,
+            scorecard_category=_collapse_scorecard_categories(accumulator.scorecard_categories),
             country=country,
             is_applicable=is_applicable,
             normalized_dot=None if errors else normalized,
@@ -758,15 +778,25 @@ def _build_rollups(
             errors=tuple(errors),
         ))
 
-    valid = [(index, row.normalized_dot) for index, row in enumerate(results) if not row.errors and row.normalized_dot is not None]
-    ranks = _percentile_ranks(valid, config.target)
+    grouped_valid: dict[str, list[tuple[int, float]]] = {}
+    for index, result in enumerate(results):
+        if result.errors or result.normalized_dot is None:
+            continue
+        grouped_valid.setdefault(result.scorecard_category, []).append((index, result.normalized_dot))
+
+    rank_map: dict[int, tuple[float, float, str]] = {}
+    for values in grouped_valid.values():
+        ranks = _percentile_ranks([(local_index, value) for local_index, (_, value) in enumerate(values)], config.target)
+        for local_index, (original_index, _) in enumerate(values):
+            rank_map[original_index] = ranks[local_index]
+
     for index, result in enumerate(results):
         if not result.is_applicable:
             result.score_status = "Not applicable"
         elif result.errors or result.normalized_dot is None:
             result.score_status = "Invalid DOT"
         else:
-            rank, percentile, note = ranks[index]
+            rank, percentile, note = rank_map[index]
             result.rank = rank
             result.percentile = percentile
             result.rank_note = note
@@ -937,6 +967,25 @@ def _rollup_label(row: dict[str, Any], level: str) -> str:
     if level == "category":
         return _text(row.get("category")) or "Unassigned category"
     return _text(row.get("zone")) or "Unassigned zone"
+
+
+def _scorecard_category(row: dict[str, Any]) -> str:
+    return _text(row.get("scorecard_category")) or "Unassigned scorecard category"
+
+
+def _scorecard_category_from_rows(rows: Iterable[dict[str, Any]]) -> str:
+    return _collapse_scorecard_categories(Counter(_scorecard_category(row) for row in rows))
+
+
+def _collapse_scorecard_categories(counts: Counter[str]) -> str:
+    if not counts:
+        return "Unassigned scorecard category"
+    most_common = counts.most_common()
+    if len(most_common) == 1:
+        return most_common[0][0]
+    top_count = most_common[0][1]
+    tied = sorted([value for value, count in most_common if count == top_count])
+    return tied[0]
 
 
 def _raw_formula(raw: RawDotValues) -> str:

@@ -96,6 +96,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "parentSupplier": col_text("parent_name"),
         "zone": col_text("zone"),
         "category": category_series,
+        "scorecard_category": col_text("scorecard_category"),
         "maturityScoreRaw": col_numeric("supplier_maturity_score_2025"),
     })
 
@@ -126,7 +127,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
 
     # Aggregate to one row per unique supplier/dimension combo.
     group_cols = [
-        "year", "supplier", "parentSupplier", "zone", "category",
+        "year", "supplier", "parentSupplier", "zone", "category", "scorecard_category",
         "kpiApplicability",
     ]
     agg = (
@@ -143,7 +144,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     # Final column order
     output_cols = [
         "id",
-        "supplier", "parentSupplier", "zone", "category",
+        "supplier", "parentSupplier", "zone", "category", "scorecard_category",
         "kpiApplicability",
         "maturityScore",
         "year",

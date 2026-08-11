@@ -89,6 +89,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "zone": col_text("zone"),
         "country": col_text("country"),
         "category": col_text("supplier_category"),
+        "scorecard_category": col_text("scorecard_category"),
         "supplierApprovalStatus": col_text("supplier_approval_status"),
         "compliancePctRaw": col_numeric("supplier_compliance_pct"),
     })
@@ -126,6 +127,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     # safest neutral aggregation.
     group_cols = [
         "year", "supplier", "parentSupplier", "zone", "country", "category",
+        "scorecard_category",
         "kpiApplicability", "supplierApprovalStatus",
     ]
     agg = (
@@ -142,7 +144,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     # Final column order
     output_cols = [
         "id",
-        "supplier", "parentSupplier", "zone", "country", "category",
+        "supplier", "parentSupplier", "zone", "country", "category", "scorecard_category",
         "kpiApplicability", "supplierApprovalStatus",
         "compliancePct",
         "year",

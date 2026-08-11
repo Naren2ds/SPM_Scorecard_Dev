@@ -25,6 +25,7 @@ def _row(
     year="2026",
     zone="EUR",
     category="MALT",
+    scorecard_category="",
 ):
     return {
         "id": row_id,
@@ -33,6 +34,7 @@ def _row(
         "zone": zone,
         "country": "Belgium",
         "category": category,
+        "scorecard_category": scorecard_category,
         "kpiApplicability": applicable,
         "dotPercent": "",
         "onTimePoLines": str(on_time),
@@ -124,6 +126,22 @@ def test_parent_selection_scopes_supplier_summary_zone_and_category_rollups():
     assert category["items"][0]["normalizedDot"] == pytest.approx(0.85)
 
 
+def test_percentiles_are_scoped_to_scorecard_category():
+    rows = [
+        _row("a1", "Alpha One", "Parent A", 80, 100, scorecard_category="Packaging"),
+        _row("b1", "Beta One", "Parent B", 70, 100, scorecard_category="Packaging"),
+        _row("c1", "Gamma One", "Parent C", 90, 100, scorecard_category="Logistics"),
+        _row("d1", "Delta One", "Parent D", 85, 100, scorecard_category="Logistics"),
+    ]
+    model = build_dot_read_model(rows, _config(), {"years": ["2026"]})
+
+    by_supplier = {row.label: row for row in model.supplier_results}
+    assert by_supplier["Alpha One"].percentile == pytest.approx(1.0)
+    assert by_supplier["Beta One"].percentile == pytest.approx(0.0)
+    assert by_supplier["Gamma One"].percentile == pytest.approx(1.0)
+    assert by_supplier["Delta One"].percentile == pytest.approx(0.0)
+
+
 def test_strict_preview_changes_earned_score_without_changing_saved_model():
     saved = build_dot_read_model(_rows(), _config("softStretch"), {"years": ["2026"]})
     preview = build_dot_read_model(_rows(), _config("strict"), {"years": ["2026"]})
@@ -148,7 +166,7 @@ def test_summary_search_and_export_contracts():
     assert summary["result_count"] == 2
     assert matches[0]["label"] == "Parent A"
     assert exported[0] == ["DOT Config"]
-    assert exported[7][0:5] == ["Supplier", "Parent", "Zone", "Country", "Category"]
+    assert exported[7][0:6] == ["Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category"]
     assert {row[0] for row in exported[8:]} == {"Alpha One", "Alpha Two"}
 
 

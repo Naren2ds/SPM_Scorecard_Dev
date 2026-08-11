@@ -90,6 +90,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "parentSupplier": col_text("parent_name"),
         "zone": col_text("zone"),
         "category": category_series,
+        "scorecard_category": col_text("scorecard_category"),
         "eclipseScoreRaw": col_numeric("eclipse_score_2025"),
     })
 
@@ -114,7 +115,15 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     mapped["eclipseScore"] = pd.to_numeric(mapped["eclipseScore"], errors="coerce")
 
     # Aggregate
-    group_cols = ["year", "supplier", "parentSupplier", "zone", "category", "kpiApplicability"]
+    group_cols = [
+        "year",
+        "supplier",
+        "parentSupplier",
+        "zone",
+        "category",
+        "scorecard_category",
+        "kpiApplicability",
+    ]
     agg = mapped.groupby(group_cols, dropna=False, as_index=False)["eclipseScore"].mean()
 
     # ID + string cast
@@ -123,7 +132,17 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         lambda v: "" if pd.isna(v) else f"{float(v):.6f}"
     )
 
-    output_cols = ["id", "supplier", "parentSupplier", "zone", "category", "kpiApplicability", "eclipseScore", "year"]
+    output_cols = [
+        "id",
+        "supplier",
+        "parentSupplier",
+        "zone",
+        "category",
+        "scorecard_category",
+        "kpiApplicability",
+        "eclipseScore",
+        "year",
+    ]
     for col in output_cols:
         if col not in agg.columns:
             agg[col] = ""

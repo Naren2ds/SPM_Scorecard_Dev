@@ -66,6 +66,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "zone": "zone",
         "country": "country",
         "gpo_category": "category",
+        "scorecard_category": "scorecard_category",
         "total_po_value": "poValue",
         "total_invoice_value": "invoiceValue",
     })
@@ -76,6 +77,10 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     mapped["zone"] = mapped["zone"].fillna("").astype(str)
     mapped["country"] = mapped["country"].fillna("").astype(str)
     mapped["category"] = mapped["category"].fillna("").astype(str)
+    if "scorecard_category" not in mapped.columns:
+        mapped["scorecard_category"] = ""
+    else:
+        mapped["scorecard_category"] = mapped["scorecard_category"].fillna("").astype(str)
 
     # Extract year and month from delivery_month (YYYY-MM)
     mapped["year"] = mapped["delivery_month"].astype(str).str[:4]
@@ -86,7 +91,16 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     mapped["invoiceValue"] = pd.to_numeric(mapped["invoiceValue"], errors="coerce").fillna(0)
 
     # Aggregate
-    group_cols = ["year", "month", "supplier", "parentSupplier", "zone", "country", "category"]
+    group_cols = [
+        "year",
+        "month",
+        "supplier",
+        "parentSupplier",
+        "zone",
+        "country",
+        "category",
+        "scorecard_category",
+    ]
     agg = mapped.groupby(group_cols, as_index=False)[["poValue", "invoiceValue"]].sum()
 
     # Calculate Price Divergence %: abs(invoice - po) / po
@@ -107,7 +121,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     output_cols = [
-        "id", "supplier", "parentSupplier", "zone", "country", "category",
+        "id", "supplier", "parentSupplier", "zone", "country", "category", "scorecard_category",
         "kpiApplicability", "poValue", "invoiceValue", "divergencePct", "year", "month",
     ]
     return agg[output_cols]

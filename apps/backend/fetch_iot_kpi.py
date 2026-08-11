@@ -50,10 +50,17 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "zone": "zone",
         "country": "country",
         "gpo_category": "category",
+        "scorecard_category": "scorecard_category",
         "invoice_on_time_count": "invoiceOnTimeCount",
         "total_po_lines": "totalPoLines",
         "iot_applicable": "kpiApplicability",
     })
+    scorecard_category_col = next((c for c in df.columns if c.lower() == "scorecard_category"), None)
+    mapped["scorecard_category"] = (
+        df[scorecard_category_col].astype(str).fillna("").replace("nan", "")
+        if scorecard_category_col is not None
+        else ""
+    )
 
     # Handle column name variations (case-insensitive match)
     col_lower = {c.lower(): c for c in mapped.columns}
@@ -87,7 +94,17 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
             mapped[col] = 0
 
     # Step 5: Aggregate
-    group_cols = ["year", "month", "supplier", "parentSupplier", "zone", "country", "category", "kpiApplicability"]
+    group_cols = [
+        "year",
+        "month",
+        "supplier",
+        "parentSupplier",
+        "zone",
+        "country",
+        "category",
+        "scorecard_category",
+        "kpiApplicability",
+    ]
     # Only group by columns that exist
     valid_group_cols = [c for c in group_cols if c in mapped.columns]
     agg = mapped.groupby(valid_group_cols, as_index=False)[num_cols].sum()
@@ -99,7 +116,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
 
     # Step 7: Final column order
     output_cols = [
-        "id", "supplier", "parentSupplier", "zone", "country", "category",
+        "id", "supplier", "parentSupplier", "zone", "country", "category", "scorecard_category",
         "kpiApplicability", "invoiceOnTimeCount", "totalPoLines", "year", "month",
     ]
     for col in output_cols:

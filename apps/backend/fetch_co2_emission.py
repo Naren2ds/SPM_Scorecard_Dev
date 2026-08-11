@@ -87,6 +87,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "parentSupplier": col_text("parent_name"),
         "zone": col_text("zone"),
         "category": col_text("supplier_category"),
+        "scorecard_category": col_text("scorecard_category"),
     })
 
     year_frames: list[pd.DataFrame] = []
@@ -122,7 +123,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
 
     # Aggregate to one row per unique supplier/dimension/year combo.
     group_cols = [
-        "year", "supplier", "parentSupplier", "zone", "category",
+        "year", "supplier", "parentSupplier", "zone", "category", "scorecard_category",
         "kpiApplicability",
     ]
     agg = (
@@ -139,7 +140,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     # Final column order
     output_cols = [
         "id",
-        "supplier", "parentSupplier", "zone", "category",
+        "supplier", "parentSupplier", "zone", "category", "scorecard_category",
         "kpiApplicability",
         "co2Emission",
         "year",

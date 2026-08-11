@@ -50,12 +50,19 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "zone": "zone",
         "country": "country",
         "gpo_category": "category",
+        "scorecard_category": "scorecard_category",
         "on_time_delivered": "onTimePoLines",
         "total_delivered": "totalDeliveredPoLines",
         "x1_overdue": "x1DelayedOver30Days",
         "x2_future_due": "x2EarlyOver30Days",
         "dot_applicable": "kpiApplicability",
     })
+    scorecard_category_col = next((c for c in df.columns if c.lower() == "scorecard_category"), None)
+    mapped["scorecard_category"] = (
+        df[scorecard_category_col].astype(str).fillna("").replace("nan", "")
+        if scorecard_category_col is not None
+        else ""
+    )
 
     # Step 2: Map kpiApplicability
     mapped["kpiApplicability"] = mapped["kpiApplicability"].apply(
@@ -72,7 +79,17 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         mapped[col] = pd.to_numeric(mapped[col], errors="coerce").fillna(0)
 
     # Step 5: Aggregate
-    group_cols = ["year", "month", "supplier", "parentSupplier", "zone", "country", "category", "kpiApplicability"]
+    group_cols = [
+        "year",
+        "month",
+        "supplier",
+        "parentSupplier",
+        "zone",
+        "country",
+        "category",
+        "scorecard_category",
+        "kpiApplicability",
+    ]
     agg = mapped.groupby(group_cols, as_index=False)[num_cols].sum()
 
     # Step 6: Leave dotPercent empty (frontend calculates from raw values)
@@ -85,7 +102,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
 
     # Step 8: Final column order
     output_cols = [
-        "id", "supplier", "parentSupplier", "zone", "country", "category",
+        "id", "supplier", "parentSupplier", "zone", "country", "category", "scorecard_category",
         "kpiApplicability", "dotPercent", "onTimePoLines", "totalDeliveredPoLines",
         "x1DelayedOver30Days", "x2EarlyOver30Days", "year", "month",
     ]

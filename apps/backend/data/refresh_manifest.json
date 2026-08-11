@@ -1,5 +1,5 @@
 {
-  "refreshed_at_utc": "2026-08-05T06:33:41.985057+00:00",
+  "refreshed_at_utc": "2026-08-11T09:13:51.320567+00:00",
   "dataset_count": 9,
   "datasets": {
     "dot": {
@@ -14,13 +14,13 @@
     },
     "supplier_assessment": {
       "previous_rows": 3548,
-      "refreshed_rows": 3544,
-      "row_ratio": 0.998873
+      "refreshed_rows": 3096,
+      "row_ratio": 0.872604
     },
     "supplier_compliance": {
       "previous_rows": 3548,
-      "refreshed_rows": 3544,
-      "row_ratio": 0.998873
+      "refreshed_rows": 3096,
+      "row_ratio": 0.872604
     },
     "supplier_maturity": {
       "previous_rows": 291,

@@ -100,6 +100,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
         "zone": col("zone"),
         "country": col("country"),
         "category": col("supplier_category"),
+        "scorecard_category": col("scorecard_category"),
         "supplierApprovalStatus": col("supplier_approval_status"),
         "rating": col("annual_assessment"),
     })
@@ -118,6 +119,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     # Step 5: Aggregate to counts per unique supplier / dimension combo
     group_cols = [
         "year", "supplier", "parentSupplier", "zone", "country", "category",
+        "scorecard_category",
         "kpiApplicability", "supplierApprovalStatus",
     ]
     count_cols = ["green", "yellow", "red", "na", "blank"]
@@ -140,7 +142,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     # Step 8: Final column order
     output_cols = [
         "id",
-        "supplier", "parentSupplier", "zone", "country", "category",
+        "supplier", "parentSupplier", "zone", "country", "category", "scorecard_category",
         "kpiApplicability", "supplierApprovalStatus",
         "greenCount", "yellowCount", "redCount", "naCount", "blankCount",
         "year",

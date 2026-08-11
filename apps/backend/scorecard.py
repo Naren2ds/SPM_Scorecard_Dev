@@ -21,6 +21,7 @@ Pillar weights follow the Excel "Mapping" sheet:
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any, Iterable
 
 import pandas as pd
@@ -279,6 +280,56 @@ def _rollup_key(row: dict[str, Any]) -> str:
     return "Unassigned parent"
 
 
+def _scorecard_category(row: dict[str, Any]) -> str:
+    value = str(row.get("scorecard_category", "") or "").strip()
+    return value or "Unassigned scorecard category"
+
+
+def _collapse_scorecard_category(values: list[str]) -> str:
+    cleaned = [value for value in values if value]
+    if not cleaned:
+        return "Unassigned scorecard category"
+    counts = Counter(cleaned)
+    most_common = counts.most_common()
+    if len(most_common) == 1:
+        return most_common[0][0]
+    top_count = most_common[0][1]
+    tied = sorted(value for value, count in most_common if count == top_count)
+    return tied[0]
+
+
+def _percentile_ranks(
+    indexed_values: list[tuple[int, float | None]],
+    target: float,
+) -> dict[int, tuple[float, float, str]]:
+    values = [(index, float(value)) for index, value in indexed_values if value is not None and pd.notna(value)]
+    count = len(values)
+    if not count:
+        return {}
+    if count == 1:
+        return {values[0][0]: (1.0, 1.0, "single")}
+    keys = {f"{value:.12f}" for _, value in values}
+    if len(keys) == 1:
+        percentile = 1.0 if values[0][1] >= target else 0.5
+        average_rank = (count + 1) / 2
+        return {index: (average_rank, percentile, "noVariance") for index, _ in values}
+
+    sorted_values = sorted(values, key=lambda item: item[1], reverse=True)
+    result: dict[int, tuple[float, float, str]] = {}
+    cursor = 0
+    while cursor < count:
+        key = f"{sorted_values[cursor][1]:.12f}"
+        end = cursor + 1
+        while end < count and f"{sorted_values[end][1]:.12f}" == key:
+            end += 1
+        average_rank = ((cursor + 1) + end) / 2
+        percentile = (count - average_rank) / (count - 1)
+        for index in range(cursor, end):
+            result[sorted_values[index][0]] = (average_rank, percentile, "standard")
+        cursor = end
+    return result
+
+
 def _passes_filters(
     row: dict[str, Any],
     zones: set[str] | None,
@@ -337,7 +388,7 @@ def _aggregate_kpi(
     tonnes value depending on unit).  'applicable' is True only when the parent
     has at least one applicable row with usable data for this KPI.
     """
-    agg: dict[str, dict[str, float]] = {}
+    agg: dict[str, dict[str, Any]] = {}
 
     kid = kpi["id"]
 
@@ -347,7 +398,10 @@ def _aggregate_kpi(
         if not _is_applicable(r.get("kpiApplicability")):
             continue
         key = _rollup_key(r)
-        bucket = agg.setdefault(key, {"num": 0.0, "den": 0.0, "sum": 0.0, "n": 0.0})
+        bucket = agg.setdefault(
+            key,
+            {"num": 0.0, "den": 0.0, "sum": 0.0, "n": 0.0, "scorecard_categories": []},
+        )
 
         if kid == "DOT":
             on_time = _to_num(r.get("onTimePoLines")) or 0.0
@@ -357,6 +411,7 @@ def _aggregate_kpi(
             adj_den = total + 0.99 * delayed + 0.10 * early
             bucket["num"] += on_time
             bucket["den"] += adj_den
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "IOT":
             on_time = _to_num(r.get("invoiceOnTimeCount")) or 0.0
@@ -435,7 +490,12 @@ def _aggregate_kpi(
             if b["den"] <= 0:
                 continue
             ratio = b["num"] / b["den"]
-        out[key] = {"raw": ratio, "ratio": ratio, "applicable": True}
+        out[key] = {
+            "raw": ratio,
+            "ratio": ratio,
+            "applicable": True,
+            "scorecard_category": _collapse_scorecard_category(b.get("scorecard_categories", [])),
+        }
     return out
 
 
@@ -487,41 +547,55 @@ def _kpi_attainments(
         for key, info in per_parent.items()
     }
 
-    # Step 2: compute percentile ranks — mirrors frontend calculatePercentileRanks().
-    # Formula: percentile = (N - averageRank) / (N - 1)  with tie-averaged rank.
-    # Special cases: N=1 → 1.0;  all values identical → >=target ? 1.0 : 0.5.
-    reverse_sort = (direction != "lower")
-    total = len(per_parent)
+    # Step 2: compute percentile ranks.
+    # DOT now compares only against parents in the same scorecard_category.
+    # Other KPIs keep the existing global percentile behavior.
     percentiles: dict[str, float] = {}
+    if kpi["id"] == "DOT":
+        grouped: dict[str, list[tuple[str, float]]] = {}
+        for key, info in per_parent.items():
+            cohort = _scorecard_category(info)
+            grouped.setdefault(cohort, []).append((key, info["ratio"]))
 
-    if total == 1:
-        percentiles[next(iter(per_parent))] = 1.0
+        for cohort_values in grouped.values():
+            local_values = [(index, value) for index, (_, value) in enumerate(cohort_values)]
+            if not local_values:
+                continue
+            cohort_ranks = _percentile_ranks(local_values, float(target))
+            for index, (key, _) in enumerate(cohort_values):
+                percentiles[key] = cohort_ranks[index][1]
     else:
-        ratios = {k: per_parent[k]["ratio"] for k in per_parent}
-        distinct = set(round(v, 12) for v in ratios.values())
-        if len(distinct) == 1:
-            # No variance — award full percentile if above target, else 0.5.
-            shared = next(iter(ratios.values()))
-            pct = 1.0 if shared >= float(target) else 0.5
-            percentiles = {k: pct for k in per_parent}
+        reverse_sort = (direction != "lower")
+        total = len(per_parent)
+
+        if total == 1:
+            percentiles[next(iter(per_parent))] = 1.0
         else:
-            sorted_keys = sorted(
-                per_parent.keys(),
-                key=lambda k: ratios[k],
-                reverse=reverse_sort,
-            )
-            cursor = 0
-            while cursor < total:
-                current = round(ratios[sorted_keys[cursor]], 12)
-                end = cursor + 1
-                while end < total and round(ratios[sorted_keys[end]], 12) == current:
-                    end += 1
-                # 1-indexed midpoint rank for this tied group
-                avg_rank = (cursor + 1 + end) / 2
-                pct = (total - avg_rank) / (total - 1)
-                for i in range(cursor, end):
-                    percentiles[sorted_keys[i]] = pct
-                cursor = end
+            ratios = {k: per_parent[k]["ratio"] for k in per_parent}
+            distinct = set(round(v, 12) for v in ratios.values())
+            if len(distinct) == 1:
+                # No variance — award full percentile if above target, else 0.5.
+                shared = next(iter(ratios.values()))
+                pct = 1.0 if shared >= float(target) else 0.5
+                percentiles = {k: pct for k in per_parent}
+            else:
+                sorted_keys = sorted(
+                    per_parent.keys(),
+                    key=lambda k: ratios[k],
+                    reverse=reverse_sort,
+                )
+                cursor = 0
+                while cursor < total:
+                    current = round(ratios[sorted_keys[cursor]], 12)
+                    end = cursor + 1
+                    while end < total and round(ratios[sorted_keys[end]], 12) == current:
+                        end += 1
+                    # 1-indexed midpoint rank for this tied group
+                    avg_rank = (cursor + 1 + end) / 2
+                    pct = (total - avg_rank) / (total - 1)
+                    for i in range(cursor, end):
+                        percentiles[sorted_keys[i]] = pct
+                    cursor = end
 
     # Step 3: apply soft-stretch formula (matches frontend default).
     result: dict[str, dict[str, Any]] = {}

@@ -42,6 +42,7 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
   const spec = KPI_SPECS[kpiId];
   const [rows, setRows] = useState<SourceRow[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [scorecardCategories, setScorecardCategories] = useState<string[]>([]);
   const [years, setYears] = useState<string[]>(["2025", "2026"]);
   const [zones, setZones] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
@@ -104,6 +105,7 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
 
   const options = useMemo(() => ({
     categories: unique(rows.map((row) => row.category)),
+    scorecardCategories: unique(rows.map((row) => row.scorecard_category)),
     years: unique(rows.map((row) => row.year), true),
     zones: unique(rows.map((row) => row.zone)),
     countries: unique(rows.map((row) => row.country)),
@@ -111,11 +113,12 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
 
   const contextRows = useMemo(() => rows.filter((row) => {
     if (categories.length && !categories.includes(row.category)) return false;
+    if (scorecardCategories.length && !scorecardCategories.includes(row.scorecard_category)) return false;
     if (years.length && !years.includes(row.year)) return false;
     if (zones.length && !zones.includes(row.zone)) return false;
     if (countries.length && !countries.includes(row.country)) return false;
     return true;
-  }), [rows, categories, years, zones, countries]);
+  }), [rows, categories, scorecardCategories, years, zones, countries]);
 
   const quartiles = useMemo(
     () => spec.autoQuartiles ? calculateQuartiles(contextRows, spec) : null,
@@ -248,9 +251,9 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
       if (sharedParent.length && !sharedParent.includes(parentLabel(result))) return false;
       return !suppliers.length || suppliers.includes(result.label);
     });
-    const headers = ["Supplier", "Parent", "Zone", "Country", "Category", "Year", ...spec.rawColumns.map((column) => column.label), spec.metricShortLabel, "Rank", "Percentile", "Attainment", "Earned", "Status"];
+    const headers = ["Supplier", "Parent", "Zone", "Country", "Category", "SPM Category", "Year", ...spec.rawColumns.map((column) => column.label), spec.metricShortLabel, "Rank", "Percentile", "Attainment", "Earned", "Status"];
     const csvRows = supplierResults.map((result) => [
-      result.supplier, result.parentSupplier, result.zone, result.country, result.category, result.year,
+      result.supplier, result.parentSupplier, result.zone, result.country, result.category, result.scorecardCategory, result.year,
       ...spec.rawColumns.map((column) => result.rawValues[column.key] ?? ""),
       result.metric ?? "", result.rank ?? "", result.percentile ?? "", result.attainment ?? "", result.earned ?? "", result.scoreStatus,
     ]);
@@ -283,6 +286,7 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
 
       <section className="config-bar">
         <MultiSelectDropdown label="Category" options={options.categories} selected={categories} onChange={(values) => { setCategories(values); setPage(1); }} />
+        <MultiSelectDropdown label="SPM Category" options={options.scorecardCategories} selected={scorecardCategories} onChange={(values) => { setScorecardCategories(values); setPage(1); }} />
         <MultiSelectDropdown label="Year" options={options.years} selected={years} onChange={(values) => { setYears(values); setPage(1); }} />
         <MultiSelectDropdown label="Zone" options={options.zones} selected={zones} onChange={(values) => { setZones(values); setPage(1); }} />
         <MultiSelectDropdown label="Country" options={options.countries} selected={countries} onChange={(values) => { setCountries(values); setPage(1); }} />
@@ -338,7 +342,7 @@ function ConsistentKpiPage({ kpiId, sharedParent, onParentChange }: ConsistentKp
 
 function ResultsTable({ rows, level, spec, config }: { rows: DisplayResult[]; level: ResultLevel; spec: KpiSpec; config: WorkspaceConfig }) {
   const supplierLevel = level === "supplier";
-  return <div className="table-frame rollup-scroll"><table className="data-table results-table"><thead><tr><th>{supplierLevel ? "Supplier" : level === "parent" ? "Parent Supplier" : level === "zone" ? "Zone" : "Category"}</th><th>Scorecard Category</th>{supplierLevel && <><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th><th>Year</th></>}{spec.rawColumns.map((column) => <th key={column.key}>{column.label}</th>)}<th>{spec.metricShortLabel}</th><th>Rank</th><th>Percentile</th><th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Contributing Rows</th><th>Explanation</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={rowClass(row.scoreStatus)}><td>{row.label}</td><td>{row.scorecardCategory}</td>{supplierLevel && <><td>{row.parentSupplier}</td><td>{row.zone}</td><td>{row.country || "-"}</td><td>{row.category || "-"}</td><td>{row.year || "-"}</td></>}{spec.rawColumns.map((column) => <td key={column.key}>{formatRaw(row.rawValues[column.key])}</td>)}<td>{formatMetric(row.metric, spec)}</td><td>{formatRank(row.rank)}</td><td>{formatPercent(row.percentile)}</td><td>{formatNumber(row.attainment, 4)}</td><td>{config.maxScore.toFixed(2)}</td><td>{formatNumber(row.earned)}</td><td>{formatPercent(row.earned === null ? null : row.earned / config.maxScore)}</td><td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td><td>{row.contributingRows}</td><td className="explanation-cell">{row.explanation}</td></tr>)}</tbody></table></div>;
+  return <div className="table-frame rollup-scroll"><table className="data-table results-table"><thead><tr><th>{supplierLevel ? "Supplier" : level === "parent" ? "Parent Supplier" : level === "zone" ? "Zone" : "Category"}</th><th>SPM Category</th>{supplierLevel && <><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th><th>Year</th></>}{spec.rawColumns.map((column) => <th key={column.key}>{column.label}</th>)}<th>{spec.metricShortLabel}</th><th>Rank</th><th>Percentile</th><th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Contributing Rows</th><th>Explanation</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={rowClass(row.scoreStatus)}><td>{row.label}</td><td>{row.scorecardCategory}</td>{supplierLevel && <><td>{row.parentSupplier}</td><td>{row.zone}</td><td>{row.country || "-"}</td><td>{row.category || "-"}</td><td>{row.year || "-"}</td></>}{spec.rawColumns.map((column) => <td key={column.key}>{formatRaw(row.rawValues[column.key])}</td>)}<td>{formatMetric(row.metric, spec)}</td><td>{formatRank(row.rank)}</td><td>{formatPercent(row.percentile)}</td><td>{formatNumber(row.attainment, 4)}</td><td>{config.maxScore.toFixed(2)}</td><td>{formatNumber(row.earned)}</td><td>{formatPercent(row.earned === null ? null : row.earned / config.maxScore)}</td><td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td><td>{row.contributingRows}</td><td className="explanation-cell">{row.explanation}</td></tr>)}</tbody></table></div>;
 }
 
 function EntitySearch({ label, query, setQuery, matches, selected, onSelect, onRemove }: { label: string; query: string; setQuery: (value: string) => void; matches: SearchResult[]; selected: string[]; onSelect: (value: string) => void; onRemove: (value: string) => void }) {

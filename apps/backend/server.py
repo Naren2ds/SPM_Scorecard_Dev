@@ -917,6 +917,7 @@ def _saved_dot_config() -> DotConfig:
 
 def _dot_filters_from_params(
     categories: str | None,
+    scorecard_categories: str | None,
     years: str | None,
     months: str | None,
     countries: str | None,
@@ -924,6 +925,7 @@ def _dot_filters_from_params(
 ) -> dict[str, list[str]]:
     return {
         "categories": _split_csv_param(categories),
+        "scorecardCategories": _split_csv_param(scorecard_categories),
         "years": _split_csv_param(years),
         "months": _split_csv_param(months),
         "countries": _split_csv_param(countries),
@@ -976,13 +978,14 @@ def _get_dot_read_model(
 
 def _dot_model_from_query(
     categories: str | None,
+    scorecard_categories: str | None,
     years: str | None,
     months: str | None,
     countries: str | None,
     zones: str | None,
     preview_id: str | None,
 ) -> DotReadModel:
-    filters = _dot_filters_from_params(categories, years, months, countries, zones)
+    filters = _dot_filters_from_params(categories, scorecard_categories, years, months, countries, zones)
     return _get_dot_read_model(filters, preview_id)
 
 
@@ -1001,6 +1004,7 @@ def _saved_iot_config() -> IotConfig:
 
 def _iot_filters_from_params(
     categories: str | None,
+    scorecard_categories: str | None,
     years: str | None,
     months: str | None,
     countries: str | None,
@@ -1008,6 +1012,7 @@ def _iot_filters_from_params(
 ) -> dict[str, list[str]]:
     return {
         "categories": _split_csv_param(categories),
+        "scorecardCategories": _split_csv_param(scorecard_categories),
         "years": _split_csv_param(years),
         "months": _split_csv_param(months),
         "countries": _split_csv_param(countries),
@@ -1060,13 +1065,14 @@ def _get_iot_read_model(
 
 def _iot_model_from_query(
     categories: str | None,
+    scorecard_categories: str | None,
     years: str | None,
     months: str | None,
     countries: str | None,
     zones: str | None,
     preview_id: str | None,
 ) -> IotReadModel:
-    filters = _iot_filters_from_params(categories, years, months, countries, zones)
+    filters = _iot_filters_from_params(categories, scorecard_categories, years, months, countries, zones)
     return _get_iot_read_model(filters, preview_id)
 
 
@@ -1085,6 +1091,7 @@ def _saved_pdiv_config() -> PdivConfig:
 
 def _pdiv_filters_from_params(
     categories: str | None,
+    scorecard_categories: str | None,
     years: str | None,
     months: str | None,
     countries: str | None,
@@ -1092,6 +1099,7 @@ def _pdiv_filters_from_params(
 ) -> dict[str, list[str]]:
     return {
         "categories": _split_csv_param(categories),
+        "scorecardCategories": _split_csv_param(scorecard_categories),
         "years": _split_csv_param(years),
         "months": _split_csv_param(months),
         "countries": _split_csv_param(countries),
@@ -1147,13 +1155,14 @@ def _get_pdiv_read_model(
 
 def _pdiv_model_from_query(
     categories: str | None,
+    scorecard_categories: str | None,
     years: str | None,
     months: str | None,
     countries: str | None,
     zones: str | None,
     preview_id: str | None,
 ) -> PdivReadModel:
-    filters = _pdiv_filters_from_params(categories, years, months, countries, zones)
+    filters = _pdiv_filters_from_params(categories, scorecard_categories, years, months, countries, zones)
     return _get_pdiv_read_model(filters, preview_id)
 
 
@@ -1547,6 +1556,7 @@ def get_dot_summary(
     level: str = "parent",
     parents: str | None = None,
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1555,7 +1565,7 @@ def get_dot_summary(
 ):
     if level not in DOT_LEVELS:
         raise HTTPException(status_code=400, detail=f"Unsupported DOT result level: {level}")
-    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _dot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     return JSONResponse(summarize_dot_model(model, level, _split_csv_param(parents)))
 
 
@@ -1563,6 +1573,7 @@ def get_dot_summary(
 def get_dot_results(
     level: str = "parent",
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1580,7 +1591,7 @@ def get_dot_results(
         raise HTTPException(status_code=400, detail=f"Unsupported DOT result level: {level}")
     if sort not in DOT_SORT_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unsupported DOT sort field: {sort}")
-    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _dot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     try:
         result = query_dot_results(
             model,
@@ -1605,6 +1616,7 @@ def search_dot_entities(
     level: str = "parent",
     parents: str | None = None,
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1614,7 +1626,7 @@ def search_dot_entities(
 ):
     if level not in DOT_LEVELS:
         raise HTTPException(status_code=400, detail=f"Unsupported DOT result level: {level}")
-    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _dot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     return JSONResponse({
         "items": search_dot_results(
             model,
@@ -1633,13 +1645,14 @@ def get_dot_parent_detail(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=200),
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
     zones: str | None = None,
     preview_id: str | None = None,
 ):
-    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _dot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     parent_result = query_dot_results(
         model,
         level="parent",
@@ -1662,6 +1675,7 @@ def get_dot_parent_detail(
 @app.get("/api/dot/export")
 def export_dot_results(
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1670,7 +1684,7 @@ def export_dot_results(
     suppliers: str | None = None,
     preview_id: str | None = None,
 ):
-    model = _dot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _dot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     filename = f"dot_kpi_results_{datetime.now().date().isoformat()}.csv"
     return StreamingResponse(
         iter_dot_csv(
@@ -1743,6 +1757,7 @@ def get_iot_summary(
     suppliers: str | None = None,
     search: str = "",
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1751,7 +1766,7 @@ def get_iot_summary(
 ):
     if level not in IOT_LEVELS:
         raise HTTPException(status_code=400, detail=f"Unsupported IOT result level: {level}")
-    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _iot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     return JSONResponse(summarize_iot_model(
         model,
         level,
@@ -1765,6 +1780,7 @@ def get_iot_summary(
 def get_iot_results(
     level: str = "parent",
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1782,7 +1798,7 @@ def get_iot_results(
         raise HTTPException(status_code=400, detail=f"Unsupported IOT result level: {level}")
     if sort not in IOT_SORT_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unsupported IOT sort field: {sort}")
-    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _iot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     try:
         result = query_iot_results(
             model,
@@ -1807,6 +1823,7 @@ def search_iot_entities(
     level: str = "parent",
     parents: str | None = None,
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1816,7 +1833,7 @@ def search_iot_entities(
 ):
     if level not in IOT_LEVELS:
         raise HTTPException(status_code=400, detail=f"Unsupported IOT result level: {level}")
-    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _iot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     return JSONResponse({
         "items": search_iot_results(
             model,
@@ -1835,13 +1852,14 @@ def get_iot_parent_detail(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=200),
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
     zones: str | None = None,
     preview_id: str | None = None,
 ):
-    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _iot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     parent_result = query_iot_results(model, level="parent", parents=[parent], page=1, page_size=1)
     if not parent_result["items"]:
         raise HTTPException(status_code=404, detail=f"IOT parent '{parent}' not found in this cohort.")
@@ -1858,6 +1876,7 @@ def get_iot_parent_detail(
 @app.get("/api/iot/export")
 def export_iot_results(
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1866,7 +1885,7 @@ def export_iot_results(
     suppliers: str | None = None,
     preview_id: str | None = None,
 ):
-    model = _iot_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _iot_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     filename = f"iot_kpi_results_{datetime.now().date().isoformat()}.csv"
     return StreamingResponse(
         iter_iot_csv(
@@ -1939,6 +1958,7 @@ def get_pdiv_summary(
     suppliers: str | None = None,
     search: str = "",
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1947,7 +1967,7 @@ def get_pdiv_summary(
 ):
     if level not in PDIV_LEVELS:
         raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence result level: {level}")
-    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _pdiv_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     return JSONResponse(summarize_pdiv_model(
         model,
         level,
@@ -1961,6 +1981,7 @@ def get_pdiv_summary(
 def get_pdiv_results(
     level: str = "parent",
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -1978,7 +1999,7 @@ def get_pdiv_results(
         raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence result level: {level}")
     if sort not in PDIV_SORT_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence sort field: {sort}")
-    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _pdiv_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     try:
         result = query_pdiv_results(
             model,
@@ -2003,6 +2024,7 @@ def search_pdiv_entities(
     level: str = "parent",
     parents: str | None = None,
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -2012,7 +2034,7 @@ def search_pdiv_entities(
 ):
     if level not in PDIV_LEVELS:
         raise HTTPException(status_code=400, detail=f"Unsupported Price Divergence result level: {level}")
-    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _pdiv_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     return JSONResponse({
         "items": search_pdiv_results(
             model,
@@ -2031,13 +2053,14 @@ def get_pdiv_parent_detail(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=200),
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
     zones: str | None = None,
     preview_id: str | None = None,
 ):
-    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _pdiv_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     parent_result = query_pdiv_results(model, level="parent", parents=[parent], page=1, page_size=1)
     if not parent_result["items"]:
         raise HTTPException(
@@ -2057,6 +2080,7 @@ def get_pdiv_parent_detail(
 @app.get("/api/pdiv/export")
 def export_pdiv_results(
     categories: str | None = None,
+    scorecard_categories: str | None = None,
     years: str | None = None,
     months: str | None = None,
     countries: str | None = None,
@@ -2065,7 +2089,7 @@ def export_pdiv_results(
     suppliers: str | None = None,
     preview_id: str | None = None,
 ):
-    model = _pdiv_model_from_query(categories, years, months, countries, zones, preview_id)
+    model = _pdiv_model_from_query(categories, scorecard_categories, years, months, countries, zones, preview_id)
     filename = f"price_divergence_results_{datetime.now().date().isoformat()}.csv"
     return StreamingResponse(
         iter_pdiv_csv(

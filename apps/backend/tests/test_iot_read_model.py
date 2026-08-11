@@ -7,6 +7,7 @@ from iot_read_model import (
     IotConfig,
     build_iot_read_model,
     iter_iot_csv,
+    list_iot_filter_options,
     query_iot_results,
     reconfigure_iot_read_model,
     search_iot_results,
@@ -103,6 +104,20 @@ def test_percentiles_are_scoped_to_scorecard_category():
     assert model.parent_index["Parent C"].scorecard_category == "Category B"
 
 
+def test_spm_category_is_available_as_a_cohort_filter():
+    rows = [
+        _row("a", "A", "Parent A", 90, scorecard_category="Packaging"),
+        _row("b", "B", "Parent B", 80, scorecard_category="Logistics"),
+    ]
+
+    options = list_iot_filter_options(rows)
+    model = build_iot_read_model(rows, _config(), {"scorecardCategories": ["Packaging"]})
+
+    assert options["scorecardCategories"] == ["Logistics", "Packaging"]
+    assert [result.label for result in model.supplier_results] == ["A"]
+    assert query_iot_results(model, level="supplier")["items"][0]["scorecardCategory"] == "Packaging"
+
+
 def test_parent_selection_scopes_summary_zone_and_category_rollups():
     model = build_iot_read_model(_rows(), _config(), {"years": ["2026"]})
     summary = summarize_iot_model(model, "supplier", ["Parent A"])
@@ -164,7 +179,7 @@ def test_search_and_export_are_parent_scoped():
 
     assert {item["parentSupplier"] for item in matches} == {"Parent A"}
     assert exported[0] == ["IOT KPI Config"]
-    assert exported[7][0:6] == ["Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category"]
+    assert exported[7][0:6] == ["Supplier", "Parent", "Zone", "Country", "Category", "SPM Category"]
     assert {row[0] for row in exported[8:]} == {"Alpha One", "Alpha Two"}
     assert {row[1] for row in exported[8:]} == {"Parent A"}
 

@@ -173,19 +173,20 @@ def normalize_iot_filters(filters: dict[str, Iterable[str]] | None = None) -> di
     source = filters or {}
     return {
         key: tuple(sorted({_text(value) for value in source.get(key, []) if _text(value)}))
-        for key in ("categories", "years", "months", "countries", "zones")
+        for key in ("categories", "scorecardCategories", "years", "months", "countries", "zones")
     }
 
 
 def iot_filter_key(filters: dict[str, Iterable[str]] | None = None) -> tuple[tuple[str, ...], ...]:
     normalized = normalize_iot_filters(filters)
-    return tuple(normalized[key] for key in ("categories", "years", "months", "countries", "zones"))
+    return tuple(normalized[key] for key in ("categories", "scorecardCategories", "years", "months", "countries", "zones"))
 
 
 def list_iot_filter_options(rows: Iterable[dict[str, Any]]) -> dict[str, list[str]]:
-    values = {key: set() for key in ("categories", "years", "months", "countries", "zones")}
+    values = {key: set() for key in ("categories", "scorecardCategories", "years", "months", "countries", "zones")}
     fields = {
         "categories": "category",
+        "scorecardCategories": "scorecard_category",
         "years": "year",
         "months": "month",
         "countries": "country",
@@ -198,6 +199,7 @@ def list_iot_filter_options(rows: Iterable[dict[str, Any]]) -> dict[str, list[st
                 values[key].add(value)
     return {
         "categories": sorted(values["categories"]),
+        "scorecardCategories": sorted(values["scorecardCategories"]),
         "years": sorted(values["years"], key=_numeric_sort_key),
         "months": sorted(values["months"], key=_numeric_sort_key),
         "countries": sorted(values["countries"]),
@@ -501,7 +503,7 @@ def iter_iot_csv(
     yield emit([])
     yield emit(["Supplier Level"])
     yield emit([
-        "Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category", "IOT %", "Rank",
+        "Supplier", "Parent", "Zone", "Country", "Category", "SPM Category", "IOT %", "Rank",
         "Percentile", "Attainment", "Max", "Earned", "Score %", "Status",
     ])
     for result in results:
@@ -728,7 +730,13 @@ def _sort_results(rows: list[Any], sort: str, order: str) -> list[Any]:
 
 
 def _passes_filters(row: dict[str, Any], filters: dict[str, tuple[str, ...]]) -> bool:
-    fields = {"categories": "category", "years": "year", "countries": "country", "zones": "zone"}
+    fields = {
+        "categories": "category",
+        "scorecardCategories": "scorecard_category",
+        "years": "year",
+        "countries": "country",
+        "zones": "zone",
+    }
     for key, field_name in fields.items():
         selected = filters[key]
         if selected and _text(row.get(field_name)) not in selected:

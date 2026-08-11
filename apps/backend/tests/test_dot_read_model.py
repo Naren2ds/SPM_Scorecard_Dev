@@ -7,6 +7,7 @@ from dot_read_model import (
     DotConfig,
     build_dot_read_model,
     iter_dot_csv,
+    list_dot_filter_options,
     query_dot_results,
     search_dot_results,
     summarize_dot_model,
@@ -142,6 +143,20 @@ def test_percentiles_are_scoped_to_scorecard_category():
     assert by_supplier["Delta One"].percentile == pytest.approx(0.0)
 
 
+def test_spm_category_is_available_as_a_cohort_filter():
+    rows = [
+        _row("a", "A", "Parent A", 90, 100, scorecard_category="Packaging"),
+        _row("b", "B", "Parent B", 80, 100, scorecard_category="Logistics"),
+    ]
+
+    options = list_dot_filter_options(rows)
+    model = build_dot_read_model(rows, _config(), {"scorecardCategories": ["Packaging"]})
+
+    assert options["scorecardCategories"] == ["Logistics", "Packaging"]
+    assert [result.label for result in model.supplier_results] == ["A"]
+    assert query_dot_results(model, level="supplier")["items"][0]["scorecardCategory"] == "Packaging"
+
+
 def test_strict_preview_changes_earned_score_without_changing_saved_model():
     saved = build_dot_read_model(_rows(), _config("softStretch"), {"years": ["2026"]})
     preview = build_dot_read_model(_rows(), _config("strict"), {"years": ["2026"]})
@@ -166,7 +181,7 @@ def test_summary_search_and_export_contracts():
     assert summary["result_count"] == 2
     assert matches[0]["label"] == "Parent A"
     assert exported[0] == ["DOT Config"]
-    assert exported[7][0:6] == ["Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category"]
+    assert exported[7][0:6] == ["Supplier", "Parent", "Zone", "Country", "Category", "SPM Category"]
     assert {row[0] for row in exported[8:]} == {"Alpha One", "Alpha Two"}
 
 

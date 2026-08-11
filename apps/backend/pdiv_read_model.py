@@ -175,19 +175,20 @@ def normalize_pdiv_filters(filters: dict[str, Iterable[str]] | None = None) -> d
     source = filters or {}
     return {
         key: tuple(sorted({_text(value) for value in source.get(key, []) if _text(value)}))
-        for key in ("categories", "years", "months", "countries", "zones")
+        for key in ("categories", "scorecardCategories", "years", "months", "countries", "zones")
     }
 
 
 def pdiv_filter_key(filters: dict[str, Iterable[str]] | None = None) -> tuple[tuple[str, ...], ...]:
     normalized = normalize_pdiv_filters(filters)
-    return tuple(normalized[key] for key in ("categories", "years", "months", "countries", "zones"))
+    return tuple(normalized[key] for key in ("categories", "scorecardCategories", "years", "months", "countries", "zones"))
 
 
 def list_pdiv_filter_options(rows: Iterable[dict[str, Any]]) -> dict[str, list[str]]:
-    values = {key: set() for key in ("categories", "years", "months", "countries", "zones")}
+    values = {key: set() for key in ("categories", "scorecardCategories", "years", "months", "countries", "zones")}
     fields = {
         "categories": "category",
+        "scorecardCategories": "scorecard_category",
         "years": "year",
         "months": "month",
         "countries": "country",
@@ -200,6 +201,7 @@ def list_pdiv_filter_options(rows: Iterable[dict[str, Any]]) -> dict[str, list[s
                 values[key].add(value)
     return {
         "categories": sorted(values["categories"]),
+        "scorecardCategories": sorted(values["scorecardCategories"]),
         "years": sorted(values["years"], key=_numeric_sort_key),
         "months": sorted(values["months"], key=_numeric_sort_key),
         "countries": sorted(values["countries"]),
@@ -506,7 +508,7 @@ def iter_pdiv_csv(
     yield emit([])
     yield emit(["Supplier Level"])
     yield emit([
-        "Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category", "Year", "Month",
+        "Supplier", "Parent", "Zone", "Country", "Category", "SPM Category", "Year", "Month",
         "PO Value", "Invoice Value", "Absolute Difference", "Divergence %", "Rank",
         "Percentile", "Attainment", "Max", "Earned", "Score %", "Status",
     ])
@@ -751,6 +753,7 @@ def _sort_results(rows: list[Any], sort: str, order: str) -> list[Any]:
 def _passes_filters(row: dict[str, Any], filters: dict[str, tuple[str, ...]]) -> bool:
     fields = {
         "categories": "category",
+        "scorecardCategories": "scorecard_category",
         "years": "year",
         "months": "month",
         "countries": "country",

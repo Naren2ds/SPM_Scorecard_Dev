@@ -16,6 +16,7 @@ interface PdivConfig {
 
 interface PdivFilterOptions {
   categories: string[];
+  scorecardCategories: string[];
   years: string[];
   months: string[];
   countries: string[];
@@ -84,7 +85,7 @@ interface PriceDivergencePageProps {
 }
 
 const EMPTY_FILTERS: PdivFilterOptions = {
-  categories: [], years: [], months: [], countries: [], zones: [],
+  categories: [], scorecardCategories: [], years: [], months: [], countries: [], zones: [],
 };
 
 const DEFAULT_CONFIG: PdivConfig = {
@@ -113,10 +114,11 @@ function appendList(params: URLSearchParams, key: string, values: string[]) {
 }
 
 function contextParams(
-  categories: string[], years: string[], months: string[], countries: string[], zones: string[],
+  categories: string[], scorecardCategories: string[], years: string[], months: string[], countries: string[], zones: string[],
 ) {
   const params = new URLSearchParams();
   appendList(params, "categories", categories);
+  appendList(params, "scorecard_categories", scorecardCategories);
   appendList(params, "years", years);
   appendList(params, "months", months);
   appendList(params, "countries", countries);
@@ -145,6 +147,7 @@ const rank = (value: number | null) => {
 function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDivergencePageProps) {
   const [filterOptions, setFilterOptions] = useState<PdivFilterOptions>(EMPTY_FILTERS);
   const [categories, setCategories] = useState<string[]>([]);
+  const [scorecardCategories, setScorecardCategories] = useState<string[]>([]);
   const [years, setYears] = useState<string[]>(["2025", "2026"]);
   const [months, setMonths] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
@@ -170,7 +173,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
   const deferredParentQuery = useDeferredValue(parentQuery);
   const deferredSupplierQuery = useDeferredValue(supplierQuery);
   const deferredResultQuery = useDeferredValue(resultQuery);
-  const cohortSignature = JSON.stringify([categories, years, months, countries, zones]);
+  const cohortSignature = JSON.stringify([categories, scorecardCategories, years, months, countries, zones]);
   const draftSignature = JSON.stringify(draftConfig);
   const savedSignature = JSON.stringify(savedConfig);
   const configErrors = validateConfig(draftConfig);
@@ -198,7 +201,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
 
   useEffect(() => {
     const controller = new AbortController();
-    const params = contextParams(categories, years, months, countries, zones);
+    const params = contextParams(categories, scorecardCategories, years, months, countries, zones);
     params.set("level", level);
     params.set("page", String(page));
     params.set("page_size", "100");
@@ -209,7 +212,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
     if (deferredResultQuery.trim()) params.set("search", deferredResultQuery.trim());
     if (activePreviewId) params.set("preview_id", activePreviewId);
 
-    const summaryParams = contextParams(categories, years, months, countries, zones);
+    const summaryParams = contextParams(categories, scorecardCategories, years, months, countries, zones);
     summaryParams.set("level", level);
     appendList(summaryParams, "parents", sharedParent);
     if (level === "supplier") appendList(summaryParams, "suppliers", suppliers);
@@ -233,7 +236,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [level, page, categories, years, months, countries, zones, sharedParent, suppliers, deferredResultQuery, activePreviewId]);
+  }, [level, page, categories, scorecardCategories, years, months, countries, zones, sharedParent, suppliers, deferredResultQuery, activePreviewId]);
 
   useEffect(() => {
     if (deferredParentQuery.trim().length < 2) {
@@ -241,7 +244,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
       return;
     }
     const controller = new AbortController();
-    const params = contextParams(categories, years, months, countries, zones);
+    const params = contextParams(categories, scorecardCategories, years, months, countries, zones);
     params.set("level", "parent");
     params.set("q", deferredParentQuery.trim());
     params.set("limit", "30");
@@ -260,7 +263,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
       return;
     }
     const controller = new AbortController();
-    const params = contextParams(categories, years, months, countries, zones);
+    const params = contextParams(categories, scorecardCategories, years, months, countries, zones);
     params.set("level", "supplier");
     params.set("q", deferredSupplierQuery.trim());
     params.set("limit", "30");
@@ -288,7 +291,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
       const response = await fetchJson<{ previewId: string }>(`${API_BASE}/api/pdiv/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...draftConfig, maxScore: savedConfig.maxScore, filters: { categories, years, months, countries, zones } }),
+        body: JSON.stringify({ ...draftConfig, maxScore: savedConfig.maxScore, filters: { categories, scorecardCategories, years, months, countries, zones } }),
       });
       setPreview({ id: response.previewId, cohortSignature, configSignature: draftSignature });
       setPage(1);
@@ -335,7 +338,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
   };
 
   const exportResults = () => {
-    const params = contextParams(categories, years, months, countries, zones);
+    const params = contextParams(categories, scorecardCategories, years, months, countries, zones);
     appendList(params, "parents", sharedParent);
     appendList(params, "suppliers", suppliers);
     if (activePreviewId) params.set("preview_id", activePreviewId);
@@ -370,6 +373,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
 
       <section className="config-bar">
         <MultiSelectDropdown label="Category" options={filterOptions.categories} selected={categories} onChange={(values) => { setCategories(values); setPage(1); }} />
+        <MultiSelectDropdown label="SPM Category" options={filterOptions.scorecardCategories} selected={scorecardCategories} onChange={(values) => { setScorecardCategories(values); setPage(1); }} />
         <MultiSelectDropdown label="Year" options={filterOptions.years} selected={years} onChange={(values) => { setYears(values); setPage(1); }} />
         <MultiSelectDropdown label="Month" options={filterOptions.months} selected={months} onChange={(values) => { setMonths(values); setPage(1); }} />
         <MultiSelectDropdown label="Zone" options={filterOptions.zones} selected={zones} onChange={(values) => { setZones(values); setPage(1); }} />
@@ -434,7 +438,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 
 function PdivResultsTable({ rows, level }: { rows: PdivResult[]; level: PdivLevel }) {
   const supplierLevel = level === "supplier";
-  return <div className="table-frame rollup-scroll"><table className="data-table results-table"><thead><tr><th>{supplierLevel ? "Supplier" : level === "parent" ? "Parent Supplier" : level === "zone" ? "Zone" : "Category"}</th><th>Scorecard Category</th>{supplierLevel && <><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th><th>Year</th><th>Month</th></>}<th>PO Value</th><th>Invoice Value</th><th>Absolute Difference</th><th>Divergence %</th><th>Rank</th><th>Percentile</th><th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Contributing Rows</th><th>Explanation</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={rowClass(row.scoreStatus)}><td>{row.label}</td><td>{row.scorecardCategory}</td>{supplierLevel && <><td>{row.parentSupplier}</td><td>{row.zone}</td><td>{row.country}</td><td>{row.category}</td><td>{row.year}</td><td>{row.month}</td></>}<td>{numeric(row.poValue)}</td><td>{numeric(row.invoiceValue)}</td><td>{numeric(row.absoluteDifference)}</td><td>{percent(row.normalizedDivergence)}</td><td>{rank(row.rankAscending)}</td><td>{percent(row.percentile)}</td><td>{numeric(row.attainmentFactor, 4)}</td><td>{numeric(row.maxScore)}</td><td>{numeric(row.earnedScore)}</td><td>{percent(row.scorePercent)}</td><td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td><td>{row.contributingRows}</td><td className="explanation-cell">{row.explanation}</td></tr>)}</tbody></table></div>;
+  return <div className="table-frame rollup-scroll"><table className="data-table results-table"><thead><tr><th>{supplierLevel ? "Supplier" : level === "parent" ? "Parent Supplier" : level === "zone" ? "Zone" : "Category"}</th><th>SPM Category</th>{supplierLevel && <><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th><th>Year</th><th>Month</th></>}<th>PO Value</th><th>Invoice Value</th><th>Absolute Difference</th><th>Divergence %</th><th>Rank</th><th>Percentile</th><th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Contributing Rows</th><th>Explanation</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={rowClass(row.scoreStatus)}><td>{row.label}</td><td>{row.scorecardCategory}</td>{supplierLevel && <><td>{row.parentSupplier}</td><td>{row.zone}</td><td>{row.country}</td><td>{row.category}</td><td>{row.year}</td><td>{row.month}</td></>}<td>{numeric(row.poValue)}</td><td>{numeric(row.invoiceValue)}</td><td>{numeric(row.absoluteDifference)}</td><td>{percent(row.normalizedDivergence)}</td><td>{rank(row.rankAscending)}</td><td>{percent(row.percentile)}</td><td>{numeric(row.attainmentFactor, 4)}</td><td>{numeric(row.maxScore)}</td><td>{numeric(row.earnedScore)}</td><td>{percent(row.scorePercent)}</td><td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td><td>{row.contributingRows}</td><td className="explanation-cell">{row.explanation}</td></tr>)}</tbody></table></div>;
 }
 
 const rowClass = (status: string) => status === "Missing Data" ? "invalid-row" : status === "Not Applicable" ? "not-applicable-row" : "";

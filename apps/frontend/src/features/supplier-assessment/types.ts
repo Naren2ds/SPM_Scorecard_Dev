@@ -33,6 +33,7 @@ export interface SupplierAssessmentInputRow {
   zone: string;
   country: string;
   category: string;
+  scorecard_category: string;
   kpiApplicability: AssessmentApplicability;
   supplierApprovalStatus: string;
   greenCount: string;
@@ -73,6 +74,7 @@ export interface AssessmentCountRow extends AssessmentCounts {
   zone: string;
   country: string;
   category: string;
+  scorecard_category: string;
   supplierApprovalStatus: string;
   isApplicable: boolean;
 }

@@ -93,6 +93,7 @@ const toAssessmentRow = (
     parentSupplier: dim(row.parentSupplier, "Unassigned parent"),
     zone: dim(row.zone, "Unassigned zone"),
     category: dim(row.category, "Unassigned category"),
+    scorecard_category: dim(row.scorecard_category, "Unassigned scorecard category"),
     isApplicable: row.kpiApplicability !== "Not Applicable",
     maturityScore: parsed.value,
     errors,
@@ -167,11 +168,17 @@ export function calculateMaturityEarnedScore(
 
 // ─── Row scoring orchestration ─────────────────────────────────────────────
 
-const cohortKeyForRow = (row: MaturityAssessmentRow, config: MaturityConfig) => {
-  if (config.cohortLevel === "Parent") return row.parentSupplier;
-  if (config.cohortLevel === "Zone") return row.zone;
-  if (config.cohortLevel === "Category") return row.category;
-  return "All suppliers";
+const cohortKeyForRow = (row: MaturityAssessmentRow, _config: MaturityConfig) =>
+  row.scorecard_category;
+
+const dominantScorecardCategory = (rows: Array<{ scorecard_category: string }>) => {
+  const counts = new Map<string, number>();
+  rows.forEach((row) => counts.set(row.scorecard_category, (counts.get(row.scorecard_category) ?? 0) + 1));
+  const topCount = Math.max(0, ...counts.values());
+  return [...counts.entries()]
+    .filter(([, count]) => count === topCount)
+    .map(([value]) => value)
+    .sort()[0] ?? "Unassigned scorecard category";
 };
 
 const invalidBaseScore = (
@@ -410,6 +417,7 @@ const rollupRows = (
       parentSupplier: level === "Parent" ? label : "All parents",
       zone: level === "Zone" ? label : "All zones",
       category: level === "Category" ? label : "All categories",
+      scorecard_category: dominantScorecardCategory(groupRows),
       isApplicable: contributing.length > 0,
       maturityScore: avg,
       errors: [],

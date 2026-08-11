@@ -31,6 +31,7 @@ export interface Co2EmissionInputRow {
   parentSupplier: string;
   zone: string;
   category: string;
+  scorecard_category: string;
   kpiApplicability: Co2Applicability;
   /** Serialised as string in the API — absolute tonnes CO2e. */
   co2Emission: string;
@@ -53,6 +54,7 @@ export interface Co2AssessmentRow {
   parentSupplier: string;
   zone: string;
   category: string;
+  scorecard_category: string;
   isApplicable: boolean;
   /** Numeric CO2 emission (tonnes) or null if missing/invalid. */
   co2Emission: number | null;

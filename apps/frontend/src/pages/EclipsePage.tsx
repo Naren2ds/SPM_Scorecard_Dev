@@ -28,6 +28,7 @@ interface EclipseInputRow {
   parentSupplier: string;
   zone: string;
   category: string;
+  scorecard_category: string;
   kpiApplicability: string;
   eclipseScore: string;
   year: string;
@@ -47,6 +48,7 @@ interface EclipseScoredRow extends EclipseInputRow {
 interface EclipseRollupRow {
   id: string;
   label: string;
+  scorecard_category: string;
   eclipseNorm: number | null;
   rank: number | null;
   percentile: number | null;
@@ -69,6 +71,19 @@ const numeric = (v: number | null, d = 2) =>
 const formatRank = (v: number | null) =>
   v === null || !Number.isFinite(v) ? "-" : String(Math.floor(v));
 
+const scorecardCategory = (value: string) =>
+  value?.trim() || "Unassigned scorecard category";
+
+const dominantScorecardCategory = (values: string[]) => {
+  const counts = new Map<string, number>();
+  values.forEach((value) => counts.set(scorecardCategory(value), (counts.get(scorecardCategory(value)) ?? 0) + 1));
+  const topCount = Math.max(0, ...counts.values());
+  return [...counts.entries()]
+    .filter(([, count]) => count === topCount)
+    .map(([value]) => value)
+    .sort()[0] ?? "Unassigned scorecard category";
+};
+
 // ─── Multi-select dropdown ──────────────────────────────────────────────────
 
 // ─── Eclipse Scoring ────────────────────────────────────────────────────────
@@ -83,11 +98,15 @@ function scoreEclipseRows(rows: EclipseInputRow[], config: KpiConfig): EclipseSc
   });
 
   // Get valid rows for ranking
-  const validRows = assessed
-    .filter((r) => r.isApplicable && r.eclipseNorm !== null)
-    .map((r) => ({ id: r.id, dot: r.eclipseNorm as number }));
-
-  const ranks = calculatePercentileRanks(validRows, config.target);
+  const ranks = new Map<string, ReturnType<typeof calculatePercentileRanks> extends Map<string, infer T> ? T : never>();
+  const cohorts = new Map<string, Array<{ id: string; dot: number }>>();
+  assessed.filter((r) => r.isApplicable && r.eclipseNorm !== null).forEach((row) => {
+    const key = scorecardCategory(row.scorecard_category);
+    const cohort = cohorts.get(key) ?? [];
+    cohort.push({ id: row.id, dot: row.eclipseNorm as number });
+    cohorts.set(key, cohort);
+  });
+  cohorts.forEach((cohort) => calculatePercentileRanks(cohort, config.target).forEach((rank, id) => ranks.set(id, rank)));
 
   return assessed.map((row) => {
     if (!row.isApplicable) {
@@ -133,7 +152,7 @@ function calculateEclipseRollup(
   groupBy: "supplier" | "zone" | "parentSupplier" | "category",
 ): EclipseRollupRow[] {
   // Group and average
-  const groups = new Map<string, { sum: number; count: number }>();
+  const groups = new Map<string, { sum: number; count: number; scorecardCategories: string[] }>();
   rows.forEach((row) => {
     if (row.kpiApplicability === "Not Applicable") return;
     const raw = parseFloat(row.eclipseScore);
@@ -141,9 +160,10 @@ function calculateEclipseRollup(
     const key = groupBy === "parentSupplier"
       ? (row.parentSupplier?.trim() || "Unassigned parent")
       : (row[groupBy]?.trim() || "Unassigned");
-    const existing = groups.get(key) || { sum: 0, count: 0 };
+    const existing = groups.get(key) || { sum: 0, count: 0, scorecardCategories: [] };
     existing.sum += raw;
     existing.count += 1;
+    existing.scorecardCategories.push(row.scorecard_category);
     groups.set(key, existing);
   });
 
@@ -151,16 +171,20 @@ function calculateEclipseRollup(
   const seeds = Array.from(groups.entries()).map(([label, g], i) => ({
     id: `rollup-${groupBy}-${i}`,
     label,
+    scorecard_category: dominantScorecardCategory(g.scorecardCategories),
     eclipseNorm: g.count > 0 ? g.sum / g.count : null,
     contributingRows: g.count,
   }));
 
   // Rank
-  const validSeeds = seeds.filter((s) => s.eclipseNorm !== null);
-  const ranks = calculatePercentileRanks(
-    validSeeds.map((s) => ({ id: s.id, dot: s.eclipseNorm as number })),
-    config.target,
-  );
+  const ranks = new Map<string, ReturnType<typeof calculatePercentileRanks> extends Map<string, infer T> ? T : never>();
+  const cohorts = new Map<string, Array<{ id: string; dot: number }>>();
+  seeds.filter((s) => s.eclipseNorm !== null).forEach((seed) => {
+    const cohort = cohorts.get(seed.scorecard_category) ?? [];
+    cohort.push({ id: seed.id, dot: seed.eclipseNorm as number });
+    cohorts.set(seed.scorecard_category, cohort);
+  });
+  cohorts.forEach((cohort) => calculatePercentileRanks(cohort, config.target).forEach((rank, id) => ranks.set(id, rank)));
 
   return seeds.map((seed) => {
     if (seed.eclipseNorm === null) {

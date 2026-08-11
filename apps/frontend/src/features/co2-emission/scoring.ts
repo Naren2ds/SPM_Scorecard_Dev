@@ -123,6 +123,7 @@ const toAssessmentRow = (
     parentSupplier: dim(row.parentSupplier, "Unassigned parent"),
     zone: dim(row.zone, "Unassigned zone"),
     category: dim(row.category, "Unassigned category"),
+    scorecard_category: dim(row.scorecard_category, "Unassigned scorecard category"),
     isApplicable: row.kpiApplicability !== "Not Applicable",
     co2Emission: parsed.value,
     errors,
@@ -198,10 +199,17 @@ export function calculateCo2EarnedScore(
 
 // ─── Row scoring orchestration ─────────────────────────────────────────────
 
-const cohortKeyForRow = (row: Co2AssessmentRow, config: Co2Config) => {
-  if (config.cohortLevel === "Parent") return row.parentSupplier;
-  if (config.cohortLevel === "Zone") return row.zone;
-  return "All suppliers";
+const cohortKeyForRow = (row: Co2AssessmentRow, _config: Co2Config) =>
+  row.scorecard_category;
+
+const dominantScorecardCategory = (rows: Array<{ scorecard_category: string }>) => {
+  const counts = new Map<string, number>();
+  rows.forEach((row) => counts.set(row.scorecard_category, (counts.get(row.scorecard_category) ?? 0) + 1));
+  const topCount = Math.max(0, ...counts.values());
+  return [...counts.entries()]
+    .filter(([, count]) => count === topCount)
+    .map(([value]) => value)
+    .sort()[0] ?? "Unassigned scorecard category";
 };
 
 const invalidBaseScore = (
@@ -435,6 +443,7 @@ const rollupRows = (
       parentSupplier: level === "Parent" ? label : "All parents",
       zone: level === "Zone" ? label : "All zones",
       category: "All categories",
+      scorecard_category: dominantScorecardCategory(groupRows),
       isApplicable: contributing.length > 0,
       co2Emission: avg,
       errors: [],

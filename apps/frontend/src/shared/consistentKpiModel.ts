@@ -10,6 +10,7 @@ export interface SourceRow {
   zone: string;
   country: string;
   category: string;
+  scorecard_category: string;
   kpiApplicability: string;
   year: string;
 }
@@ -45,6 +46,7 @@ export interface DisplayResult {
   zone: string;
   country: string;
   category: string;
+  scorecardCategory: string;
   year: string;
   metric: number | null;
   rawValues: Record<string, number | string>;
@@ -66,6 +68,7 @@ interface AssessedRow {
 
 interface RollupSeed {
   label: string;
+  scorecardCategory: string;
   metric: number;
   rawValues: Record<string, number | string>;
   contributingRows: number;
@@ -174,6 +177,7 @@ export function normalizeSourceRows(rows: Array<Record<string, unknown>>): Sourc
       zone: normalized.zone || "",
       country: normalized.country || "",
       category: normalized.category || "",
+      scorecard_category: normalized.scorecard_category || "Unassigned scorecard category",
       kpiApplicability: normalized.kpiApplicability || "Applicable",
       year: normalized.year || "",
     };
@@ -200,16 +204,24 @@ export function buildResults(
 ): DisplayResult[] {
   if (level === "supplier") {
     const assessed = rows.map((row) => assessRow(row, spec));
-    const ranked = rankValues(
-      assessed.map((row, index) => ({ index, value: row.metric })),
+    const ranked = rankValuesByScorecardCategory(
+      assessed.map((assessment, index) => ({
+        index,
+        value: assessment.metric,
+        scorecardCategory: scorecardCategory(assessment.row.scorecard_category),
+      })),
       config.target,
     );
     return assessed.map((assessment, index) => scoreAssessment(assessment, ranked.get(index), config));
   }
 
   const seeds = buildRollupSeeds(rows, spec, level);
-  const ranked = rankValues(
-    seeds.map((seed, index) => ({ index, value: seed.metric })),
+  const ranked = rankValuesByScorecardCategory(
+    seeds.map((seed, index) => ({
+      index,
+      value: seed.metric,
+      scorecardCategory: seed.scorecardCategory,
+    })),
     config.target,
   );
   return seeds.map((seed, index) => scoreRollup(seed, ranked.get(index), config, level));
@@ -282,7 +294,15 @@ function buildRollupSeeds(rows: SourceRow[], spec: KpiSpec, level: Exclude<Resul
         rawValues[column.key] = metric;
       });
     }
-    return { label, metric, rawValues, contributingRows: assessments.length };
+    return {
+      label,
+      scorecardCategory: dominantScorecardCategory(
+        assessments.map((assessment) => assessment.row.scorecard_category),
+      ),
+      metric,
+      rawValues,
+      contributingRows: assessments.length,
+    };
   });
 }
 
@@ -303,6 +323,7 @@ function scoreAssessment(
     zone: row.zone,
     country: row.country,
     category: row.category,
+    scorecardCategory: scorecardCategory(row.scorecard_category),
     year: row.year,
     metric,
     rawValues,
@@ -325,6 +346,7 @@ function scoreRollup(
     zone: level === "zone" ? seed.label : "All zones",
     country: "",
     category: level === "category" ? seed.label : "",
+    scorecardCategory: seed.scorecardCategory,
     year: "",
     metric: seed.metric,
     rawValues: seed.rawValues,
@@ -346,7 +368,7 @@ function scoredResult(
   const status = belowFloor ? "Below critical floor" : "Valid score";
   const explanation = belowFloor
     ? `Below critical floor. Attainment = 0 and earned score = 0.`
-    : `Valid score. Attainment = ${attainment?.toFixed(4)}. Earned Score = ${earned?.toFixed(2)}. ${base.level === "supplier" ? "Rank remains global within the top-filter cohort." : `Rollup of ${base.contributingRows} valid rows.`}`;
+    : `Valid score. Attainment = ${attainment?.toFixed(4)}. Earned Score = ${earned?.toFixed(2)}. Percentile cohort: ${base.scorecardCategory}. ${base.level === "supplier" ? "Rank is calculated within this scorecard category." : `Rollup of ${base.contributingRows} valid rows.`}`;
   return {
     ...base,
     rank: percentileRank.rank,
@@ -368,6 +390,7 @@ function emptyResult(row: SourceRow, rawValues: Record<string, number | string>,
     zone: row.zone,
     country: row.country,
     category: row.category,
+    scorecardCategory: scorecardCategory(row.scorecard_category),
     year: row.year,
     metric: null,
     rawValues,
@@ -413,6 +436,40 @@ function rankValues(
     cursor = end;
   }
   return output;
+}
+
+function rankValuesByScorecardCategory(
+  rows: Array<{ index: number; value: number | null; scorecardCategory: string }>,
+  target: number,
+): Map<number, { rank: number; percentile: number; note: string }> {
+  const cohorts = new Map<string, Array<{ index: number; value: number | null }>>();
+  rows.forEach((row) => {
+    const cohort = cohorts.get(row.scorecardCategory) ?? [];
+    cohort.push({ index: row.index, value: row.value });
+    cohorts.set(row.scorecardCategory, cohort);
+  });
+  const output = new Map<number, { rank: number; percentile: number; note: string }>();
+  cohorts.forEach((cohort) => {
+    rankValues(cohort, target).forEach((rank, index) => output.set(index, rank));
+  });
+  return output;
+}
+
+function scorecardCategory(value: string): string {
+  return value.trim() || "Unassigned scorecard category";
+}
+
+function dominantScorecardCategory(values: string[]): string {
+  const counts = new Map<string, number>();
+  values.forEach((value) => {
+    const normalized = scorecardCategory(value);
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  });
+  const topCount = Math.max(0, ...counts.values());
+  return [...counts.entries()]
+    .filter(([, count]) => count === topCount)
+    .map(([value]) => value)
+    .sort()[0] ?? "Unassigned scorecard category";
 }
 
 function attainmentFor(metric: number, config: WorkspaceConfig): number {

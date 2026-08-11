@@ -20,6 +20,7 @@ interface InvoiceInputRow {
   zone: string;
   country: string;
   category: string;
+  scorecard_category: string;
   kpiApplicability: string;
   conformityPct: string;
   missingPo: string;
@@ -54,6 +55,19 @@ const formatRank = (v: number | null) =>
 const rawInt = (v: number | null | undefined) =>
   v == null ? "-" : String(v);
 
+const scorecardCategory = (value: string) =>
+  value?.trim() || "Unassigned scorecard category";
+
+const dominantScorecardCategory = (values: string[]) => {
+  const counts = new Map<string, number>();
+  values.forEach((value) => counts.set(scorecardCategory(value), (counts.get(scorecardCategory(value)) ?? 0) + 1));
+  const topCount = Math.max(0, ...counts.values());
+  return [...counts.entries()]
+    .filter(([, count]) => count === topCount)
+    .map(([value]) => value)
+    .sort()[0] ?? "Unassigned scorecard category";
+};
+
 // ─── Multi-select dropdown ──────────────────────────────────────────────────
 
 // ─── Invoice Conformity Scoring ─────────────────────────────────────────────
@@ -61,6 +75,7 @@ const rawInt = (v: number | null | undefined) =>
 interface InvoiceRollupRow {
   id: string;
   label: string;
+  scorecard_category: string;
   conformity: number | null;
   missingPo: number;
   wrongPo: number;
@@ -86,11 +101,15 @@ function scoreInvoiceRows(rows: InvoiceInputRow[], config: KpiConfig): InvoiceSc
   });
 
   // Get valid rows for ranking (higher conformity = better = rank highest first)
-  const validRows = assessed
-    .filter((r) => r.isApplicable && r.conformity !== null)
-    .map((r) => ({ id: r.id, dot: r.conformity as number }));
-
-  const ranks = calculatePercentileRanks(validRows, config.target);
+  const ranks = new Map<string, ReturnType<typeof calculatePercentileRanks> extends Map<string, infer T> ? T : never>();
+  const cohorts = new Map<string, Array<{ id: string; dot: number }>>();
+  assessed.filter((r) => r.isApplicable && r.conformity !== null).forEach((row) => {
+    const key = scorecardCategory(row.scorecard_category);
+    const cohort = cohorts.get(key) ?? [];
+    cohort.push({ id: row.id, dot: row.conformity as number });
+    cohorts.set(key, cohort);
+  });
+  cohorts.forEach((cohort) => calculatePercentileRanks(cohort, config.target).forEach((rank, id) => ranks.set(id, rank)));
 
   return assessed.map((row) => {
     if (!row.isApplicable) {
@@ -136,18 +155,19 @@ function calculateInvoiceRollup(
   groupBy: "zone" | "parentSupplier" | "category",
 ): InvoiceRollupRow[] {
   // Group and sum raw counts
-  const groups = new Map<string, { missingPo: number; wrongPo: number; wrongInvoice: number; totalInvoices: number; count: number }>();
+  const groups = new Map<string, { missingPo: number; wrongPo: number; wrongInvoice: number; totalInvoices: number; count: number; scorecardCategories: string[] }>();
   rows.forEach((row) => {
     if (row.kpiApplicability === "Not Applicable") return;
     const key = groupBy === "parentSupplier"
       ? (row.parentSupplier?.trim() || "Unassigned parent")
       : (row[groupBy]?.trim() || "Unassigned");
-    const existing = groups.get(key) || { missingPo: 0, wrongPo: 0, wrongInvoice: 0, totalInvoices: 0, count: 0 };
+    const existing = groups.get(key) || { missingPo: 0, wrongPo: 0, wrongInvoice: 0, totalInvoices: 0, count: 0, scorecardCategories: [] };
     existing.missingPo += Number(row.missingPo) || 0;
     existing.wrongPo += Number(row.wrongPo) || 0;
     existing.wrongInvoice += Number(row.wrongInvoice) || 0;
     existing.totalInvoices += Number(row.totalInvoices) || 0;
     existing.count += 1;
+    existing.scorecardCategories.push(row.scorecard_category);
     groups.set(key, existing);
   });
 
@@ -158,6 +178,7 @@ function calculateInvoiceRollup(
     return {
       id: `rollup-${groupBy}-${i}`,
       label,
+      scorecard_category: dominantScorecardCategory(g.scorecardCategories),
       conformity,
       missingPo: g.missingPo,
       wrongPo: g.wrongPo,
@@ -168,11 +189,14 @@ function calculateInvoiceRollup(
   });
 
   // Rank
-  const validSeeds = seeds.filter((s) => s.conformity !== null);
-  const ranks = calculatePercentileRanks(
-    validSeeds.map((s) => ({ id: s.id, dot: s.conformity as number })),
-    config.target,
-  );
+  const ranks = new Map<string, ReturnType<typeof calculatePercentileRanks> extends Map<string, infer T> ? T : never>();
+  const cohorts = new Map<string, Array<{ id: string; dot: number }>>();
+  seeds.filter((s) => s.conformity !== null).forEach((seed) => {
+    const cohort = cohorts.get(seed.scorecard_category) ?? [];
+    cohort.push({ id: seed.id, dot: seed.conformity as number });
+    cohorts.set(seed.scorecard_category, cohort);
+  });
+  cohorts.forEach((cohort) => calculatePercentileRanks(cohort, config.target).forEach((rank, id) => ranks.set(id, rank)));
 
   return seeds.map((seed) => {
     if (seed.conformity === null) {

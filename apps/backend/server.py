@@ -365,9 +365,9 @@ def _build_scored_cache() -> None:
     """Pre-compute the normalized scorecard for ALL parent suppliers.
 
     Uses the full KPI_CONFIGS (floor, target, weights, max_score) defined in
-    scorecard.py as the single source of truth.  Percentile ranks are computed
-    across the entire population so each parent's earned score reflects where
-    it stands relative to all peers — matching the formula used by the
+    scorecard.py as the single source of truth. Percentile ranks are computed
+    within each scorecard_category so each parent's earned score reflects where
+    it stands relative to its category peers, matching the formula used by the
     individual KPI pages (softStretch mode).
 
     Call this at startup and via POST /api/scorecard/rebuild when config

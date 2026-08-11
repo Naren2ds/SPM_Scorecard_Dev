@@ -31,6 +31,7 @@ export interface SupplierMaturityInputRow {
   parentSupplier: string;
   zone: string;
   category: string;
+  scorecard_category: string;
   kpiApplicability: MaturityApplicability;
   /** Serialised as string in the API — always in [0, 1] after backend normalisation. */
   maturityScore: string;
@@ -51,6 +52,7 @@ export interface MaturityAssessmentRow {
   parentSupplier: string;
   zone: string;
   category: string;
+  scorecard_category: string;
   isApplicable: boolean;
   /** Numeric maturity score in [0, 1] or null if missing/invalid. */
   maturityScore: number | null;

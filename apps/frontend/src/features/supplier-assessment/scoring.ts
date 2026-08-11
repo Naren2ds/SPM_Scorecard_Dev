@@ -151,6 +151,7 @@ const toCountRow = (
     zone: dim(row.zone, "Unassigned zone"),
     country: dim(row.country, "Unassigned country"),
     category: dim(row.category, "Unassigned category"),
+    scorecard_category: dim(row.scorecard_category, "Unassigned scorecard category"),
     supplierApprovalStatus: (row.supplierApprovalStatus ?? "").trim(),
     isApplicable: row.kpiApplicability !== "Not Applicable",
     greenCount,
@@ -261,13 +262,17 @@ export function calculateAssessmentEarnedScore(
 
 const cohortKeyForRow = (
   row: AssessmentCountRow,
-  config: AssessmentConfig,
-) => {
-  if (config.cohortLevel === "Parent") return row.parentSupplier;
-  if (config.cohortLevel === "Zone") return row.zone;
-  if (config.cohortLevel === "Category") return row.category;
-  if (config.cohortLevel === "Country") return row.country;
-  return "All suppliers";
+  _config: AssessmentConfig,
+) => row.scorecard_category;
+
+const dominantScorecardCategory = (rows: Array<{ scorecard_category: string }>) => {
+  const counts = new Map<string, number>();
+  rows.forEach((row) => counts.set(row.scorecard_category, (counts.get(row.scorecard_category) ?? 0) + 1));
+  const topCount = Math.max(0, ...counts.values());
+  return [...counts.entries()]
+    .filter(([, count]) => count === topCount)
+    .map(([value]) => value)
+    .sort()[0] ?? "Unassigned scorecard category";
 };
 
 const invalidBaseScore = (
@@ -517,6 +522,7 @@ const rollupRows = (
         zone: level === "Zone" ? label : "All zones",
         country: level === "Country" ? label : "All countries",
         category: level === "Category" ? label : "All categories",
+        scorecard_category: dominantScorecardCategory(groupRows),
         supplierApprovalStatus: firstText(
           groupRows.map((r) => r.supplierApprovalStatus),
           "",

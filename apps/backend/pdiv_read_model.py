@@ -6,6 +6,7 @@ import csv
 import io
 import math
 import threading
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator
 
@@ -80,6 +81,7 @@ class PdivSupplierResult:
 class PdivRollupResult:
     level: str
     label: str
+    scorecard_category: str
     country: str
     normalized_divergence: float
     raw_values: RawPdivValues
@@ -99,6 +101,7 @@ class _RollupAccumulator:
     invoice_value: float = 0.0
     absolute_difference: float = 0.0
     countries: set[str] = field(default_factory=set)
+    scorecard_categories: Counter[str] = field(default_factory=Counter)
 
 
 @dataclass(slots=True)
@@ -411,6 +414,7 @@ def serialize_pdiv_result(
             "zone": _text(row.get("zone")),
             "country": _text(row.get("country")),
             "category": _text(row.get("category")),
+            "scorecardCategory": _scorecard_category(row),
             "year": _text(row.get("year")),
             "month": _text(row.get("month")),
             "poValue": assessment.raw_values.po_value,
@@ -445,6 +449,7 @@ def serialize_pdiv_result(
         "parentSupplier": result.label if result.level == "parent" else "All parents",
         "zone": result.label if result.level == "zone" else "All zones",
         "country": result.country,
+        "scorecardCategory": result.scorecard_category,
         "poValue": result.raw_values.po_value,
         "invoiceValue": result.raw_values.invoice_value,
         "absoluteDifference": result.raw_values.absolute_difference,
@@ -501,7 +506,7 @@ def iter_pdiv_csv(
     yield emit([])
     yield emit(["Supplier Level"])
     yield emit([
-        "Supplier", "Parent", "Zone", "Country", "Category", "Year", "Month",
+        "Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category", "Year", "Month",
         "PO Value", "Invoice Value", "Absolute Difference", "Divergence %", "Rank",
         "Percentile", "Attainment", "Max", "Earned", "Score %", "Status",
     ])
@@ -509,7 +514,7 @@ def iter_pdiv_csv(
         row = serialize_pdiv_result(result, config)
         yield emit([
             row["supplier"], row["parentSupplier"], row["zone"], row["country"],
-            row["category"], row["year"], row["month"],
+            row["category"], row["scorecardCategory"], row["year"], row["month"],
             _format_number(row["poValue"], 2), _format_number(row["invoiceValue"], 2),
             _format_number(row["absoluteDifference"], 2),
             _format_percent(row["normalizedDivergence"], 2),
@@ -543,12 +548,16 @@ def _score_suppliers(
     assessments: list[PdivAssessment],
     config: PdivConfig,
 ) -> list[PdivSupplierResult]:
-    valid = [
-        (index, row.normalized_divergence)
-        for index, row in enumerate(assessments)
-        if row.is_valid and row.normalized_divergence is not None
-    ]
-    ranks = _percentile_ranks(valid, config.target)
+    grouped_valid: dict[str, list[tuple[int, float]]] = {}
+    for index, assessment in enumerate(assessments):
+        if not assessment.is_valid or assessment.normalized_divergence is None:
+            continue
+        grouped_valid.setdefault(_scorecard_category(assessment.row), []).append(
+            (index, assessment.normalized_divergence)
+        )
+    ranks: dict[int, tuple[float, float, str]] = {}
+    for values in grouped_valid.values():
+        ranks.update(_percentile_ranks(values, config.target))
     results: list[PdivSupplierResult] = []
     for index, assessment in enumerate(assessments):
         if not assessment.is_applicable:
@@ -577,6 +586,7 @@ def _build_rollups(
         label = _rollup_label(assessment.row, level)
         accumulator = groups.setdefault(label, _RollupAccumulator())
         accumulator.count += 1
+        accumulator.scorecard_categories[_scorecard_category(assessment.row)] += 1
         accumulator.po_value += assessment.raw_values.po_value
         accumulator.invoice_value += assessment.raw_values.invoice_value
         accumulator.absolute_difference += assessment.raw_values.absolute_difference
@@ -591,6 +601,7 @@ def _build_rollups(
         results.append(PdivRollupResult(
             level=level,
             label=label,
+            scorecard_category=_collapse_scorecard_categories(accumulator.scorecard_categories),
             country=next(iter(accumulator.countries)) if len(accumulator.countries) == 1 else "Multiple",
             normalized_divergence=accumulator.absolute_difference / accumulator.po_value,
             raw_values=RawPdivValues(
@@ -601,10 +612,14 @@ def _build_rollups(
             contributing_rows=accumulator.count,
         ))
 
-    ranks = _percentile_ranks(
-        [(index, row.normalized_divergence) for index, row in enumerate(results)],
-        config.target,
-    )
+    grouped_valid: dict[str, list[tuple[int, float]]] = {}
+    for index, result in enumerate(results):
+        grouped_valid.setdefault(result.scorecard_category, []).append(
+            (index, result.normalized_divergence)
+        )
+    ranks: dict[int, tuple[float, float, str]] = {}
+    for values in grouped_valid.values():
+        ranks.update(_percentile_ranks(values, config.target))
     for index, result in enumerate(results):
         rank, percentile, note = ranks[index]
         attainment = _attainment(result.normalized_divergence, config)
@@ -756,6 +771,17 @@ def _rollup_label(row: dict[str, Any], level: str) -> str:
     field_name = {"parent": "parentSupplier", "zone": "zone", "category": "category"}[level]
     fallback = {"parent": "Unassigned parent", "zone": "Unassigned zone", "category": "Unassigned category"}[level]
     return _text(row.get(field_name)) or fallback
+
+
+def _scorecard_category(row: dict[str, Any]) -> str:
+    return _text(row.get("scorecard_category")) or "Unassigned scorecard category"
+
+
+def _collapse_scorecard_categories(counts: Counter[str]) -> str:
+    if not counts:
+        return "Unassigned scorecard category"
+    top_count = max(counts.values())
+    return sorted(value for value, count in counts.items() if count == top_count)[0]
 
 
 def _to_number(value: Any) -> float | None:

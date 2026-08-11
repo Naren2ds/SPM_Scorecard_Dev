@@ -454,7 +454,7 @@ function ScorecardPage() {
 
   const bannerText =
     selZones.length > 0 || selCategories.length > 0
-      ? "Filtered view - scores are recomputed from the selected filters only. Remove the filters to return to the global ranking."
+      ? "Filtered view - scores are recomputed within scorecard-category cohorts using the selected filters. Remove the filters to return to the full category cohorts."
       : `Global view - scores from cache. Percentile ranks computed across all ${cacheInfo?.parent_count ?? "..."} parent suppliers.`;
 
   return (

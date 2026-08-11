@@ -6,6 +6,7 @@ import csv
 import io
 import math
 import threading
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator
 
@@ -79,6 +80,7 @@ class IotSupplierResult:
 class IotRollupResult:
     level: str
     label: str
+    scorecard_category: str
     country: str
     normalized_iot: float | None
     raw_values: RawIotValues
@@ -97,6 +99,7 @@ class _RollupAccumulator:
     invoice_on_time: float = 0.0
     total_po_lines: float = 0.0
     countries: set[str] = field(default_factory=set)
+    scorecard_categories: Counter[str] = field(default_factory=Counter)
 
 
 @dataclass(slots=True)
@@ -408,6 +411,7 @@ def serialize_iot_result(
             "zone": _text(row.get("zone")),
             "country": _text(row.get("country")),
             "category": _text(row.get("category")),
+            "scorecardCategory": _scorecard_category(row),
             "year": _text(row.get("year")),
             "month": _text(row.get("month")),
             "invoiceOnTimeCount": assessment.raw_values.invoice_on_time,
@@ -441,6 +445,7 @@ def serialize_iot_result(
         "parentSupplier": result.label if result.level == "parent" else "All parents",
         "zone": result.label if result.level == "zone" else "All zones",
         "country": result.country,
+        "scorecardCategory": result.scorecard_category,
         "invoiceOnTimeCount": result.raw_values.invoice_on_time,
         "totalPoLines": result.raw_values.total_po_lines,
         "normalizedIot": result.normalized_iot,
@@ -496,14 +501,14 @@ def iter_iot_csv(
     yield emit([])
     yield emit(["Supplier Level"])
     yield emit([
-        "Supplier", "Parent", "Zone", "Country", "Category", "IOT %", "Rank",
+        "Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category", "IOT %", "Rank",
         "Percentile", "Attainment", "Max", "Earned", "Score %", "Status",
     ])
     for result in results:
         row = serialize_iot_result(result, config)
         yield emit([
             row["supplier"], row["parentSupplier"], row["zone"], row["country"],
-            row["category"], _format_percent(row["normalizedIot"], 2),
+            row["category"], row["scorecardCategory"], _format_percent(row["normalizedIot"], 2),
             _format_rank(row["rankDescending"]), _format_percent(row["percentile"], 2),
             _format_number(row["attainmentFactor"], 4), _format_number(row["maxScore"], 2),
             _format_number(row["earnedScore"], 2), _format_percent(row["scorePercent"], 2),
@@ -529,12 +534,16 @@ def _assess_row(row: dict[str, Any], row_number: int) -> IotAssessment:
 
 
 def _score_suppliers(assessments: list[IotAssessment], config: IotConfig) -> list[IotSupplierResult]:
-    valid = [
-        (index, row.normalized_iot)
-        for index, row in enumerate(assessments)
-        if row.is_valid and row.normalized_iot is not None
-    ]
-    ranks = _percentile_ranks(valid, config.target)
+    grouped_valid: dict[str, list[tuple[int, float]]] = {}
+    for index, assessment in enumerate(assessments):
+        if not assessment.is_valid or assessment.normalized_iot is None:
+            continue
+        grouped_valid.setdefault(_scorecard_category(assessment.row), []).append(
+            (index, assessment.normalized_iot)
+        )
+    ranks: dict[int, tuple[float, float, str]] = {}
+    for values in grouped_valid.values():
+        ranks.update(_percentile_ranks(values, config.target))
     results: list[IotSupplierResult] = []
     for index, assessment in enumerate(assessments):
         if not assessment.is_applicable:
@@ -563,6 +572,7 @@ def _build_rollups(
         label = _rollup_label(assessment.row, level)
         accumulator = groups.setdefault(label, _RollupAccumulator())
         accumulator.count += 1
+        accumulator.scorecard_categories[_scorecard_category(assessment.row)] += 1
         accumulator.invoice_on_time += assessment.raw_values.invoice_on_time
         accumulator.total_po_lines += assessment.raw_values.total_po_lines
         country = _text(assessment.row.get("country"))
@@ -578,14 +588,21 @@ def _build_rollups(
         results.append(IotRollupResult(
             level=level,
             label=label,
+            scorecard_category=_collapse_scorecard_categories(accumulator.scorecard_categories),
             country=next(iter(accumulator.countries)) if len(accumulator.countries) == 1 else "Multiple",
             normalized_iot=normalized,
             raw_values=RawIotValues(accumulator.invoice_on_time, accumulator.total_po_lines),
             contributing_rows=accumulator.count,
         ))
 
-    valid = [(index, row.normalized_iot) for index, row in enumerate(results) if row.normalized_iot is not None]
-    ranks = _percentile_ranks(valid, config.target)
+    grouped_valid: dict[str, list[tuple[int, float]]] = {}
+    for index, result in enumerate(results):
+        if result.normalized_iot is None:
+            continue
+        grouped_valid.setdefault(result.scorecard_category, []).append((index, result.normalized_iot))
+    ranks: dict[int, tuple[float, float, str]] = {}
+    for values in grouped_valid.values():
+        ranks.update(_percentile_ranks(values, config.target))
     for index, result in enumerate(results):
         if result.normalized_iot is None:
             continue
@@ -728,6 +745,17 @@ def _rollup_label(row: dict[str, Any], level: str) -> str:
     if level == "category":
         return _text(row.get("category")) or "Unassigned"
     return _text(row.get("zone")) or "Unassigned"
+
+
+def _scorecard_category(row: dict[str, Any]) -> str:
+    return _text(row.get("scorecard_category")) or "Unassigned scorecard category"
+
+
+def _collapse_scorecard_categories(counts: Counter[str]) -> str:
+    if not counts:
+        return "Unassigned scorecard category"
+    top_count = max(counts.values())
+    return sorted(value for value, count in counts.items() if count == top_count)[0]
 
 
 def _to_number(value: Any) -> float | None:

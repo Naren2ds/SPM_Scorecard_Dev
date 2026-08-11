@@ -31,6 +31,7 @@ interface PdivResult {
   zone: string;
   country: string;
   category?: string;
+  scorecardCategory: string;
   year?: string;
   month?: string;
   poValue: number;
@@ -379,7 +380,7 @@ function PriceDivergencePageOptimized({ sharedParent, onParentChange }: PriceDiv
       <section className="dot-entity-filters" aria-label="Price Divergence display filters">
         <EntitySearch label="Find Parent Supplier" query={parentQuery} setQuery={setParentQuery} matches={parentMatches} selected={sharedParent} onSelect={selectParent} onRemove={(value) => { onParentChange(sharedParent.filter((item) => item !== value)); setSuppliers([]); setPage(1); }} />
         {level === "supplier" && <EntitySearch label="Find Supplier" query={supplierQuery} setQuery={setSupplierQuery} matches={supplierMatches} selected={suppliers} onSelect={selectSupplier} onRemove={(value) => { setSuppliers(suppliers.filter((item) => item !== value)); setPage(1); }} />}
-        <p className="supporting">Parent and Supplier ranks stay global within the top-filter cohort. Zone and Category are recalculated only from the selected parent's Price Divergence rows.</p>
+        <p className="supporting">Parent and Supplier ranks stay within their scorecard-category cohort across the top filters. Zone and Category are recalculated only from the selected parent's Price Divergence rows.</p>
       </section>
 
       <section className="config-bar dot-scenario-config">
@@ -433,7 +434,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 
 function PdivResultsTable({ rows, level }: { rows: PdivResult[]; level: PdivLevel }) {
   const supplierLevel = level === "supplier";
-  return <div className="table-frame rollup-scroll"><table className="data-table results-table"><thead><tr><th>{supplierLevel ? "Supplier" : level === "parent" ? "Parent Supplier" : level === "zone" ? "Zone" : "Category"}</th>{supplierLevel && <><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th><th>Year</th><th>Month</th></>}<th>PO Value</th><th>Invoice Value</th><th>Absolute Difference</th><th>Divergence %</th><th>Rank</th><th>Percentile</th><th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Contributing Rows</th><th>Explanation</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={rowClass(row.scoreStatus)}><td>{row.label}</td>{supplierLevel && <><td>{row.parentSupplier}</td><td>{row.zone}</td><td>{row.country}</td><td>{row.category}</td><td>{row.year}</td><td>{row.month}</td></>}<td>{numeric(row.poValue)}</td><td>{numeric(row.invoiceValue)}</td><td>{numeric(row.absoluteDifference)}</td><td>{percent(row.normalizedDivergence)}</td><td>{rank(row.rankAscending)}</td><td>{percent(row.percentile)}</td><td>{numeric(row.attainmentFactor, 4)}</td><td>{numeric(row.maxScore)}</td><td>{numeric(row.earnedScore)}</td><td>{percent(row.scorePercent)}</td><td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td><td>{row.contributingRows}</td><td className="explanation-cell">{row.explanation}</td></tr>)}</tbody></table></div>;
+  return <div className="table-frame rollup-scroll"><table className="data-table results-table"><thead><tr><th>{supplierLevel ? "Supplier" : level === "parent" ? "Parent Supplier" : level === "zone" ? "Zone" : "Category"}</th><th>Scorecard Category</th>{supplierLevel && <><th>Parent</th><th>Zone</th><th>Country</th><th>Category</th><th>Year</th><th>Month</th></>}<th>PO Value</th><th>Invoice Value</th><th>Absolute Difference</th><th>Divergence %</th><th>Rank</th><th>Percentile</th><th>Attainment</th><th>Max</th><th>Earned</th><th>Score %</th><th>Status</th><th>Contributing Rows</th><th>Explanation</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={rowClass(row.scoreStatus)}><td>{row.label}</td><td>{row.scorecardCategory}</td>{supplierLevel && <><td>{row.parentSupplier}</td><td>{row.zone}</td><td>{row.country}</td><td>{row.category}</td><td>{row.year}</td><td>{row.month}</td></>}<td>{numeric(row.poValue)}</td><td>{numeric(row.invoiceValue)}</td><td>{numeric(row.absoluteDifference)}</td><td>{percent(row.normalizedDivergence)}</td><td>{rank(row.rankAscending)}</td><td>{percent(row.percentile)}</td><td>{numeric(row.attainmentFactor, 4)}</td><td>{numeric(row.maxScore)}</td><td>{numeric(row.earnedScore)}</td><td>{percent(row.scorePercent)}</td><td><span className={`status-pill ${statusClass(row.scoreStatus)}`}>{row.scoreStatus}</span></td><td>{row.contributingRows}</td><td className="explanation-cell">{row.explanation}</td></tr>)}</tbody></table></div>;
 }
 
 const rowClass = (status: string) => status === "Missing Data" ? "invalid-row" : status === "Not Applicable" ? "not-applicable-row" : "";

@@ -209,9 +209,10 @@ def recompute_from_scratch(
         )
 
         result[parent] = {
-            "normalized_score": round(normalized, 6),
-            "coverage_pct": round(coverage, 6),
-            "coverage_adjusted_score": round(normalized * coverage, 6),
+            # Keep full precision until the comparison applies server rounding.
+            "normalized_score": normalized,
+            "coverage_pct": coverage,
+            "coverage_adjusted_score": normalized * coverage,
             "kpi_details": kpi_details,
         }
 

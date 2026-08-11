@@ -85,9 +85,16 @@ For each KPI, the backend calculates a parent supplier score in `scorecard.py`.
 raw KPI rows
    -> aggregate to one raw KPI value per parent
    -> apply floor/target attainment
-   -> calculate percentile rank
+   -> split parents into scorecard_category cohorts
+   -> calculate percentile rank inside each cohort
    -> calculate earned KPI points
 ```
+
+This cohort rule applies to all nine active KPIs. A supplier or parent is
+compared only with peers that have the same `scorecard_category`. Blank values
+use the explicit fallback `Unassigned scorecard category`. Raw KPI formulas,
+floor/target attainment, KPI weights, pillar weights, and the earned-score
+formula are unchanged.
 
 The general earned score formula is:
 

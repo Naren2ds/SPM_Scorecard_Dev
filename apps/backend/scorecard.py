@@ -301,6 +301,8 @@ def _collapse_scorecard_category(values: list[str]) -> str:
 def _percentile_ranks(
     indexed_values: list[tuple[int, float | None]],
     target: float,
+    *,
+    higher_is_better: bool = True,
 ) -> dict[int, tuple[float, float, str]]:
     values = [(index, float(value)) for index, value in indexed_values if value is not None and pd.notna(value)]
     count = len(values)
@@ -314,7 +316,7 @@ def _percentile_ranks(
         average_rank = (count + 1) / 2
         return {index: (average_rank, percentile, "noVariance") for index, _ in values}
 
-    sorted_values = sorted(values, key=lambda item: item[1], reverse=True)
+    sorted_values = sorted(values, key=lambda item: item[1], reverse=higher_is_better)
     result: dict[int, tuple[float, float, str]] = {}
     cursor = 0
     while cursor < count:
@@ -418,6 +420,7 @@ def _aggregate_kpi(
             total = _to_num(r.get("totalPoLines")) or 0.0
             bucket["num"] += on_time
             bucket["den"] += total
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "IC":
             total_inv = _to_num(r.get("totalInvoices")) or 0.0
@@ -425,6 +428,7 @@ def _aggregate_kpi(
             conformant = max(total_inv - mismatches, 0.0)
             bucket["num"] += conformant
             bucket["den"] += total_inv
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "PDIV":
             po_val = _to_num(r.get("poValue"))
@@ -433,6 +437,7 @@ def _aggregate_kpi(
                 continue
             bucket["num"] += abs(inv_val - po_val)
             bucket["den"] += po_val
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "SA":
             g = _to_num(r.get("greenCount")) or 0.0
@@ -446,6 +451,7 @@ def _aggregate_kpi(
                 continue
             bucket["num"] += g * 1.0 + y * 0.5
             bucket["den"] += valid
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "SC":
             v = _to_num(r.get("compliancePct"))
@@ -453,6 +459,7 @@ def _aggregate_kpi(
                 continue
             bucket["sum"] += v
             bucket["n"] += 1.0
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "SM":
             v = _to_num(r.get("maturityScore"))
@@ -463,6 +470,7 @@ def _aggregate_kpi(
                 v = v / 100.0
             bucket["sum"] += v
             bucket["n"] += 1.0
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "ECL":
             v = _to_num(r.get("eclipseScore"))
@@ -472,6 +480,7 @@ def _aggregate_kpi(
                 v = v / 100.0
             bucket["sum"] += v
             bucket["n"] += 1.0
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
         elif kid == "CO2":
             v = _to_num(r.get("co2Emission"))
@@ -479,6 +488,7 @@ def _aggregate_kpi(
                 continue
             bucket["sum"] += v
             bucket["n"] += 1.0
+            bucket["scorecard_categories"].append(_scorecard_category(r))
 
     out: dict[str, dict[str, Any]] = {}
     for key, b in agg.items():
@@ -548,54 +558,22 @@ def _kpi_attainments(
     }
 
     # Step 2: compute percentile ranks.
-    # DOT now compares only against parents in the same scorecard_category.
-    # Other KPIs keep the existing global percentile behavior.
+    # Every KPI compares parents only within the same scorecard_category.
     percentiles: dict[str, float] = {}
-    if kpi["id"] == "DOT":
-        grouped: dict[str, list[tuple[str, float]]] = {}
-        for key, info in per_parent.items():
-            cohort = _scorecard_category(info)
-            grouped.setdefault(cohort, []).append((key, info["ratio"]))
+    grouped: dict[str, list[tuple[str, float]]] = {}
+    for key, info in per_parent.items():
+        cohort = _scorecard_category(info)
+        grouped.setdefault(cohort, []).append((key, info["ratio"]))
 
-        for cohort_values in grouped.values():
-            local_values = [(index, value) for index, (_, value) in enumerate(cohort_values)]
-            if not local_values:
-                continue
-            cohort_ranks = _percentile_ranks(local_values, float(target))
-            for index, (key, _) in enumerate(cohort_values):
-                percentiles[key] = cohort_ranks[index][1]
-    else:
-        reverse_sort = (direction != "lower")
-        total = len(per_parent)
-
-        if total == 1:
-            percentiles[next(iter(per_parent))] = 1.0
-        else:
-            ratios = {k: per_parent[k]["ratio"] for k in per_parent}
-            distinct = set(round(v, 12) for v in ratios.values())
-            if len(distinct) == 1:
-                # No variance — award full percentile if above target, else 0.5.
-                shared = next(iter(ratios.values()))
-                pct = 1.0 if shared >= float(target) else 0.5
-                percentiles = {k: pct for k in per_parent}
-            else:
-                sorted_keys = sorted(
-                    per_parent.keys(),
-                    key=lambda k: ratios[k],
-                    reverse=reverse_sort,
-                )
-                cursor = 0
-                while cursor < total:
-                    current = round(ratios[sorted_keys[cursor]], 12)
-                    end = cursor + 1
-                    while end < total and round(ratios[sorted_keys[end]], 12) == current:
-                        end += 1
-                    # 1-indexed midpoint rank for this tied group
-                    avg_rank = (cursor + 1 + end) / 2
-                    pct = (total - avg_rank) / (total - 1)
-                    for i in range(cursor, end):
-                        percentiles[sorted_keys[i]] = pct
-                    cursor = end
+    for cohort_values in grouped.values():
+        local_values = [(index, value) for index, (_, value) in enumerate(cohort_values)]
+        cohort_ranks = _percentile_ranks(
+            local_values,
+            float(target),
+            higher_is_better=direction != "lower",
+        )
+        for index, (key, _) in enumerate(cohort_values):
+            percentiles[key] = cohort_ranks[index][1]
 
     # Step 3: apply soft-stretch formula (matches frontend default).
     result: dict[str, dict[str, Any]] = {}
@@ -605,6 +583,7 @@ def _kpi_attainments(
         earned = kpi["max_score"] * att * (0.70 + 0.30 * pct)
         result[key] = {
             "raw": per_parent[key]["raw"],
+            "scorecard_category": _scorecard_category(per_parent[key]),
             "attainment": att,
             "percentile": pct,
             "earned": earned,
@@ -740,6 +719,7 @@ def compute_scorecard(
                             "name": kpi["name"],
                             "max_score": kpi["max_score"],
                             "raw": None,
+                            "scorecard_category": None,
                             "attainment": None,
                             "earned": None,
                             "applicable": False,
@@ -753,6 +733,7 @@ def compute_scorecard(
                         "name": kpi["name"],
                         "max_score": kpi["max_score"],
                         "raw": scored["raw"],
+                        "scorecard_category": scored["scorecard_category"],
                         "attainment": scored["attainment"],
                         "percentile": scored.get("percentile"),
                         "earned": scored["earned"],

@@ -67,6 +67,49 @@ for (const [kpiId, filename] of Object.entries(FILES)) {
   console.log(`${kpiId}: ${cohort.length} cohort rows, ${parents.length} parents, formula and isolation passed`);
 }
 
+for (const kpiId of Object.keys(FILES)) {
+  const spec = KPI_SPECS[kpiId];
+  const rows = normalizeSourceRows([
+    syntheticRow(kpiId, "a", "Category A", 0.9),
+    syntheticRow(kpiId, "b", "Category A", 0.8),
+    syntheticRow(kpiId, "c", "Category B", 0.7),
+    syntheticRow(kpiId, "d", "Category B", 0.6),
+  ]);
+  const results = buildResults(rows, spec, spec.defaultConfig, "supplier");
+  assert.deepEqual(
+    results.map((row) => row.percentile),
+    [1, 0, 1, 0],
+    `${kpiId}: percentile must restart within each scorecard category`,
+  );
+  assert.deepEqual(
+    results.map((row) => row.scorecardCategory),
+    ["Category A", "Category A", "Category B", "Category B"],
+    `${kpiId}: result must expose its scorecard category`,
+  );
+}
+
+console.log("All six consistent KPI pages passed scorecard-category cohort validation");
+
+function syntheticRow(kpiId, id, scorecardCategory, metric) {
+  const row = {
+    id,
+    supplier: `Supplier ${id}`,
+    parentSupplier: `Parent ${id}`,
+    zone: "Zone",
+    country: "Country",
+    category: "Procurement Category",
+    scorecard_category: scorecardCategory,
+    kpiApplicability: "Applicable",
+    year: "2026",
+  };
+  if (kpiId === "SA") return { ...row, greenCount: metric * 10, yellowCount: 0, redCount: (1 - metric) * 10 };
+  if (kpiId === "IC") return { ...row, totalInvoices: 100, mismatchCount: (1 - metric) * 100 };
+  if (kpiId === "SC") return { ...row, compliancePct: metric };
+  if (kpiId === "SM") return { ...row, maturityScore: metric };
+  if (kpiId === "ECL") return { ...row, eclipseScore: metric };
+  return { ...row, co2Emission: metric };
+}
+
 function independentlyAggregateParents(rows, kpiId) {
   const groups = new Map();
   for (const row of rows) {

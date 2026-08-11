@@ -34,6 +34,7 @@ export interface SupplierComplianceInputRow {
   zone: string;
   country: string;
   category: string;
+  scorecard_category: string;
   kpiApplicability: ComplianceApplicability;
   supplierApprovalStatus: string;
   /** Serialised as string in the API — always in [0, 1] after backend normalisation. */
@@ -56,6 +57,7 @@ export interface ComplianceAssessmentRow {
   zone: string;
   country: string;
   category: string;
+  scorecard_category: string;
   supplierApprovalStatus: string;
   isApplicable: boolean;
   /** Numeric compliance in [0, 1] or null if missing/invalid. */

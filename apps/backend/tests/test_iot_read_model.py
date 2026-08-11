@@ -26,6 +26,7 @@ def _row(
     year="2026",
     zone="EUR",
     category="MALT",
+    scorecard_category="Packaging",
 ):
     return {
         "id": row_id,
@@ -34,6 +35,7 @@ def _row(
         "zone": zone,
         "country": "Belgium",
         "category": category,
+        "scorecard_category": scorecard_category,
         "kpiApplicability": applicable,
         "invoiceOnTimeCount": str(on_time),
         "totalPoLines": str(total),
@@ -82,6 +84,23 @@ def test_supplier_drilldown_keeps_global_supplier_rank():
     assert by_supplier["Alpha Two"]["rankDescending"] == 1
     assert by_supplier["Alpha One"]["rankDescending"] == 2
     assert by_supplier["Alpha One"]["percentile"] == pytest.approx(0.5)
+
+
+def test_percentiles_are_scoped_to_scorecard_category():
+    rows = [
+        _row("a", "A", "Parent A", 90, scorecard_category="Category A"),
+        _row("b", "B", "Parent B", 80, scorecard_category="Category A"),
+        _row("c", "C", "Parent C", 70, scorecard_category="Category B"),
+        _row("d", "D", "Parent D", 60, scorecard_category="Category B"),
+    ]
+    model = build_iot_read_model(rows, _config())
+    by_supplier = {result.label: result for result in model.supplier_results}
+
+    assert by_supplier["A"].percentile == pytest.approx(1.0)
+    assert by_supplier["B"].percentile == pytest.approx(0.0)
+    assert by_supplier["C"].percentile == pytest.approx(1.0)
+    assert by_supplier["D"].percentile == pytest.approx(0.0)
+    assert model.parent_index["Parent C"].scorecard_category == "Category B"
 
 
 def test_parent_selection_scopes_summary_zone_and_category_rollups():
@@ -145,7 +164,7 @@ def test_search_and_export_are_parent_scoped():
 
     assert {item["parentSupplier"] for item in matches} == {"Parent A"}
     assert exported[0] == ["IOT KPI Config"]
-    assert exported[7][0:5] == ["Supplier", "Parent", "Zone", "Country", "Category"]
+    assert exported[7][0:6] == ["Supplier", "Parent", "Zone", "Country", "Category", "Scorecard Category"]
     assert {row[0] for row in exported[8:]} == {"Alpha One", "Alpha Two"}
     assert {row[1] for row in exported[8:]} == {"Parent A"}
 

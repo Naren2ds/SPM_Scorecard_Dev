@@ -12,6 +12,7 @@ export type ScorecardKpi = {
   percentile?: number | null;
   earned: number | null;
   applicable: boolean;
+  expected_applicable?: boolean;
   floor_used: number | null;
   target_used: number | null;
 };
@@ -33,6 +34,7 @@ export type ParentScorecard = {
   coverage_pct: number;
   coverage_adjusted_score: number;
   applicable_pillar_weight: number;
+  expected_applicable_kpi_weight?: number;
   total_earned: number;
   total_applicable_max: number;
   invoice_value: number;
@@ -59,6 +61,10 @@ export type ScorecardResponse = {
   filters_applied: {
     zones: string[];
     categories: string[];
+    countries: string[];
+    subCategories: string[];
+    purchaseCategories: string[];
+    scorecardCategories: string[];
     parents: string[];
   };
 };
@@ -75,6 +81,10 @@ export type ParentDetailResponse = {
 export type ScorecardFilterOptions = {
   zones: string[];
   categories: string[];
+  countries: string[];
+  subCategories: string[];
+  purchaseCategories: string[];
+  scorecardCategories: string[];
   parents: string[];
 };
 

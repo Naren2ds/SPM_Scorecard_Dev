@@ -45,9 +45,14 @@ from scorecard import (
     PILLAR_WEIGHTS,
     _aggregate_kpi,
     _attainment,
+    _build_kpi_status_lookup,
+    _index_kpi_applicability,
+    _is_excluded_by_scorecard_category,
     _is_applicable,
     _kpi_attainments,
+    _parent_scorecard_categories,
     _rollup_key,
+    _scorecard_category,
     _to_num,
     compute_scorecard,
 )
@@ -124,8 +129,20 @@ def recompute_from_scratch(
     server path. Returns structure mirrors compute_scorecard() output.
     """
     kpi_results: dict[str, dict[str, dict]] = {}
+    kpi_applicability_index: dict[str, tuple[set[str], set[str]]] = {}
     for kpi in KPI_CONFIGS:
         rows = cache.get(kpi["cache_key"], []) or []
+        kpi_applicability_index[kpi["id"]] = _index_kpi_applicability(
+            kpi,
+            rows,
+            zones,
+            categories,
+            None,
+            None,
+            None,
+            None,
+            parents,
+        )
         agg = _aggregate_kpi(kpi, rows, zones, categories, parents)
 
         individual_vals: list[float] | None = None
@@ -137,6 +154,8 @@ def recompute_from_scratch(
                 if categories and str(r.get("category", "")).strip() not in categories:
                     continue
                 if parents and _rollup_key(r) not in parents:
+                    continue
+                if _is_excluded_by_scorecard_category(kpi, _scorecard_category(r)):
                     continue
                 if not _is_applicable(r.get("kpiApplicability")):
                     continue
@@ -150,8 +169,23 @@ def recompute_from_scratch(
     parent_universe: set[str] = set()
     for scored in kpi_results.values():
         parent_universe.update(scored.keys())
+    parent_scorecard_categories = _parent_scorecard_categories(
+        cache,
+        zones,
+        categories,
+        None,
+        None,
+        None,
+        None,
+        parents,
+    )
+    kpi_status_lookup = _build_kpi_status_lookup(
+        parent_universe,
+        parent_scorecard_categories,
+        kpi_results,
+        kpi_applicability_index,
+    )
 
-    total_expected_weight = sum(k["max_score"] for k in KPI_CONFIGS)
     kpis_by_pillar: dict[str, list[dict]] = {}
     for k in KPI_CONFIGS:
         kpis_by_pillar.setdefault(k["pillar"], []).append(k)
@@ -161,6 +195,7 @@ def recompute_from_scratch(
         weighted_sum = 0.0
         applicable_pillar_weight = 0.0
         available_kpi_weight = 0.0
+        expected_applicable_kpi_weight = 0.0
         kpi_details: list[dict] = []
 
         for pillar_name, pillar_weight in PILLAR_WEIGHTS.items():
@@ -168,6 +203,10 @@ def recompute_from_scratch(
             max_sum = 0.0
             for kpi in kpis_by_pillar.get(pillar_name, []):
                 scored = kpi_results[kpi["id"]].get(parent)
+                applicability_status = kpi_status_lookup[kpi["id"]][parent]
+                expected_applicable = applicability_status in {"VALID_DATA", "MISSING_DATA"}
+                if expected_applicable:
+                    expected_applicable_kpi_weight += kpi["max_score"]
                 if scored is None:
                     kpi_details.append({
                         "kpi_id": kpi["id"],
@@ -178,6 +217,7 @@ def recompute_from_scratch(
                         "earned": None,
                         "max_score": kpi["max_score"],
                         "applicable": False,
+                        "expected_applicable": expected_applicable,
                     })
                     continue
                 kpi_details.append({
@@ -189,6 +229,7 @@ def recompute_from_scratch(
                     "earned": scored["earned"],
                     "max_score": kpi["max_score"],
                     "applicable": True,
+                    "expected_applicable": True,
                 })
                 earned_sum += scored["earned"]
                 max_sum += kpi["max_score"]
@@ -204,8 +245,8 @@ def recompute_from_scratch(
             if applicable_pillar_weight > 0 else 0.0
         )
         coverage = (
-            available_kpi_weight / total_expected_weight
-            if total_expected_weight > 0 else 0.0
+            available_kpi_weight / expected_applicable_kpi_weight
+            if expected_applicable_kpi_weight > 0 else 0.0
         )
 
         result[parent] = {

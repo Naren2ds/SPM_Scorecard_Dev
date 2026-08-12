@@ -123,10 +123,18 @@ function ScorecardPage() {
   const [filters, setFilters] = useState<ScorecardFilterOptions>({
     zones: [],
     categories: [],
+    countries: [],
+    subCategories: [],
+    purchaseCategories: [],
+    scorecardCategories: [],
     parents: [],
   });
   const [selZones, setSelZones] = usePersistedState<string[]>("sc-sel-zones", []);
   const [selCategories, setSelCategories] = usePersistedState<string[]>("sc-sel-categories", []);
+  const [selCountries, setSelCountries] = usePersistedState<string[]>("sc-sel-countries", []);
+  const [selSubCategories, setSelSubCategories] = usePersistedState<string[]>("sc-sel-sub-categories", []);
+  const [selPurchaseCategories, setSelPurchaseCategories] = usePersistedState<string[]>("sc-sel-purchase-categories", []);
+  const [selScorecardCategories, setSelScorecardCategories] = usePersistedState<string[]>("sc-sel-scorecard-categories", []);
   const [summary, setSummary] = useState<ScorecardSummary | null>(null);
   const [leaderboard, setLeaderboard] = useState<ScorecardLeaderboardResponse | null>(null);
   const [parentSearch, setParentSearch] = useState<ScorecardParentSearchResponse | null>(null);
@@ -158,13 +166,30 @@ function ScorecardPage() {
       .catch((err) => setError(String(err)));
   }, []);
 
+  const contextParams = () => {
+    const params = new URLSearchParams();
+    if (selZones.length) params.set("zones", selZones.join(","));
+    if (selCategories.length) params.set("categories", selCategories.join(","));
+    if (selCountries.length) params.set("countries", selCountries.join(","));
+    if (selSubCategories.length) params.set("sub_categories", selSubCategories.join(","));
+    if (selPurchaseCategories.length) params.set("purchase_categories", selPurchaseCategories.join(","));
+    if (selScorecardCategories.length) params.set("scorecard_categories", selScorecardCategories.join(","));
+    return params;
+  };
+
+  const hasActiveFilters =
+    selZones.length > 0 ||
+    selCategories.length > 0 ||
+    selCountries.length > 0 ||
+    selSubCategories.length > 0 ||
+    selPurchaseCategories.length > 0 ||
+    selScorecardCategories.length > 0;
+
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams();
-    if (selZones.length) params.set("zones", selZones.join(","));
-    if (selCategories.length) params.set("categories", selCategories.join(","));
+    const params = contextParams();
     params.set("page", "1");
     params.set("page_size", "100");
     params.set("sort", "normalized_score");
@@ -182,13 +207,11 @@ function ScorecardPage() {
       });
 
     return () => controller.abort();
-  }, [selZones, selCategories]);
+  }, [selZones, selCategories, selCountries, selSubCategories, selPurchaseCategories, selScorecardCategories]);
 
   useEffect(() => {
     const controller = new AbortController();
-    const params = new URLSearchParams();
-    if (selZones.length) params.set("zones", selZones.join(","));
-    if (selCategories.length) params.set("categories", selCategories.join(","));
+    const params = contextParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
 
     fetchJson<ScorecardSummary>(`${API_BASE}/api/scorecard/summary?${params.toString()}`, controller.signal)
@@ -198,7 +221,7 @@ function ScorecardPage() {
       });
 
     return () => controller.abort();
-  }, [selZones, selCategories, debouncedSearch]);
+  }, [selZones, selCategories, selCountries, selSubCategories, selPurchaseCategories, selScorecardCategories, debouncedSearch]);
 
   useEffect(() => {
     if (debouncedSearch.length < 2) {
@@ -210,8 +233,7 @@ function ScorecardPage() {
     const controller = new AbortController();
     setParentSearchLoading(true);
     const params = new URLSearchParams({ q: debouncedSearch, limit: "30" });
-    if (selZones.length) params.set("zones", selZones.join(","));
-    if (selCategories.length) params.set("categories", selCategories.join(","));
+    contextParams().forEach((value, key) => params.set(key, value));
 
     fetchJson<ScorecardParentSearchResponse>(`${API_BASE}/api/scorecard/parents/search?${params.toString()}`, controller.signal)
       .then((data) => {
@@ -226,7 +248,7 @@ function ScorecardPage() {
       });
 
     return () => controller.abort();
-  }, [selZones, selCategories, debouncedSearch]);
+  }, [selZones, selCategories, selCountries, selSubCategories, selPurchaseCategories, selScorecardCategories, debouncedSearch]);
 
   useEffect(() => {
     if (!leaderboard) return;
@@ -248,8 +270,7 @@ function ScorecardPage() {
     setDetailLoading(true);
 
     const params = new URLSearchParams({ name: selectedParent });
-    if (selZones.length) params.set("zones", selZones.join(","));
-    if (selCategories.length) params.set("categories", selCategories.join(","));
+    contextParams().forEach((value, key) => params.set(key, value));
 
     fetchJson<ParentDetailResponse>(`${API_BASE}/api/scorecard/parent?${params.toString()}`, controller.signal)
       .then((data) => {
@@ -267,7 +288,7 @@ function ScorecardPage() {
       });
 
     return () => controller.abort();
-  }, [selectedParent, selZones, selCategories, leaderboard, setSelectedParent]);
+  }, [selectedParent, selZones, selCategories, selCountries, selSubCategories, selPurchaseCategories, selScorecardCategories, leaderboard, setSelectedParent]);
 
   const parentOptionNames = useMemo(() => {
     const names =
@@ -290,8 +311,6 @@ function ScorecardPage() {
   };
 
   const selected = parentDetail?.scorecard ?? null;
-  const totalExpectedKpiWeight = parentDetail?.total_expected_kpi_weight ?? 0;
-
   type ComputedKpi = {
     id: string;
     name: string;
@@ -303,6 +322,7 @@ function ScorecardPage() {
     effective_earned: number;
     has_data: boolean;
     default_applicable: boolean;
+    expected_applicable: boolean;
     user_override: boolean | undefined;
     effectively_applicable: boolean;
   };
@@ -312,6 +332,9 @@ function ScorecardPage() {
     weight: number;
     earned_points: number;
     applicable_max_points: number;
+    available_kpi_weight: number;
+    expected_applicable_kpi_weight: number;
+    coverage_pct: number | null;
     pillar_pct: number | null;
     weighted_contribution: number;
     status: "applicable" | "not_applicable";
@@ -331,6 +354,7 @@ function ScorecardPage() {
     coverage_adjusted_score: number;
     total_earned: number;
     total_applicable_max: number;
+    expected_applicable_kpi_weight: number;
   } | null;
 
   const computed: ComputedScorecard = useMemo(() => {
@@ -343,6 +367,7 @@ function ScorecardPage() {
       const kpis: ComputedKpi[] = pillar.kpis.map((kpi) => {
         const hasData = kpi.earned !== null && kpi.earned !== undefined;
         const defaultApplicable = kpi.applicable;
+        const expectedApplicable = kpi.expected_applicable ?? kpi.applicable;
         const userOverride = selectedParent ? (overrides[selectedParent]?.[kpi.id] as boolean | undefined) : undefined;
         const effectivelyApplicable = userOverride ?? defaultApplicable;
         const effectiveEarned = effectivelyApplicable ? (hasData ? (kpi.earned ?? 0) : 0) : 0;
@@ -363,18 +388,34 @@ function ScorecardPage() {
           effective_earned: effectiveEarned,
           has_data: hasData,
           default_applicable: defaultApplicable,
+          expected_applicable: expectedApplicable,
           user_override: userOverride,
           effectively_applicable: effectivelyApplicable,
         };
       });
 
       const pillarPct = maxSum > 0 ? earnedSum / maxSum : null;
+      const availableKpiWeight = kpis.reduce(
+        (sum, kpi) =>
+          kpi.effectively_applicable && kpi.has_data ? sum + kpi.max_score : sum,
+        0,
+      );
+      const expectedApplicableKpiWeight = kpis.reduce((sum, kpi) => {
+        const expected = kpi.user_override ?? kpi.expected_applicable;
+        return expected ? sum + kpi.max_score : sum;
+      }, 0);
 
       return {
         pillar: pillar.pillar,
         weight: pillar.weight,
         earned_points: earnedSum,
         applicable_max_points: maxSum,
+        available_kpi_weight: availableKpiWeight,
+        expected_applicable_kpi_weight: expectedApplicableKpiWeight,
+        coverage_pct:
+          expectedApplicableKpiWeight > 0
+            ? availableKpiWeight / expectedApplicableKpiWeight
+            : null,
         pillar_pct: pillarPct,
         weighted_contribution: pillarPct === null ? 0 : pillarPct * pillar.weight,
         status: maxSum > 0 ? "applicable" : "not_applicable",
@@ -389,18 +430,16 @@ function ScorecardPage() {
     );
     const normalizedScore = applicablePillarWeight > 0 ? (weightedSum / applicablePillarWeight) * 100 : 0;
     const availableKpiWeight = pillars.reduce(
-      (sum, pillar) =>
-        sum +
-        pillar.kpis.reduce(
-          (kpiSum, kpi) =>
-            kpi.effectively_applicable && kpi.has_data ? kpiSum + kpi.max_score : kpiSum,
-          0,
-        ),
+      (sum, pillar) => sum + pillar.available_kpi_weight,
       0,
     );
-    const coverage = totalExpectedKpiWeight > 0 ? availableKpiWeight / totalExpectedKpiWeight : 0;
+    const expectedApplicableKpiWeight = pillars.reduce(
+      (sum, pillar) => sum + pillar.expected_applicable_kpi_weight,
+      0,
+    );
     const totalEarned = pillars.reduce((sum, pillar) => sum + pillar.earned_points, 0);
     const totalApplicableMax = pillars.reduce((sum, pillar) => sum + pillar.applicable_max_points, 0);
+    const coverage = expectedApplicableKpiWeight > 0 ? availableKpiWeight / expectedApplicableKpiWeight : 0;
 
     return {
       parentSupplier: selected.parentSupplier,
@@ -415,14 +454,19 @@ function ScorecardPage() {
       coverage_adjusted_score: normalizedScore * coverage,
       total_earned: totalEarned,
       total_applicable_max: totalApplicableMax,
+      expected_applicable_kpi_weight: expectedApplicableKpiWeight,
     };
-  }, [selected, parentDetail, overrides, selectedParent, totalExpectedKpiWeight]);
+  }, [selected, parentDetail, overrides, selectedParent]);
 
   const overrideCount = selectedParent ? Object.keys(overrides[selectedParent] ?? {}).length : 0;
 
   const clearFilters = () => {
     setSelZones([]);
     setSelCategories([]);
+    setSelCountries([]);
+    setSelSubCategories([]);
+    setSelPurchaseCategories([]);
+    setSelScorecardCategories([]);
     setSearch("");
   };
 
@@ -436,9 +480,7 @@ function ScorecardPage() {
   };
 
   const exportCsv = () => {
-    const params = new URLSearchParams();
-    if (selZones.length) params.set("zones", selZones.join(","));
-    if (selCategories.length) params.set("categories", selCategories.join(","));
+    const params = contextParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     const anchor = document.createElement("a");
     anchor.href = `${API_BASE}/api/scorecard/export?${params.toString()}`;
@@ -453,7 +495,7 @@ function ScorecardPage() {
   const weightedContributionText = computed ? computed.weighted_sum.toFixed(2) : "0.00";
 
   const bannerText =
-    selZones.length > 0 || selCategories.length > 0
+    hasActiveFilters
       ? "Filtered view - scores are recomputed within scorecard-category cohorts using the selected filters. Remove the filters to return to the full category cohorts."
       : `Global view - scores from cache. Percentile ranks computed across all ${cacheInfo?.parent_count ?? "..."} parent suppliers.`;
 
@@ -518,6 +560,52 @@ function ScorecardPage() {
         </div>
       </section>
 
+      <div
+        className={`scorecard-banner ${hasActiveFilters ? "is-warning" : "is-success"}`}
+      >
+        <strong>{hasActiveFilters ? "Filtered view - live scores." : "Global view - scores from cache."}</strong>
+        <span>
+          {bannerText}
+          {selZones.length > 0 && (
+            <>
+              {" "}
+              Zone filter: <strong>{selZones.join(", ")}</strong>.
+            </>
+          )}
+          {selCategories.length > 0 && (
+            <>
+              {" "}
+              Category filter: <strong>{selCategories.join(", ")}</strong>.
+            </>
+          )}
+          {selCountries.length > 0 && (
+            <>
+              {" "}
+              Country filter: <strong>{selCountries.join(", ")}</strong>.
+            </>
+          )}
+          {selSubCategories.length > 0 && (
+            <>
+              {" "}
+              Sub Category filter: <strong>{selSubCategories.join(", ")}</strong>.
+            </>
+          )}
+          {selPurchaseCategories.length > 0 && (
+            <>
+              {" "}
+              Purchase Category filter: <strong>{selPurchaseCategories.join(", ")}</strong>.
+            </>
+          )}
+          {selScorecardCategories.length > 0 && (
+            <>
+              {" "}
+              Ranking Category filter: <strong>{selScorecardCategories.join(", ")}</strong>.
+            </>
+          )}
+          {cacheInfo?.cached_at ? ` Last built ${new Date(cacheInfo.cached_at).toLocaleString()}.` : ""}
+        </span>
+      </div>
+
       <section className="scorecard-toolbar">
         <div className="scorecard-toolbar-filters">
           <MultiSelectDropdown
@@ -533,38 +621,44 @@ function ScorecardPage() {
             onChange={setSelCategories}
             searchable
           />
+          <MultiSelectDropdown
+            label="Country"
+            options={filters.countries}
+            selected={selCountries}
+            onChange={setSelCountries}
+            searchable
+          />
+          <MultiSelectDropdown
+            label="Sub Category"
+            options={filters.subCategories}
+            selected={selSubCategories}
+            onChange={setSelSubCategories}
+            searchable
+          />
+          <MultiSelectDropdown
+            label="Purchase Category"
+            options={filters.purchaseCategories}
+            selected={selPurchaseCategories}
+            onChange={setSelPurchaseCategories}
+            searchable
+          />
+          <MultiSelectDropdown
+            label="Ranking Category"
+            options={filters.scorecardCategories}
+            selected={selScorecardCategories}
+            onChange={setSelScorecardCategories}
+            searchable
+          />
+        </div>
+        <div className="scorecard-toolbar-actions">
           <button type="button" onClick={clearFilters}>
             Clear filters
           </button>
-        </div>
-        <div className="scorecard-toolbar-meta">
           <div className="scorecard-filter-summary">
-            <strong>{summary?.filtered_parent_count ?? 0}</strong> suppliers
+            <strong>{summary?.filtered_parent_count ?? 0}</strong> parent suppliers
           </div>
         </div>
       </section>
-
-      <div
-        className={`scorecard-banner ${selZones.length > 0 || selCategories.length > 0 ? "is-warning" : "is-success"}`}
-      >
-        <strong>{selZones.length > 0 || selCategories.length > 0 ? "Filtered view - live scores." : "Global view - scores from cache."}</strong>
-        <span>
-          {bannerText}
-          {selZones.length > 0 && (
-            <>
-              {" "}
-              Zone filter: <strong>{selZones.join(", ")}</strong>.
-            </>
-          )}
-          {selCategories.length > 0 && (
-            <>
-              {" "}
-              Category filter: <strong>{selCategories.join(", ")}</strong>.
-            </>
-          )}
-          {cacheInfo?.cached_at ? ` Last built ${new Date(cacheInfo.cached_at).toLocaleString()}.` : ""}
-        </span>
-      </div>
 
       <section className="scorecard-selector">
         <div className="scorecard-selector-copy">
@@ -586,7 +680,7 @@ function ScorecardPage() {
 
         <div className="scorecard-selector-controls">
           <label className="scorecard-control">
-            <span>Search supplier</span>
+            <span>Search parent supplier</span>
             <input
               type="search"
               className="sc-supplier-search"
@@ -681,7 +775,7 @@ function ScorecardPage() {
         <div className="scorecard-summary-card">
           <span>Available KPI weight</span>
           <strong>
-            {availableKpiWeightText} / {totalExpectedKpiWeight.toFixed(1)}
+            {availableKpiWeightText} / {computed ? computed.expected_applicable_kpi_weight.toFixed(1) : "0.0"}
           </strong>
           <p>Weight currently represented by applicable KPI data.</p>
         </div>
@@ -705,6 +799,9 @@ function ScorecardPage() {
                 <Th align="right">Pillar Weight</Th>
                 <Th align="right">Earned KPI Points</Th>
                 <Th align="right">Applicable KPI Max Points</Th>
+                <Th align="right">Available KPI Weight</Th>
+                <Th align="right">Expected KPI Weight</Th>
+                <Th align="right">Coverage</Th>
                 <Th align="right">Pillar Score %</Th>
                 <Th align="right">Weighted Contribution</Th>
               </tr>
@@ -722,13 +819,26 @@ function ScorecardPage() {
                           : pillar.pillar_pct >= 0.3
                             ? "is-low"
                             : "is-critical";
+                  const rowClass =
+                    pillar.expected_applicable_kpi_weight === 0
+                      ? "is-muted"
+                      : pillar.available_kpi_weight === 0
+                        ? "is-warning"
+                        : "";
 
                   return (
-                    <tr key={pillar.pillar} className={pillar.status === "not_applicable" ? "is-muted" : ""}>
+                    <tr key={pillar.pillar} className={rowClass}>
                       <Td>{pillar.pillar}</Td>
                       <Td align="right">{pillar.weight.toFixed(1)}</Td>
                       <Td align="right">{pillar.status === "applicable" ? pillar.earned_points.toFixed(2) : "N/A"}</Td>
                       <Td align="right">{pillar.status === "applicable" ? pillar.applicable_max_points.toFixed(1) : "N/A"}</Td>
+                      <Td align="right">{pillar.available_kpi_weight.toFixed(1)}</Td>
+                      <Td align="right">{pillar.expected_applicable_kpi_weight.toFixed(1)}</Td>
+                      <Td align="right">
+                        <span className={`scorecard-pill ${pillar.coverage_pct === null ? "is-neutral" : pillar.coverage_pct >= 0.8 ? "is-good" : pillar.coverage_pct >= 0.5 ? "is-warm" : "is-critical"}`}>
+                          {pillar.coverage_pct === null ? "N/A" : fmtPct(pillar.coverage_pct, 1)}
+                        </span>
+                      </Td>
                       <Td align="right">
                         <span className={`scorecard-pill ${tone}`}>
                           {pillar.pillar_pct === null ? "N/A" : fmtPct(pillar.pillar_pct, 1)}
@@ -740,7 +850,7 @@ function ScorecardPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="scorecard-empty-cell">
+                  <td colSpan={9} className="scorecard-empty-cell">
                     {detailLoading
                       ? "Loading parent scorecard..."
                       : "Search for and select a parent supplier to see the pillar-by-pillar breakdown."}
@@ -755,6 +865,9 @@ function ScorecardPage() {
                   <td align="right">{computed.applicable_pillar_weight.toFixed(1)}</td>
                   <td align="right">{computed.total_earned.toFixed(2)}</td>
                   <td align="right">{computed.total_applicable_max.toFixed(1)}</td>
+                  <td align="right">{computed.available_kpi_weight.toFixed(1)}</td>
+                  <td align="right">{computed.expected_applicable_kpi_weight.toFixed(1)}</td>
+                  <td align="right">{fmtPct(computed.coverage_pct, 1)}</td>
                   <td align="right">N/A</td>
                   <td align="right">{weightedContributionText}</td>
                 </tr>
@@ -788,7 +901,7 @@ function ScorecardPage() {
         <div className="scorecard-strip-row">
           <MiniBox label="Available KPI Weight" value={availableKpiWeightText} />
           <div className="scorecard-strip-op">/</div>
-          <MiniBox label="Total Expected KPI Weight" value={totalExpectedKpiWeight.toFixed(1)} />
+          <MiniBox label="Expected Applicable KPI Weight" value={computed ? computed.expected_applicable_kpi_weight.toFixed(1) : "0.0"} />
           <div className="scorecard-strip-op">=</div>
           <MiniBox label="Coverage" value={coverageText} />
           <div className="scorecard-strip-op">x</div>
@@ -838,7 +951,7 @@ function ScorecardPage() {
                         ? kpi.effective_earned / kpi.max_score
                         : null;
                     const isOverridden = kpi.user_override !== undefined;
-                    const isMissingApplicable = kpi.effectively_applicable && !kpi.has_data;
+                    const isMissingApplicable = kpi.expected_applicable && !kpi.has_data;
                     const rowClass = !kpi.effectively_applicable
                       ? "is-muted"
                       : isMissingApplicable
@@ -908,7 +1021,7 @@ function ScorecardPage() {
             : "N/A"}
         </span>
         <span>
-          Coverage = Available KPI Weight / Total Expected KPI Weight ({parentDetail ? parentDetail.total_expected_kpi_weight : 0})
+          Coverage = Available KPI Weight / Expected Applicable KPI Weight ({computed ? computed.expected_applicable_kpi_weight.toFixed(1) : "0.0"})
         </span>
       </section>
     </div>

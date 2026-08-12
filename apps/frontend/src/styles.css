@@ -3073,23 +3073,29 @@ details.summary-section:not([open]) > .summary-section-summary {
 }
 
 .scorecard-toolbar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  gap: 16px;
-  padding: 16px 18px;
+  gap: 16px 24px;
+  padding: 20px 18px 18px;
+  position: relative;
+  z-index: 40;
+  overflow: visible;
 }
 
 .scorecard-toolbar-filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
   align-items: end;
-  gap: 12px;
+  gap: 14px;
 }
 
-.scorecard-toolbar-meta {
+.scorecard-toolbar-actions {
   display: flex;
+  align-items: end;
   justify-content: flex-end;
+  gap: 12px;
+  padding-bottom: 1px;
 }
 
 .scorecard-filter-summary {
@@ -3117,7 +3123,10 @@ details.summary-section:not([open]) > .summary-section-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin: 18px 0 0;
   padding: 14px 18px;
+  position: relative;
+  z-index: 30;
 }
 
 .scorecard-banner strong {
@@ -3156,6 +3165,8 @@ details.summary-section:not([open]) > .summary-section-summary {
   grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.95fr) minmax(220px, 0.55fr);
   gap: 18px;
   padding: 22px;
+  position: relative;
+  z-index: 10;
 }
 
 .scorecard-selector-copy h2 {
@@ -3363,6 +3374,10 @@ details.summary-section:not([open]) > .summary-section-summary {
   width: 100%;
   border-collapse: collapse;
   background: #ffffff;
+}
+
+.scorecard-pillar-table {
+  min-width: 1180px;
 }
 
 .table-head,
@@ -3589,7 +3604,8 @@ details.summary-section:not([open]) > .summary-section-summary {
 }
 
 .scorecard-page .ms-dropdown {
-  min-width: 180px;
+  min-width: 0;
+  width: 100%;
 }
 
 .scorecard-page .ms-label {
@@ -3602,6 +3618,7 @@ details.summary-section:not([open]) > .summary-section-summary {
 }
 
 .scorecard-page .ms-trigger {
+  width: 100%;
   min-height: 46px;
   border-radius: 12px;
   border: 1px solid rgba(38, 45, 51, 0.14);
@@ -3612,6 +3629,7 @@ details.summary-section:not([open]) > .summary-section-summary {
 .scorecard-page .ms-panel {
   border-radius: 14px;
   border: 1px solid rgba(38, 45, 51, 0.12);
+  z-index: 200;
 }
 
 .scorecard-page .ms-item {
@@ -3633,10 +3651,18 @@ details.summary-section:not([open]) > .summary-section-summary {
   }
 
   .scorecard-section-heading,
-  .scorecard-strip-heading,
-  .scorecard-toolbar {
+  .scorecard-strip-heading {
     align-items: start;
     flex-direction: column;
+  }
+
+  .scorecard-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .scorecard-toolbar-actions {
+    justify-content: space-between;
+    width: 100%;
   }
 
   .scorecard-section-note {
@@ -3677,9 +3703,15 @@ details.summary-section:not([open]) > .summary-section-summary {
 
   .scorecard-toolbar-filters {
     width: 100%;
+    grid-template-columns: 1fr;
   }
 
   .scorecard-toolbar-filters .ms-dropdown {
     width: 100%;
+  }
+
+  .scorecard-toolbar-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

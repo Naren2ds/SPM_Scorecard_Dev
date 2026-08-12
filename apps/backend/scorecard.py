@@ -285,6 +285,10 @@ def _scorecard_category(row: dict[str, Any]) -> str:
     return value or "Unassigned scorecard category"
 
 
+def _is_excluded_by_scorecard_category(kpi: dict[str, Any], scorecard_category: str) -> bool:
+    return kpi.get("pillar") == "Sustainability" and scorecard_category.strip().upper() == "BST"
+
+
 def _collapse_scorecard_category(values: list[str]) -> str:
     cleaned = [value for value in values if value]
     if not cleaned:
@@ -296,6 +300,113 @@ def _collapse_scorecard_category(values: list[str]) -> str:
     top_count = most_common[0][1]
     tied = sorted(value for value, count in most_common if count == top_count)
     return tied[0]
+
+
+def _parent_scorecard_categories(
+    cache: dict[str, Any],
+    zones: set[str] | None,
+    categories: set[str] | None,
+    countries: set[str] | None,
+    sub_categories: set[str] | None,
+    purchase_categories: set[str] | None,
+    scorecard_categories: set[str] | None,
+    parents: set[str] | None,
+) -> dict[str, str]:
+    values: dict[str, list[str]] = {}
+    for kpi in KPI_CONFIGS:
+        cache_key = kpi.get("cache_key")
+        if not cache_key:
+            continue
+        for row in cache.get(cache_key, []) or []:
+            if not _passes_filters(
+                row,
+                zones,
+                categories,
+                countries,
+                sub_categories,
+                purchase_categories,
+                scorecard_categories,
+                parents,
+            ):
+                continue
+            values.setdefault(_rollup_key(row), []).append(_scorecard_category(row))
+    return {
+        parent: _collapse_scorecard_category(scorecard_category_values)
+        for parent, scorecard_category_values in values.items()
+    }
+
+
+def _index_kpi_applicability(
+    kpi: dict[str, Any],
+    rows: list[dict[str, Any]],
+    zones: set[str] | None,
+    categories: set[str] | None,
+    countries: set[str] | None,
+    sub_categories: set[str] | None,
+    purchase_categories: set[str] | None,
+    scorecard_categories: set[str] | None,
+    parents: set[str] | None,
+) -> tuple[set[str], set[str]]:
+    """Index row presence and source applicability in one pass per KPI."""
+    matched_parents: set[str] = set()
+    applicable_parents: set[str] = set()
+    for row in rows:
+        if not _passes_filters(
+            row,
+            zones,
+            categories,
+            countries,
+            sub_categories,
+            purchase_categories,
+            scorecard_categories,
+            parents,
+        ):
+            continue
+        parent = _rollup_key(row)
+        matched_parents.add(parent)
+        if (
+            _is_applicable(row.get("kpiApplicability"))
+            and not _is_excluded_by_scorecard_category(kpi, _scorecard_category(row))
+        ):
+            applicable_parents.add(parent)
+    return matched_parents, applicable_parents
+
+
+def _build_kpi_status_lookup(
+    parent_universe: set[str],
+    parent_scorecard_categories: dict[str, str],
+    kpi_results: dict[str, dict[str, dict[str, Any]]],
+    kpi_applicability_index: dict[str, tuple[set[str], set[str]]],
+) -> dict[str, dict[str, str]]:
+    """Derive each parent/KPI status once for score and coverage assembly."""
+    lookup: dict[str, dict[str, str]] = {}
+    for kpi in KPI_CONFIGS:
+        kpi_id = kpi["id"]
+        scored_parents = kpi_results[kpi_id]
+        matched_parents, applicable_parents = kpi_applicability_index.get(
+            kpi_id,
+            (set(), set()),
+        )
+        statuses: dict[str, str] = {}
+        for parent in parent_universe:
+            parent_scorecard_category = parent_scorecard_categories.get(
+                parent,
+                "Unassigned scorecard category",
+            )
+            if not kpi.get("cache_key"):
+                status = "BUSINESS_EXCLUDED"
+            elif _is_excluded_by_scorecard_category(kpi, parent_scorecard_category):
+                status = "BST_EXCLUDED"
+            elif parent in scored_parents:
+                status = "VALID_DATA"
+            elif parent not in matched_parents or parent in applicable_parents:
+                # No row, or an applicable row without enough usable values to score.
+                status = "MISSING_DATA"
+            else:
+                status = "NOT_APPLICABLE"
+            statuses[parent] = status
+        lookup[kpi_id] = statuses
+    return lookup
 
 
 def _percentile_ranks(
@@ -336,11 +447,23 @@ def _passes_filters(
     row: dict[str, Any],
     zones: set[str] | None,
     categories: set[str] | None,
-    parents: set[str] | None,
+    countries: set[str] | None = None,
+    sub_categories: set[str] | None = None,
+    purchase_categories: set[str] | None = None,
+    scorecard_categories: set[str] | None = None,
+    parents: set[str] | None = None,
 ) -> bool:
     if zones and str(row.get("zone", "")).strip() not in zones:
         return False
     if categories and str(row.get("category", "")).strip() not in categories:
+        return False
+    if countries and str(row.get("country", "")).strip() not in countries:
+        return False
+    if sub_categories and str(row.get("sub_category", "")).strip() not in sub_categories:
+        return False
+    if purchase_categories and str(row.get("purchasing_category", "")).strip() not in purchase_categories:
+        return False
+    if scorecard_categories and _scorecard_category(row) not in scorecard_categories:
         return False
     if parents and _rollup_key(row) not in parents:
         return False
@@ -351,7 +474,11 @@ def _parent_invoice_totals(
     cache: dict[str, Any],
     zones: set[str] | None,
     categories: set[str] | None,
-    parents: set[str] | None,
+    countries: set[str] | None = None,
+    sub_categories: set[str] | None = None,
+    purchase_categories: set[str] | None = None,
+    scorecard_categories: set[str] | None = None,
+    parents: set[str] | None = None,
 ) -> dict[str, float]:
     """
     Total invoice value per parent supplier, aggregated from price_divergence
@@ -360,7 +487,16 @@ def _parent_invoice_totals(
     """
     totals: dict[str, float] = {}
     for r in cache.get("price_divergence", []) or []:
-        if not _passes_filters(r, zones, categories, parents):
+        if not _passes_filters(
+            r,
+            zones,
+            categories,
+            countries,
+            sub_categories,
+            purchase_categories,
+            scorecard_categories,
+            parents,
+        ):
             continue
         if not _is_applicable(r.get("kpiApplicability")):
             continue
@@ -382,6 +518,11 @@ def _aggregate_kpi(
     zones: set[str] | None,
     categories: set[str] | None,
     parents: set[str] | None,
+    *,
+    countries: set[str] | None = None,
+    sub_categories: set[str] | None = None,
+    purchase_categories: set[str] | None = None,
+    scorecard_categories: set[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """
     Return { parent_key: { raw, ratio, applicable } } for a single KPI.
@@ -395,7 +536,18 @@ def _aggregate_kpi(
     kid = kpi["id"]
 
     for r in rows:
-        if not _passes_filters(r, zones, categories, parents):
+        if not _passes_filters(
+            r,
+            zones,
+            categories,
+            countries,
+            sub_categories,
+            purchase_categories,
+            scorecard_categories,
+            parents,
+        ):
+            continue
+        if _is_excluded_by_scorecard_category(kpi, _scorecard_category(r)):
             continue
         if not _is_applicable(r.get("kpiApplicability")):
             continue
@@ -602,6 +754,10 @@ def compute_scorecard(
     categories: Iterable[str] | None = None,
     parents: Iterable[str] | None = None,
     *,
+    countries: Iterable[str] | None = None,
+    sub_categories: Iterable[str] | None = None,
+    purchase_categories: Iterable[str] | None = None,
+    scorecard_categories: Iterable[str] | None = None,
     include_kpi_breakdown: bool = True,
     top_n: int | None = None,
 ) -> dict[str, Any]:
@@ -619,12 +775,23 @@ def compute_scorecard(
     """
     zones_set = {z for z in (zones or []) if z}
     categories_set = {c for c in (categories or []) if c}
+    countries_set = {c for c in (countries or []) if c}
+    sub_categories_set = {s for s in (sub_categories or []) if s}
+    purchase_categories_set = {p for p in (purchase_categories or []) if p}
+    scorecard_categories_set = {s for s in (scorecard_categories or []) if s}
     parents_set = {p for p in (parents or []) if p}
+    filter_args = (
+        zones_set or None,
+        categories_set or None,
+        countries_set or None,
+        sub_categories_set or None,
+        purchase_categories_set or None,
+        scorecard_categories_set or None,
+    )
 
     invoice_totals = _parent_invoice_totals(
         cache,
-        zones_set or None,
-        categories_set or None,
+        *filter_args,
         parents_set or None,
     )
 
@@ -644,15 +811,26 @@ def compute_scorecard(
     # Step 1 — per-KPI, per-parent aggregation across the full population.
     # top_parent_set is only used to filter the final response, NOT here.
     kpi_results: dict[str, dict[str, dict[str, Any]]] = {}
+    kpi_applicability_index: dict[str, tuple[set[str], set[str]]] = {}
     kpi_meta: list[dict[str, Any]] = []
     for kpi in KPI_CONFIGS:
         rows = cache.get(kpi["cache_key"], []) or []
+        kpi_applicability_index[kpi["id"]] = _index_kpi_applicability(
+            kpi,
+            rows,
+            *filter_args,
+            parents_set or None,
+        )
         agg = _aggregate_kpi(
             kpi,
             rows,
-            zones_set or None,
-            categories_set or None,
+            filter_args[0],
+            filter_args[1],
             parents_set or None,
+            countries=filter_args[2],
+            sub_categories=filter_args[3],
+            purchase_categories=filter_args[4],
+            scorecard_categories=filter_args[5],
         )
         # For quartile KPIs (CO2), collect individual row values so Q1/Q3 are
         # computed from the supplier-level distribution — matching the frontend
@@ -662,7 +840,13 @@ def compute_scorecard(
             individual_vals = []
             value_field = "co2Emission"  # only quartile KPI in current config
             for r in (rows or []):
-                if not _passes_filters(r, zones_set or None, categories_set or None, parents_set or None):
+                if not _passes_filters(
+                    r,
+                    *filter_args,
+                    parents_set or None,
+                ):
+                    continue
+                if _is_excluded_by_scorecard_category(kpi, _scorecard_category(r)):
                     continue
                 if not _is_applicable(r.get("kpiApplicability")):
                     continue
@@ -687,6 +871,17 @@ def compute_scorecard(
     parent_universe: set[str] = set()
     for scored in kpi_results.values():
         parent_universe.update(scored.keys())
+    parent_scorecard_categories = _parent_scorecard_categories(
+        cache,
+        *filter_args,
+        parents_set or None,
+    )
+    kpi_status_lookup = _build_kpi_status_lookup(
+        parent_universe,
+        parent_scorecard_categories,
+        kpi_results,
+        kpi_applicability_index,
+    )
 
     # Total expected KPI weight across all pillars (for coverage %).
     total_expected_weight = sum(k["max_score"] for k in KPI_CONFIGS)
@@ -701,8 +896,13 @@ def compute_scorecard(
         weighted_sum = 0.0
         applicable_pillar_weight = 0.0
         available_kpi_weight = 0.0
+        expected_applicable_kpi_weight = 0.0
         total_earned = 0.0
         total_applicable_max = 0.0
+        parent_scorecard_category = parent_scorecard_categories.get(
+            parent,
+            "Unassigned scorecard category",
+        )
 
         for pillar_name, pillar_weight in PILLAR_WEIGHTS.items():
             pillar_kpis = kpis_by_pillar.get(pillar_name, [])
@@ -712,6 +912,10 @@ def compute_scorecard(
 
             for kpi in pillar_kpis:
                 scored = kpi_results[kpi["id"]].get(parent)
+                applicability_status = kpi_status_lookup[kpi["id"]][parent]
+                expected_applicable = applicability_status in {"VALID_DATA", "MISSING_DATA"}
+                if expected_applicable:
+                    expected_applicable_kpi_weight += kpi["max_score"]
                 if scored is None:
                     if include_kpi_breakdown:
                         kpi_breakdown.append({
@@ -719,10 +923,11 @@ def compute_scorecard(
                             "name": kpi["name"],
                             "max_score": kpi["max_score"],
                             "raw": None,
-                            "scorecard_category": None,
+                            "scorecard_category": parent_scorecard_category if expected_applicable else None,
                             "attainment": None,
                             "earned": None,
                             "applicable": False,
+                            "expected_applicable": expected_applicable,
                             "floor_used": kpi["floor"],
                             "target_used": kpi["target"],
                         })
@@ -738,6 +943,7 @@ def compute_scorecard(
                         "percentile": scored.get("percentile"),
                         "earned": scored["earned"],
                         "applicable": True,
+                        "expected_applicable": True,
                         "floor_used": scored["floor_used"],
                         "target_used": scored["target_used"],
                     })
@@ -775,8 +981,8 @@ def compute_scorecard(
             else 0.0
         )
         coverage = (
-            available_kpi_weight / total_expected_weight
-            if total_expected_weight > 0
+            available_kpi_weight / expected_applicable_kpi_weight
+            if expected_applicable_kpi_weight > 0
             else 0.0
         )
         coverage_adjusted = normalized * coverage
@@ -787,6 +993,7 @@ def compute_scorecard(
             "coverage_pct": round(coverage, 4),
             "coverage_adjusted_score": round(coverage_adjusted, 2),
             "applicable_pillar_weight": applicable_pillar_weight,
+            "expected_applicable_kpi_weight": round(expected_applicable_kpi_weight, 2),
             "total_earned": round(total_earned, 2),
             "total_applicable_max": round(total_applicable_max, 2),
             "invoice_value": round(invoice_totals.get(parent, 0.0), 2),
@@ -826,9 +1033,13 @@ def _score_band(score: float) -> str:
 # ─── Filter option discovery (for slicer dropdowns) ────────────────────────
 
 def list_filter_options(cache: dict[str, Any]) -> dict[str, list[str]]:
-    """Collect distinct zones / categories / parent suppliers across all KPIs."""
+    """Collect distinct scorecard slicer values across all KPIs."""
     zones: set[str] = set()
     categories: set[str] = set()
+    countries: set[str] = set()
+    sub_categories: set[str] = set()
+    purchase_categories: set[str] = set()
+    scorecard_categories: set[str] = set()
     parents: set[str] = set()
 
     for kpi in KPI_CONFIGS:
@@ -839,6 +1050,18 @@ def list_filter_options(cache: dict[str, Any]) -> dict[str, list[str]]:
             c = str(r.get("category", "") or "").strip()
             if c:
                 categories.add(c)
+            country = str(r.get("country", "") or "").strip()
+            if country:
+                countries.add(country)
+            sub_category = str(r.get("sub_category", "") or "").strip()
+            if sub_category:
+                sub_categories.add(sub_category)
+            purchase_category = str(r.get("purchasing_category", "") or "").strip()
+            if purchase_category:
+                purchase_categories.add(purchase_category)
+            ranking_category = _scorecard_category(r)
+            if ranking_category:
+                scorecard_categories.add(ranking_category)
             p = _rollup_key(r)
             if p and p != "(Unknown)":
                 parents.add(p)
@@ -846,5 +1069,9 @@ def list_filter_options(cache: dict[str, Any]) -> dict[str, list[str]]:
     return {
         "zones": sorted(zones),
         "categories": sorted(categories),
+        "countries": sorted(countries),
+        "subCategories": sorted(sub_categories),
+        "purchaseCategories": sorted(purchase_categories),
+        "scorecardCategories": sorted(scorecard_categories),
         "parents": sorted(parents),
     }

@@ -10,10 +10,12 @@ Databricks source table
     -> fetch_*.py connector
     -> processed CSV in apps/backend/data/
     -> server loads CSV into _cache
-    -> KPI pages read from _cache
+    -> KPI pages use one of two loading paths:
+       1. optimized KPIs recalculate in backend after slicers
+       2. consistent KPIs recalculate in frontend after slicers
     -> compute_scorecard() builds normalized scorecard
     -> _scored_cache stores final scorecard in memory
-    -> frontend calls API and renders the UI
+    -> frontend renders the UI
 ```
 
 ## 2. Raw KPI Flow
@@ -48,7 +50,10 @@ Example group-by dimensions can include:
 - `zone`
 - `country`
 - `category`
+- `sub_category`
+- `purchasing_category`
 - `scorecard_category`
+- `vendor_account_number`
 - `year`
 - `month`
 - `kpiApplicability`
@@ -112,7 +117,73 @@ The exact raw ratio depends on the KPI:
 - SC, SM, ECL: mean value per parent supplier
 - CO2: quartile-based scoring on emission values
 
-## 5. Normalized Scorecard Flow
+## 5. Individual KPI Loading Paths
+
+Individual KPI pages now follow two loading patterns.
+
+### Path A: Backend-Calculated Optimized KPIs
+
+Used by:
+
+- DOT
+- IOT
+- Price Divergence
+
+Flow:
+
+```text
+Frontend slicers
+   -> API query params
+   -> backend filters cached rows
+   -> backend recalculates KPI result, cohort, rank, percentile, and earned score
+   -> frontend displays returned results
+```
+
+For these pages, the frontend sends slicers such as `category`,
+`sub_category`, `purchasing_category`, `scorecard_category`,
+`vendor_account_number`, `year`, `month`, `zone`, and `country` to the backend.
+The backend read model applies the filters against `_cache` and returns the
+final results for the selected cohort.
+
+### Path B: Frontend-Calculated Consistent KPIs
+
+Used by:
+
+- Supplier Assessment
+- Supplier Compliance
+- Supplier Maturity
+- CO2 Emission
+- Eclipse
+- Invoice Conformity
+
+Flow:
+
+```text
+Backend cached rows
+   -> frontend receives KPI source rows
+   -> frontend applies slicers
+   -> frontend recalculates visible KPI result, cohort, rank, percentile, and earned score
+   -> frontend displays results
+```
+
+For these pages, the backend provides refreshed cached rows, while the frontend
+shared KPI model performs the slicer-specific calculation.
+
+In both paths, slicers define the cohort. Changing `Sub Category`,
+`Purchase Category`, `Ranking Category`, or `Account Number` can change the
+rows included, the peer comparison group, percentile, rank, and earned score.
+
+Display label mapping:
+
+```text
+category              -> Category
+sub_category          -> Sub Category
+purchasing_category   -> Purchase Category
+scorecard_category    -> Ranking Category
+vendor_account_number -> Account Number
+```
+
+## 6. Normalized Scorecard Flow
 
 Once every KPI has an earned score, the scorecard is assembled:
 
@@ -136,7 +207,39 @@ coverage_adjusted_score = normalized_score * coverage
 
 The pillar weights are defined in `apps/backend/scorecard.py`.
 
-## 6. Refresh Flow
+### Normalized Scorecard Control Mapping
+
+The Normalized Scorecard page mixes backend cohort recomputation with frontend
+selection controls.
+
+| Control | Behavior | Where it happens |
+| --- | --- | --- |
+| `Zone` | Recomputes the scorecard cohort for the selected zone(s). | Backend recompute |
+| `Category` | Recomputes the scorecard cohort for the selected category/categories. | Backend recompute |
+| `Country` | Recomputes the scorecard cohort for the selected country/countries. | Backend recompute |
+| `Sub Category` | Recomputes the scorecard cohort for the selected sub-category values. | Backend recompute |
+| `Purchase Category` | Recomputes the scorecard cohort for the selected purchasing category values. | Backend recompute |
+| `Ranking Category` | Recomputes the scorecard cohort for the selected `scorecard_category` values. | Backend recompute |
+| `Parent Supplier` | Selects one parent supplier from the current computed cohort and shows its detail. | Row selection |
+| `Search Supplier` | Searches parent suppliers within the current cohort so a parent can be selected. | Search + row selection |
+
+Practical flow:
+
+```text
+No filters
+   -> frontend reads global backend _scored_cache
+
+Zone, Category, Country, Sub Category, Purchase Category, or Ranking Category selected
+   -> frontend sends filters to backend
+   -> backend reruns compute_scorecard(...) for that cohort
+   -> frontend renders the filtered backend result
+
+Parent Supplier or Search Supplier used
+   -> frontend selects a parent from the current scorecard cohort
+   -> no full scorecard recomputation just for that parent
+```
+
+## 7. Refresh Flow
 
 When you refresh a KPI dataset, the flow is:
 
@@ -153,27 +256,41 @@ Refresh endpoint
 For the normalized scorecard, the backend also rebuilds the scorecard cache
 at startup and after refresh.
 
-## 7. Frontend View
+## 8. Frontend View
 
-The frontend does not calculate the final score itself in normal usage.
-It mainly:
+The frontend has two roles:
 
-- calls the KPI API to show raw/processed KPI rows
-- calls the scorecard API to show normalized scores
-- renders whatever the backend returns
+- For optimized KPIs, it sends slicers to the backend and renders returned
+  calculated results.
+- For consistent KPIs, it receives cached KPI rows and recalculates the selected
+  slicer view locally.
+- For the normalized scorecard, it calls the scorecard API and renders the
+  backend `_scored_cache` results.
 
-## 8. Short Version
+## 9. Short Version
 
 If you want the shortest mental model:
 
 ```text
-Raw data -> CSV -> _cache -> KPI score -> _scored_cache -> frontend
+Raw data -> CSV -> _cache
+
+Optimized KPIs:
+_cache -> backend applies slicers and recalculates -> frontend
+
+Consistent KPIs:
+_cache -> frontend applies slicers and recalculates -> frontend
+
+Normalized scorecard:
+_cache -> compute_scorecard() -> _scored_cache -> frontend
 ```
 
-## 9. Key Files
+## 10. Key Files
 
 - `apps/backend/server.py`
 - `apps/backend/scorecard.py`
+- `apps/backend/dot_read_model.py`
+- `apps/backend/iot_read_model.py`
+- `apps/backend/pdiv_read_model.py`
 - `apps/backend/fetch_dot_kpi.py`
 - `apps/backend/fetch_iot_kpi.py`
 - `apps/backend/fetch_supplier_assessment.py`
@@ -183,8 +300,10 @@ Raw data -> CSV -> _cache -> KPI score -> _scored_cache -> frontend
 - `apps/backend/fetch_eclipse.py`
 - `apps/backend/fetch_invoice_conformity.py`
 - `apps/backend/fetch_price_divergence.py`
+- `apps/frontend/src/pages/ConsistentKpiPage.tsx`
+- `apps/frontend/src/shared/consistentKpiModel.ts`
 
-## 10. One-Page Visual Diagram
+## 11. One-Page Visual Diagram
 
 ```text
                                ALL 9 KPI FLOWS

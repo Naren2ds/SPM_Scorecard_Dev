@@ -749,10 +749,18 @@ function ScorecardPage() {
           </label>
         </div>
 
-        <div className="scorecard-selector-score">
-          <span>Normalized score</span>
-          <strong style={computed ? { color: bandStyles[computed.band].fg } : undefined}>{normalizedScoreText}</strong>
-          <p>Performance only. Coverage stays separate.</p>
+        <div className="scorecard-selector-score scorecard-selector-score-dual">
+          <div className="scorecard-selector-score-item">
+            <span>Normalized score</span>
+            <strong style={computed ? { color: bandStyles[computed.band].fg } : undefined}>{normalizedScoreText}</strong>
+            <p>Performance only.</p>
+          </div>
+          <div className="scorecard-selector-score-divider" />
+          <div className="scorecard-selector-score-item">
+            <span>Coverage-adjusted</span>
+            <strong className="scorecard-adjusted-score-value">{coverageAdjustedText}</strong>
+            <p>After data completeness.</p>
+          </div>
         </div>
       </section>
 
@@ -763,9 +771,9 @@ function ScorecardPage() {
           <p>Completeness of the score.</p>
         </div>
         <div className="scorecard-summary-card">
-          <span>Coverage-adjusted score</span>
-          <strong>{coverageAdjustedText}</strong>
-          <p>Normalized score after missing coverage is applied.</p>
+          <span>Earned points</span>
+          <strong>{computed ? computed.total_earned.toFixed(2) : "—"} / {computed ? computed.total_applicable_max.toFixed(1) : "—"}</strong>
+          <p>Points scored out of applicable KPI maximum.</p>
         </div>
         <div className="scorecard-summary-card">
           <span>Applicable pillar weight</span>

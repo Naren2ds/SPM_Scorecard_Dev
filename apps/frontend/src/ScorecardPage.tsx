@@ -886,6 +886,15 @@ function ScorecardPage() {
                   {showCoverage && <td align="right">{computed.expected_applicable_kpi_weight.toFixed(1)}</td>}
                   {showCoverage && <td align="right">{fmtPct(computed.coverage_pct, 1)}</td>}
                 </tr>
+                <tr className="scorecard-tfoot-score-row">
+                  <td colSpan={5} className="scorecard-tfoot-score-label">Normalized Score</td>
+                  <td align="right" className="scorecard-tfoot-score-value">{normalizedScoreText}</td>
+                  {showCoverage && <td colSpan={3} />}
+                </tr>
+                <tr className="scorecard-tfoot-score-row scorecard-tfoot-adjusted-row">
+                  <td colSpan={showCoverage ? 8 : 5} className="scorecard-tfoot-score-label">Coverage-Adjusted Score</td>
+                  <td align="right" className="scorecard-tfoot-score-value scorecard-tfoot-adjusted-value">{coverageAdjustedText}</td>
+                </tr>
               </tfoot>
             )}
           </table>

@@ -3427,6 +3427,37 @@ details.summary-section:not([open]) > .summary-section-summary {
   font-weight: 700;
 }
 
+.scorecard-tfoot-score-row td {
+  background: #f0f2f5;
+  border-top: 1px solid rgba(38, 45, 51, 0.12);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.scorecard-tfoot-score-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #6a737c;
+  text-transform: uppercase;
+}
+
+.scorecard-tfoot-score-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #26303a;
+}
+
+.scorecard-tfoot-adjusted-row td {
+  background: #eef4ff;
+  border-top: none;
+}
+
+.scorecard-tfoot-adjusted-value {
+  color: #2d5fa6;
+}
+
 .table-head-group {
   border-bottom: 2px solid rgba(38, 45, 51, 0.12);
   font-size: 0.58rem;

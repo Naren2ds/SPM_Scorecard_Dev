@@ -3471,38 +3471,15 @@ details.summary-section:not([open]) > .summary-section-summary {
   border-left: 2px solid #c5d8f7;
 }
 
-.scorecard-section-heading-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.scorecard-coverage-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(38, 45, 51, 0.2);
-  background: transparent;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #6a737c;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-
-.scorecard-coverage-toggle:hover {
-  background: #f0f2f5;
-  color: #26303a;
-}
-
-.scorecard-coverage-toggle.is-active {
-  background: #eef4ff;
-  border-color: #2d5fa6;
+.td-coverage {
+  background: #f5f8ff;
   color: #2d5fa6;
+  border-left: 1px solid #dce8f9;
+  font-variant-numeric: tabular-nums;
+}
+
+.scorecard-table tbody tr:hover .td-coverage {
+  background: #eef4ff;
 }
 
 .scorecard-pill {

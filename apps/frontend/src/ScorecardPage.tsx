@@ -749,14 +749,13 @@ function ScorecardPage() {
           </label>
         </div>
 
-        <div className="scorecard-selector-score scorecard-selector-score-dual">
-          <div className="scorecard-selector-score-item">
+        <div className="scorecard-selector-scores">
+          <div className="scorecard-selector-score">
             <span>Normalized score</span>
             <strong style={computed ? { color: bandStyles[computed.band].fg } : undefined}>{normalizedScoreText}</strong>
             <p>Performance only.</p>
           </div>
-          <div className="scorecard-selector-score-divider" />
-          <div className="scorecard-selector-score-item">
+          <div className="scorecard-selector-score">
             <span>Coverage-adjusted</span>
             <strong className="scorecard-adjusted-score-value">{coverageAdjustedText}</strong>
             <p>After data completeness.</p>
@@ -772,19 +771,28 @@ function ScorecardPage() {
         </div>
         <div className="scorecard-summary-card">
           <span>Earned points</span>
-          <strong>{computed ? computed.total_earned.toFixed(2) : "—"} / {computed ? computed.total_applicable_max.toFixed(1) : "—"}</strong>
+          <strong>
+            {computed && computed.total_applicable_max > 0
+              ? `${((computed.total_earned / computed.total_applicable_max) * 100).toFixed(1)}%`
+              : "—"}
+          </strong>
+          <small>{computed ? computed.total_earned.toFixed(2) : "—"} / {computed ? computed.total_applicable_max.toFixed(1) : "—"} pts</small>
           <p>Points scored out of applicable KPI maximum.</p>
         </div>
         <div className="scorecard-summary-card">
           <span>Applicable pillar weight</span>
-          <strong>{applicablePillarWeightText} / 100</strong>
+          <strong>{computed ? `${computed.applicable_pillar_weight.toFixed(1)}%` : "—"}</strong>
+          <small>{applicablePillarWeightText} / 100</small>
           <p>Official denominator for the normalized score.</p>
         </div>
         <div className="scorecard-summary-card">
           <span>Available KPI weight</span>
           <strong>
-            {availableKpiWeightText} / {computed ? computed.expected_applicable_kpi_weight.toFixed(1) : "0.0"}
+            {computed && computed.expected_applicable_kpi_weight > 0
+              ? `${((computed.available_kpi_weight / computed.expected_applicable_kpi_weight) * 100).toFixed(1)}%`
+              : "—"}
           </strong>
+          <small>{availableKpiWeightText} / {computed ? computed.expected_applicable_kpi_weight.toFixed(1) : "0.0"}</small>
           <p>Weight currently represented by applicable KPI data.</p>
         </div>
       </section>

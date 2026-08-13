@@ -3275,6 +3275,12 @@ details.summary-section:not([open]) > .summary-section-summary {
   text-transform: uppercase;
 }
 
+.scorecard-selector-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .scorecard-selector-score {
   padding: 18px;
   border-radius: 16px;
@@ -3285,33 +3291,6 @@ details.summary-section:not([open]) > .summary-section-summary {
   gap: 6px;
   text-align: right;
 }
-
-.scorecard-selector-score-dual {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 0;
-}
-
-.scorecard-selector-score-item {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  flex: 1;
-  text-align: right;
-}
-
-.scorecard-selector-score-divider {
-  width: 1px;
-  background: rgba(38, 45, 51, 0.1);
-  margin: 0 16px;
-  align-self: stretch;
-}
-
-.scorecard-adjusted-score-value {
-  color: #2d5fa6 !important;
-}
-
 .scorecard-selector-score span {
   color: #6a737c;
   font-family: var(--mono);
@@ -3322,9 +3301,13 @@ details.summary-section:not([open]) > .summary-section-summary {
 }
 
 .scorecard-selector-score strong {
-  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-size: clamp(1.8rem, 4vw, 3rem);
   line-height: 0.95;
   letter-spacing: -0.03em;
+}
+
+.scorecard-adjusted-score-value {
+  color: #2d5fa6 !important;
 }
 
 .scorecard-selector-score p {
@@ -3355,6 +3338,14 @@ details.summary-section:not([open]) > .summary-section-summary {
   font-size: clamp(1.5rem, 3vw, 2.4rem);
   line-height: 1;
   letter-spacing: -0.03em;
+}
+
+.scorecard-summary-card small {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6a737c;
+  letter-spacing: 0.03em;
 }
 
 .scorecard-summary-card p {

@@ -148,6 +148,7 @@ function ScorecardPage() {
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [cacheInfo, setCacheInfo] = useState<{ cached_at: string | null; parent_count: number } | null>(null);
   const [overrides, setOverrides] = useState<Record<string, Record<string, boolean>>>({});
+  const [showCoverage, setShowCoverage] = useState(false);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -787,23 +788,35 @@ function ScorecardPage() {
             <p className="scorecard-eyebrow">Pillar roll-up</p>
             <h2>Earned points - pillar % - weighted contribution</h2>
           </div>
-          <p className="scorecard-section-note">
-            The official normalized score denominator remains applicable pillar weight.
-          </p>
+          <div className="scorecard-section-heading-right">
+            <button
+              className={`scorecard-coverage-toggle${showCoverage ? " is-active" : ""}`}
+              onClick={() => setShowCoverage((v) => !v)}
+            >
+              {showCoverage ? "Hide coverage columns" : "Show coverage columns"}
+            </button>
+            <p className="scorecard-section-note">
+              The official normalized score denominator remains applicable pillar weight.
+            </p>
+          </div>
         </div>
         <div className="scorecard-table-frame">
           <table className="scorecard-table scorecard-pillar-table">
             <thead>
               <tr>
+                <th colSpan={6} className="table-head table-head-group">Normalized Scorecard</th>
+                {showCoverage && <th colSpan={3} className="table-head table-head-group table-head-group-coverage">Coverage (data completeness)</th>}
+              </tr>
+              <tr>
                 <Th>Pillar</Th>
                 <Th align="right">Pillar Weight</Th>
                 <Th align="right">Earned KPI Points</Th>
                 <Th align="right">Applicable KPI Max Points</Th>
-                <Th align="right">Available KPI Weight</Th>
-                <Th align="right">Expected KPI Weight</Th>
-                <Th align="right">Coverage</Th>
                 <Th align="right">Pillar Score %</Th>
                 <Th align="right">Weighted Contribution</Th>
+                {showCoverage && <Th align="right">Available KPI Weight</Th>}
+                {showCoverage && <Th align="right">Expected KPI Weight</Th>}
+                {showCoverage && <Th align="right">Coverage</Th>}
               </tr>
             </thead>
             <tbody>
@@ -832,25 +845,27 @@ function ScorecardPage() {
                       <Td align="right">{pillar.weight.toFixed(1)}</Td>
                       <Td align="right">{pillar.status === "applicable" ? pillar.earned_points.toFixed(2) : "N/A"}</Td>
                       <Td align="right">{pillar.status === "applicable" ? pillar.applicable_max_points.toFixed(1) : "N/A"}</Td>
-                      <Td align="right">{pillar.available_kpi_weight.toFixed(1)}</Td>
-                      <Td align="right">{pillar.expected_applicable_kpi_weight.toFixed(1)}</Td>
-                      <Td align="right">
-                        <span className={`scorecard-pill ${pillar.coverage_pct === null ? "is-neutral" : pillar.coverage_pct >= 0.8 ? "is-good" : pillar.coverage_pct >= 0.5 ? "is-warm" : "is-critical"}`}>
-                          {pillar.coverage_pct === null ? "N/A" : fmtPct(pillar.coverage_pct, 1)}
-                        </span>
-                      </Td>
                       <Td align="right">
                         <span className={`scorecard-pill ${tone}`}>
                           {pillar.pillar_pct === null ? "N/A" : fmtPct(pillar.pillar_pct, 1)}
                         </span>
                       </Td>
                       <Td align="right">{pillar.status === "applicable" ? pillar.weighted_contribution.toFixed(2) : "0.00"}</Td>
+                      {showCoverage && <Td align="right">{pillar.available_kpi_weight.toFixed(1)}</Td>}
+                      {showCoverage && <Td align="right">{pillar.expected_applicable_kpi_weight.toFixed(1)}</Td>}
+                      {showCoverage && (
+                        <Td align="right">
+                          <span className={`scorecard-pill ${pillar.coverage_pct === null ? "is-neutral" : pillar.coverage_pct >= 0.8 ? "is-good" : pillar.coverage_pct >= 0.5 ? "is-warm" : "is-critical"}`}>
+                            {pillar.coverage_pct === null ? "N/A" : fmtPct(pillar.coverage_pct, 1)}
+                          </span>
+                        </Td>
+                      )}
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="scorecard-empty-cell">
+                  <td colSpan={showCoverage ? 9 : 6} className="scorecard-empty-cell">
                     {detailLoading
                       ? "Loading parent scorecard..."
                       : "Search for and select a parent supplier to see the pillar-by-pillar breakdown."}
@@ -865,11 +880,11 @@ function ScorecardPage() {
                   <td align="right">{computed.applicable_pillar_weight.toFixed(1)}</td>
                   <td align="right">{computed.total_earned.toFixed(2)}</td>
                   <td align="right">{computed.total_applicable_max.toFixed(1)}</td>
-                  <td align="right">{computed.available_kpi_weight.toFixed(1)}</td>
-                  <td align="right">{computed.expected_applicable_kpi_weight.toFixed(1)}</td>
-                  <td align="right">{fmtPct(computed.coverage_pct, 1)}</td>
                   <td align="right">N/A</td>
                   <td align="right">{weightedContributionText}</td>
+                  {showCoverage && <td align="right">{computed.available_kpi_weight.toFixed(1)}</td>}
+                  {showCoverage && <td align="right">{computed.expected_applicable_kpi_weight.toFixed(1)}</td>}
+                  {showCoverage && <td align="right">{fmtPct(computed.coverage_pct, 1)}</td>}
                 </tr>
               </tfoot>
             )}

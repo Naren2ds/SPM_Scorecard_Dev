@@ -185,3 +185,176 @@ Since both are already placeholder entries:
 - The primary dependency is **getting the Databricks table/view from the data team**
 - NPS scoring is likely linear attainment (higher is better, 0–10 scale typically)
 - Turnover scoring direction needs business clarification (lower turnover = better supplier stability)
+
+---
+
+## Zone-Specific (Local) KPIs
+
+> **Question:** What if a new KPI applies only to a specific zone (e.g., EUR) and not to other zones (APAC, LATAM)?
+> **Answer:** The existing `kpiApplicability` engine already handles this with zero changes to the scoring formula.
+
+---
+
+### The Mathematical Contract
+
+The pillar weight is a **global constant**:
+
+```
+Service Level:  pillar_weight = 40   (fixed, never changes)
+```
+
+But `max_sum` — the denominator in `pillar_pct = earned_sum / max_sum` — is computed **per supplier**, not globally. Only KPIs with a scored result for that supplier are added to `max_sum`. This means:
+
+- A EUR supplier evaluated on 4 KPIs has `max_sum = 30`
+- A LATAM supplier evaluated on 3 KPIs has `max_sum = 25`
+- Both can still achieve `pillar_pct = 100%` and `weighted = 40`
+
+The scoring is always **"how well did you perform on what was expected of you"**.
+
+---
+
+### Step-by-Step Example: Adding "EUR Delivery Quality" (EDQ, max_score=5)
+
+#### Three suppliers
+
+| Supplier | Zone | DOT raw | SA raw | SC raw | EDQ raw |
+|----------|------|---------|--------|--------|---------|
+| ARDAGH | EUR | 88% | 75% | 80% | 82% |
+| APAC Corp | APAC | 90% | 70% | 85% | N/A |
+| LATAM Brew | LATAM | 82% | 65% | 75% | N/A |
+
+---
+
+#### SCENARIO A — No local KPI (DOT + SA + SC only)
+
+All three suppliers share the same `max_sum = 25`.
+
+**ARDAGH (EUR) attainment:**
+
+| KPI | raw | floor | target | attainment | earned |
+|-----|-----|-------|--------|------------|--------|
+| DOT | 0.88 | 0.70 | 0.85 | (0.88-0.70)/(0.85-0.70) = **1.0** (capped) | 10.0 |
+| SA | 0.75 | 0.50 | 0.80 | (0.75-0.50)/(0.80-0.50) = **0.833** | 8.33 |
+| SC | 0.80 | 0.60 | 0.90 | (0.80-0.60)/(0.90-0.60) = **0.667** | 3.33 |
+
+```
+earned_sum = 10.0 + 8.33 + 3.33 = 21.67
+max_sum    = 10 + 10 + 5         = 25
+pillar_pct = 21.67 / 25          = 86.7%
+weighted   = 86.7% × 40          = 34.67
+```
+
+Same `max_sum = 25` applies to APAC Corp and LATAM Brew — all three evaluated on identical scale.
+
+---
+
+#### SCENARIO B — With zone-specific KPI EDQ (max_score=5, EUR only)
+
+**Step 1 — Add to `KPI_CONFIGS` in `scorecard.py`:**
+
+```python
+{
+    "id": "EDQ",
+    "name": "EUR Delivery Quality",
+    "pillar": "Service Level",
+    "cache_key": "eur_delivery_quality",
+    "max_score": 5.0,
+    "floor": 0.60,
+    "target": 0.90,
+    "direction": "higher",
+    "unit": "percent",
+},
+```
+
+**Step 2 — Critical line in `fetch_eur_delivery_quality.py`:**
+
+```python
+def process(df: pd.DataFrame) -> pd.DataFrame:
+    # Every non-EUR row MUST appear with "Not Applicable" — never omit rows
+    df["kpiApplicability"] = df["zone"].apply(
+        lambda z: "Applicable" if z == "EUR" else "Not Applicable"
+    )
+    return df
+```
+
+**Step 3 — Trace the math per supplier:**
+
+**ARDAGH (EUR) — EDQ attainment = (0.82-0.60)/(0.90-0.60) = 0.733, earned = 3.67**
+
+| KPI | earned | added to max_sum? |
+|-----|--------|-------------------|
+| DOT | 10.0 | ✅ |
+| SA | 8.33 | ✅ |
+| SC | 3.33 | ✅ |
+| EDQ | 3.67 | ✅ (kpiApplicability = "Applicable") |
+
+```
+earned_sum = 10.0 + 8.33 + 3.33 + 3.67 = 25.33
+max_sum    = 10 + 10 + 5 + 5            = 30
+pillar_pct = 25.33 / 30                 = 84.4%
+weighted   = 84.4% × 40                 = 33.77
+```
+
+**APAC Corp (APAC) — EDQ = NOT_APPLICABLE**
+
+| KPI | earned | added to max_sum? |
+|-----|--------|-------------------|
+| DOT | ~9.0 | ✅ |
+| SA | ~6.67 | ✅ |
+| SC | ~4.17 | ✅ |
+| EDQ | 0 | ❌ (kpiApplicability = "Not Applicable") |
+
+```
+earned_sum = 9.0 + 6.67 + 4.17 = 19.83
+max_sum    = 10 + 10 + 5        = 25       ← identical to Scenario A
+pillar_pct = 19.83 / 25         = 79.3%
+weighted   = 79.3% × 40         = 31.72
+```
+
+**LATAM Brew (LATAM) — identical to APAC Corp logic. max_sum stays at 25.**
+
+---
+
+#### Side-by-side impact
+
+| Supplier | Scenario A max_sum | Scenario B max_sum | Change? |
+|----------|--------------------|--------------------|---------|
+| ARDAGH (EUR) | 25 | **30** | ✅ Extra 5 pts to earn — harder ceiling |
+| APAC Corp | 25 | 25 | No change |
+| LATAM Brew | 25 | 25 | No change |
+
+Adding EDQ affects **only EUR suppliers**. APAC and LATAM are completely untouched.
+
+---
+
+### ⚠️ Critical: Missing Rows vs. "Not Applicable" Rows
+
+Inside `_build_kpi_status_lookup()`:
+
+```python
+elif parent not in matched_parents or parent in applicable_parents:
+    status = "MISSING_DATA"    # row absent OR applicable row with no scoreable value
+else:
+    status = "NOT_APPLICABLE"  # row present with kpiApplicability = "Not Applicable"
+```
+
+| Situation | Status assigned | Counted in Coverage? |
+|-----------|----------------|----------------------|
+| Row present, `kpiApplicability = "Not Applicable"` | `NOT_APPLICABLE` | ❌ Not counted — correct |
+| Row absent entirely | `MISSING_DATA` | ✅ Counted — **wrongly reduces coverage %** for that supplier |
+
+**Rule: always include explicit `"Not Applicable"` rows for out-of-zone suppliers in your fetch module. Never omit them.**
+
+---
+
+### Files touched for a zone-specific KPI
+
+| # | File | What you do |
+|---|------|-------------|
+| 1 | `apps/backend/scorecard.py` | Add the new KPI entry to `KPI_CONFIGS` |
+| 2 | `apps/backend/fetch_eur_delivery_quality.py` | New file — Databricks query + `process()` setting `kpiApplicability` |
+| 3 | `apps/backend/server.py` | Add CSV path constant, cache load on startup, GET + refresh endpoints |
+| 4 | `apps/backend/data/eur_delivery_quality.csv` | Seed file for local dev/testing |
+| 5 | `apps/backend/refresh_scorecard_data.py` | Add to the refresh pipeline |
+
+Normalized score formula, pillar roll-up, coverage calculation, and frontend table — **zero changes needed**.

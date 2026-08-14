@@ -1096,11 +1096,13 @@ function Th({
 function Td({
   children,
   align = "left",
+  className,
 }: {
   children: ReactNode;
   align?: "left" | "right" | "center";
+  className?: string;
 }) {
-  return <td className={`table-cell ${alignClass(align)}`}>{children}</td>;
+  return <td className={`table-cell ${alignClass(align)}${className ? ` ${className}` : ""}`}>{children}</td>;
 }
 
 function alignClass(align: "left" | "right" | "center") {

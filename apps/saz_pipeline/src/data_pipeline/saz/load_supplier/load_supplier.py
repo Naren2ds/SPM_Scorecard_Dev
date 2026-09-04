@@ -2,33 +2,15 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping
 from typing import Any
 
 from ..common.base_loader import BaseDatabricksLoader
 from ..common.constants import MAIN_CATEGORY_TO_TABLE
+from ..common.source_utils import required_source_text as _required_source_text
+from ..common.source_utils import source_value as _source_value
+from ..common.source_utils import supplier_key as _supplier_key
 from .models import SupplierRecord
-
-
-def _source_value(row: Mapping[str, Any], column_name: str) -> Any:
-	"""Return a source value using case-insensitive column matching."""
-	for source_column, value in row.items():
-		if source_column.lower() == column_name.lower():
-			return value
-	return None
-
-
-def _required_source_text(row: Mapping[str, Any], column_name: str) -> str:
-	value = _source_value(row, column_name)
-	if value is None or not str(value).strip():
-		raise ValueError(f"Missing required source column value: {column_name}")
-	return str(value).strip()
-
-
-def _supplier_key(parent_company: str) -> str:
-	# No granular supplier ID exists in the SAZ feed; the parent company name IS the key.
-	return re.sub(r"\s+", " ", parent_company.strip())
 
 
 def transform_supplier_row(

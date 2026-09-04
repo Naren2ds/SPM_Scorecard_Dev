@@ -43,6 +43,22 @@ MAIN_CATEGORY_TO_SERVICE_LEVEL_COLUMN = {
     "Directs": "service_level_directs",
 }
 
+# Sustainability pillar column is populated for all 5 main_category values.
+SUSTAINABILITY_COLUMN = "sustainability"
+
+# main_category -> which operational column the source uses (None = no Operational pillar row).
+MAIN_CATEGORY_TO_OPERATIONAL_COLUMN = {
+    "BST": "operational",
+    "Brand Act Commercial": "operational",
+    "Brand Commercials": None,
+    "Capex MRO": "operational",
+    "Directs": "operational",
+}
+
+# Value Creation pillar: BST populates value_generation_formula, all others populate
+# value_generation; the two are never populated simultaneously, so try both in order.
+VALUE_CREATION_COLUMNS = ("value_generation", "value_generation_formula")
+
 # main_category -> populated KPI source columns (confirmed via direct Databricks inspection).
 MAIN_CATEGORY_TO_KPI_COLUMNS = {
     "BST": [

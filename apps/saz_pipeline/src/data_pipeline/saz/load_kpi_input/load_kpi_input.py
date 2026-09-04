@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import calendar
-import math
 from collections.abc import Mapping
 from datetime import date
 from typing import Any
@@ -12,47 +11,13 @@ import pandas as pd
 
 from ..common.base_loader import BaseDatabricksLoader
 from ..common.constants import ApplicabilityStatus, MAIN_CATEGORY_TO_KPI_COLUMNS, MAIN_CATEGORY_TO_TABLE
-from ..load_supplier.load_supplier import _source_value, _supplier_key
+from ..common.source_utils import id_component as _id_component
+from ..common.source_utils import numeric_source_value as _numeric_source_value
+from ..common.source_utils import reporting_period as _reporting_period
+from ..common.source_utils import required_source_text as _required_source_text
+from ..common.source_utils import source_value as _source_value
+from ..common.source_utils import supplier_key as _supplier_key
 from .models import KpiInputRecord
-
-
-_EMPTY_SOURCE_VALUES = {"", "NA", "N/A", "NULL", "NONE", "NAN", "(BLANK)"}
-
-
-def _required_source_text(row: Mapping[str, Any], column_name: str) -> str:
-	value = _source_value(row, column_name)
-	if value is None or not str(value).strip():
-		raise ValueError(f"Missing required source column value: {column_name}")
-	return str(value).strip()
-
-
-def _reporting_period(row: Mapping[str, Any]) -> date:
-	year_text = _required_source_text(row, "year")
-	month_text = _required_source_text(row, "month")
-	try:
-		year = int(float(year_text))
-		month = int(month_text) if month_text.isdigit() else list(calendar.month_name).index(month_text.title())
-		return date(year, month, 1)
-	except (ValueError, IndexError) as exc:
-		raise ValueError(f"Invalid reporting period: year={year_text!r}, month={month_text!r}") from exc
-
-
-def _numeric_source_value(value: Any) -> float | None:
-	if value is None or (isinstance(value, float) and math.isnan(value)):
-		return None
-	if isinstance(value, str) and value.strip().upper() in _EMPTY_SOURCE_VALUES:
-		return None
-	try:
-		return float(value)
-	except (TypeError, ValueError) as exc:
-		raise ValueError(f"KPI source value must be numeric or empty, got {value!r}") from exc
-
-
-def _id_component(value: Any) -> str:
-	"""Normalize a value for safe inclusion in kpi_input_id; 'NA' when absent."""
-	if value is None or not str(value).strip():
-		return "NA"
-	return str(value).strip()
 
 
 def transform_kpi_rows(

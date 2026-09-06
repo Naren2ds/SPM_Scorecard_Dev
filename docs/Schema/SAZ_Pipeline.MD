@@ -336,5 +336,33 @@ All five loaders are implemented and validated against live Databricks data.
 Configuration (`SCORECARD_DEFINITION`, `PILLAR_DEFINITION`, `PILLAR_APPLICABILITY_RULE`, `KPI_DEFINITION`, `KPI_VERSION`) is complete, with all 46 KPIs mapped to a pillar. `check_integrity.py` passes: no orphan suppliers, no unknown KPI/pillar/scorecard IDs.
 
 **Next step:** the promotion job \u2014 a 1:1 copy from `PILLAR_INPUT` \u2192 `PILLAR_SCORE` and `SCORECARD_INPUT` \u2192 `SCORECARD_SCORE` at source grain, tagged `calculation_source = SOURCE_PROVIDED`. No `KPI_SCORE` rows are promoted for SAZ, because SAZ supplies raw KPI measurements rather than per-KPI scores.
+### Promotion Column Mapping
 
+All dimension columns (`supplier_id`, `parent_supplier_id`, `zone`, `country`, the four category levels, `sub_category`, `reporting_period`) copy across unchanged. The measure columns do not map one-for-one, because most of `PILLAR_SCORE` and `SCORECARD_SCORE` describes engine-calculated scoring that SAZ never performs.
+
+`PILLAR_INPUT` → `PILLAR_SCORE`:
+
+| Target column | Source | Notes |
+|---|---|---|
+| `pillar_score_pct` | `source_pillar_score_pct` | Copied unchanged, native 0–1000 scale |
+| `weighted_contribution` | `source_weighted_contribution` | `NULL` — SAZ does not supply it |
+| `coverage_pct` | `source_coverage_pct` | `NULL` — SAZ does not supply it |
+| `earned_points` | — | `NULL`. Engine-only: requires KPI-level scores |
+| `applicable_max_points` | — | `NULL`. Engine-only |
+| `available_kpi_weight` | — | `NULL`. Engine-only |
+| `expected_kpi_weight` | — | `NULL`. Engine-only |
+| `calculation_source` | — | Constant `SOURCE_PROVIDED` |
+
+`SCORECARD_INPUT` → `SCORECARD_SCORE`:
+
+| Target column | Source | Notes |
+|---|---|---|
+| `normalized_score` | `source_normalized_score` | Copied unchanged, native 0–1000 scale |
+| `coverage_adjusted_score` | `source_coverage_adjusted_score` | Defaults to `source_normalized_score` when the source omits it |
+| `overall_coverage_pct` | `source_coverage_pct` | `NULL` — SAZ does not supply it |
+| `score_band` | `source_score_band` | `NULL` — SAZ does not supply it |
+| `applicable_pillar_weight` | — | `NULL`. Engine-only |
+| `calculation_source` | — | Constant `SOURCE_PROVIDED` |
+
+**Do not compute the `NULL` columns for SAZ.** They are deliberately empty, not missing data. Deriving `earned_points` or `applicable_pillar_weight` from `KPI_INPUT` would mean the product recalculating a score the source already decided, which is precisely what `SOURCE_PROVIDED` exists to prevent. A future `ENGINE_CALCULATED` zone populates them; SAZ does not.
 Temporary review artifacts to delete once validation is complete: `export_*_csv.py`, `check_integrity.py`, `smoke_test_models.py`, and `data/*.csv` (gitignored).

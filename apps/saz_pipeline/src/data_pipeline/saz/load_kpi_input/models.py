@@ -14,7 +14,15 @@ from ..common.constants import ApplicabilityStatus
 class KpiInputRecord(BaseModel):
     kpi_input_id: str = Field(..., min_length=1)
     supplier_id: str = Field(..., min_length=1)
+    parent_supplier_id: str = Field(..., min_length=1, description="Roll-up key; equals supplier_id when the source has no vendor-level detail")
     kpi_id: str = Field(..., min_length=1, description="Source column name, e.g. 'otif', 'acceptance_term'")
+    kpi_version_id: str = Field(..., min_length=1, description="FK to KPI_VERSION; pins the scoring rules in force for this period")
+    zone: str = Field(..., min_length=1)
+    country: str | None = Field(default=None, description="NULL when the zone source has no country breakdown")
+    gpo_category: str | None = Field(default=None, description="NULL when the zone source has no GPO category")
+    purchasing_category: str | None = Field(default=None, description="NULL when the zone source has no purchasing category")
+    scorecard_category: str | None = Field(default=None)
+    sub_category: str | None = Field(default=None, description="Product-line dimension; NULL when unavailable in a zone source")
     reporting_period: date = Field(..., description="First day of the reporting month")
     period_type: str = Field(default="MONTHLY")
     period_start_date: date

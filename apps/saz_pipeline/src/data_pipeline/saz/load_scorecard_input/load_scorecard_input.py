@@ -39,7 +39,14 @@ def transform_scorecard_row(
 
 	return {
 		"scorecard_input_id": f"{main_category}-{parent_supplier_id}-{subcategory}-{period:%Y%m}",
+		"supplier_id": parent_supplier_id,
 		"parent_supplier_id": parent_supplier_id,
+		"zone": "SAZ",
+		"country": None,
+		"scorecard_category": main_category,
+		"gpo_category": main_category,
+		"purchasing_category": _source_value(row, "category"),
+		"sub_category": None if subcategory == "NA" else subcategory,
 		"reporting_period": period,
 		"source_normalized_score": source_normalized_score,
 		"source_reference": source_reference,

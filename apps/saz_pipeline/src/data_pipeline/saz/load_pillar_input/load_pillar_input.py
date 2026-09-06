@@ -64,8 +64,15 @@ def transform_pillar_rows(
 
 		records.append({
 			"pillar_input_id": f"{main_category}-{parent_supplier_id}-{pillar_id}-{subcategory}-{period:%Y%m}",
+			"supplier_id": parent_supplier_id,
 			"parent_supplier_id": parent_supplier_id,
 			"pillar_id": pillar_id,
+			"zone": "SAZ",
+			"country": None,
+			"scorecard_category": main_category,
+			"gpo_category": main_category,
+			"purchasing_category": _source_value(row, "category"),
+			"sub_category": None if subcategory == "NA" else subcategory,
 			"reporting_period": period,
 			"source_pillar_score_pct": source_pillar_score_pct,
 			"source_reference": source_reference,

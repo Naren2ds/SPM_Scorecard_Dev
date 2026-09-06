@@ -11,6 +11,7 @@ import pandas as pd
 
 from ..common.base_loader import BaseDatabricksLoader
 from ..common.constants import ApplicabilityStatus, MAIN_CATEGORY_TO_KPI_COLUMNS, MAIN_CATEGORY_TO_TABLE
+from ..common.configuration import KPI_VERSION_ID_BY_KPI_ID
 from ..common.source_utils import id_component as _id_component
 from ..common.source_utils import numeric_source_value as _numeric_source_value
 from ..common.source_utils import reporting_period as _reporting_period
@@ -48,7 +49,15 @@ def transform_kpi_rows(
 		records.append({
 			"kpi_input_id": f"{main_category}-{supplier_id}-{kpi_id}-{subcategory}-{reporting_period:%Y%m}",
 			"supplier_id": supplier_id,
+			"parent_supplier_id": supplier_id,
 			"kpi_id": kpi_id,
+			"kpi_version_id": KPI_VERSION_ID_BY_KPI_ID[kpi_id],
+			"zone": "SAZ",
+			"country": None,
+			"scorecard_category": main_category,
+			"gpo_category": main_category,
+			"purchasing_category": _source_value(row, "category"),
+			"sub_category": None if subcategory == "NA" else subcategory,
 			"reporting_period": reporting_period,
 			"period_start_date": reporting_period,
 			"period_end_date": period_end_date,

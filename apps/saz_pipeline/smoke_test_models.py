@@ -21,8 +21,9 @@ supplier = SupplierRecord(
     parent_supplier_id="GR GARANTIA DE SERVICOS",
     parent_supplier_name="GR GARANTIA DE SERVICOS",
     vendor_name="NA",
+    gpo_category="BST",
     scorecard_category="BST",
-    saz_category="BST",
+    purchasing_category="BST",
     sub_category="SERVICES",
 )
 print("SupplierRecord OK:", supplier.model_dump())
@@ -30,7 +31,10 @@ print("SupplierRecord OK:", supplier.model_dump())
 kpi_input = KpiInputRecord(
     kpi_input_id="BST-GR GARANTIA DE SERVICOS-turnover-202607",
     supplier_id="GR GARANTIA DE SERVICOS",
+    parent_supplier_id="GR GARANTIA DE SERVICOS",
     kpi_id="turnover",
+    kpi_version_id="turnover_SAZ_V1",
+    zone="SAZ",
     reporting_period=date(2026, 7, 1),
     period_start_date=date(2026, 7, 1),
     period_end_date=date(2026, 7, 31),
@@ -42,8 +46,10 @@ print("KpiInputRecord OK:", kpi_input.model_dump())
 
 pillar_input = PillarInputRecord(
     pillar_input_id="SAZ-PARENT-GRGARANTIA-SUSTAINABILITY-202607",
+    supplier_id="PARENT-GRGARANTIA",
     parent_supplier_id="PARENT-GRGARANTIA",
     pillar_id="SUSTAINABILITY",
+    zone="SAZ",
     reporting_period=date(2026, 7, 1),
     source_pillar_score_pct=817.0,
     source_reference="july_2026_main_category_bst.xlsx",
@@ -52,7 +58,9 @@ print("PillarInputRecord OK:", pillar_input.model_dump())
 
 scorecard_input = ScorecardInputRecord(
     scorecard_input_id="SAZ-PARENT-GRGARANTIA-202607",
+    supplier_id="PARENT-GRGARANTIA",
     parent_supplier_id="PARENT-GRGARANTIA",
+    zone="SAZ",
     reporting_period=date(2026, 7, 1),
     source_normalized_score=708.0,
     source_reference="july_2026_main_category_bst.xlsx",
@@ -63,7 +71,10 @@ print("ScorecardInputRecord OK:", scorecard_input.model_dump())
 negative_kpi_input = KpiInputRecord(
     kpi_input_id="bad",
     supplier_id="bad",
+    parent_supplier_id="bad",
     kpi_id="bad",
+    kpi_version_id="bad_SAZ_V1",
+    zone="SAZ",
     reporting_period=date(2026, 7, 1),
     period_start_date=date(2026, 7, 1),
     period_end_date=date(2026, 7, 31),

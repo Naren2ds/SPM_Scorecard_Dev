@@ -29,6 +29,9 @@ erDiagram
     KPI_DEFINITION ||--o{ KPI_VERSION : has_rules
     KPI_VERSION ||--o{ KPI_SCOPE : applies_to
     SUPPLIER ||--o{ KPI_INPUT : provides
+    SUPPLIER ||--o{ SUPPLIER_SPEND : spends
+    SUPPLIER ||--o{ PILLAR_INPUT : provides
+    SUPPLIER ||--o{ SCORECARD_INPUT : provides
     KPI_VERSION ||--o{ KPI_INPUT : defines
     KPI_INPUT ||--o{ KPI_SCORE : produces
     PILLAR_INPUT ||--o{ PILLAR_SCORE : provides
@@ -110,13 +113,35 @@ erDiagram
         string sub_category
         string purchasing_category
         string scorecard_category
-        string saz_category
+    }
+
+    SUPPLIER_SPEND {
+        string spend_id PK
+        string supplier_id FK
+        string parent_supplier_id
+        string zone
+        string country
+        string gpo_category
+        string purchasing_category
+        string scorecard_category
+        string sub_category
+        date reporting_period
+        decimal spend_amount
+        string source_reference
     }
 
     KPI_INPUT {
         string kpi_input_id PK
         string supplier_id FK
+        string parent_supplier_id
         string kpi_version_id FK
+        string kpi_id FK
+        string zone
+        string country
+        string gpo_category
+        string purchasing_category
+        string scorecard_category
+        string sub_category
         date reporting_period
         string period_type
         date period_start_date
@@ -129,8 +154,15 @@ erDiagram
     }
 
     KPI_SCORE {
+        string supplier_id FK
         string parent_supplier_id
         string kpi_version_id FK
+        string zone
+        string country
+        string gpo_category
+        string purchasing_category
+        string scorecard_category
+        string sub_category
         date reporting_period
         decimal raw_value
         decimal attainment
@@ -142,9 +174,16 @@ erDiagram
 
     PILLAR_INPUT {
         string pillar_input_id PK
+        string supplier_id FK
         string parent_supplier_id
         string scorecard_id FK
         string pillar_id FK
+        string zone
+        string country
+        string gpo_category
+        string purchasing_category
+        string scorecard_category
+        string sub_category
         date reporting_period
         decimal source_pillar_score_pct
         decimal source_weighted_contribution
@@ -154,8 +193,15 @@ erDiagram
 
     SCORECARD_INPUT {
         string scorecard_input_id PK
+        string supplier_id FK
         string parent_supplier_id
         string scorecard_id FK
+        string zone
+        string country
+        string gpo_category
+        string purchasing_category
+        string scorecard_category
+        string sub_category
         date reporting_period
         decimal source_normalized_score
         decimal source_coverage_pct
@@ -165,8 +211,15 @@ erDiagram
     }
 
     PILLAR_SCORE {
+        string supplier_id FK
         string parent_supplier_id
         string pillar_id
+        string zone
+        string country
+        string gpo_category
+        string purchasing_category
+        string scorecard_category
+        string sub_category
         date reporting_period
         decimal earned_points
         decimal applicable_max_points
@@ -179,8 +232,15 @@ erDiagram
     }
 
     SCORECARD_SCORE {
+        string supplier_id FK
         string parent_supplier_id
         string scorecard_id FK
+        string zone
+        string country
+        string gpo_category
+        string purchasing_category
+        string scorecard_category
+        string sub_category
         date reporting_period
         decimal normalized_score
         decimal applicable_pillar_weight
@@ -409,9 +469,38 @@ Keep supplier/master attributes in one table. The screenshot's source columns ma
 | `sub_category` | `sub_category` |
 | `purchasing_category` | `purchasing_category` |
 | `scorecard_category` | `scorecard_category` |
-| *(SAZ `category`)* | `saz_category` | Optional, zone-specific sub-grouping within `scorecard_category`. For SAZ, holds one of `BST, CAPEX, COMM CAPEX, COMMERCIAL, PACKAGING, RAU` — a finer breakdown one level below `main_category` (e.g. `Capex MRO` splits into `CAPEX` / `COMM CAPEX`). `NULL` for zones/sources that don't have this level of grouping. |
+| *(SAZ `main_category`)* | `gpo_category` | SAZ level 1, e.g. `BST`, `Directs`, `Capex MRO`, `Brand Act Commercial`, `Brand Commercials`. Also copied to `scorecard_category`, which is what `PILLAR_APPLICABILITY_RULE` evaluates. |
+| *(SAZ `category`)* | `purchasing_category` | SAZ level 2, e.g. `PACKAGING`, `RAU`, `CAPEX`, `COMM CAPEX`, `COMMERCIAL`, `BST`. |
+| *(SAZ `subcategory`)* | `sub_category` | SAZ level 3, e.g. `BOTTLES`, `CANS`, `MALT`, `FOLDING CARTONS`, `SERVICES`. |
+
+No zone gets its own category column. Every zone maps its own category hierarchy onto the same generic fields, and writes `NULL` for any level it does not have. This keeps one common schema and lets the frontend group by the same field names regardless of zone.
 
 Use stable `supplier_id` and `parent_supplier_id` keys rather than supplier names as joins/roll-up keys. Preserve these original source labels in ingestion metadata or a source mapping table for bilingual/source traceability.
+
+### `SUPPLIER_SPEND`
+
+Spend is a separate measure from performance, so it lives in its own table rather than being duplicated onto every score row. It carries the same dimensional grain as the score tables, so it joins or aggregates alongside them without extra logic.
+
+**Grain:** one row per supplier x sub-category x reporting period.
+
+| Column | Type | Example | Rule |
+|---|---|---|---|
+| `spend_id` | STRING | `Directs-WESTROCK-FOLDING CARTONS-202604` | Primary key |
+| `supplier_id` | STRING | `WESTROCK` | FK to `SUPPLIER` |
+| `parent_supplier_id` | STRING | `WESTROCK` | Roll-up key |
+| `zone` | STRING | `SAZ` | Same dimension set as the score tables |
+| `country` | STRING | `NULL` | `NULL` when the zone source has no country breakdown |
+| `gpo_category` | STRING | `Directs` | |
+| `purchasing_category` | STRING | `PACKAGING` | |
+| `scorecard_category` | STRING | `Directs` | |
+| `sub_category` | STRING | `FOLDING CARTONS` | |
+| `reporting_period` | DATE | `2026-04-01` | Reporting month |
+| `spend_amount` | DECIMAL(18,2) | `1002747.90` | Source currency amount; `NULL` when not supplied |
+| `source_reference` | STRING | `april_2026_main_category_directs.xlsx` | Source lineage |
+
+This table is what makes a spend-weighted roll-up possible later. Until the business confirms the weighting rule, the API aggregates scores with a simple average; switching to spend-weighted then only changes the aggregation function, not the ingestion.
+
+`SUPPLIER_SPEND` also backs the Spend column in the scorecard grid and the Weighted Spend axis in the portfolio view (see [API_Contract.md](./API_Contract.md)).
 
 ### `KPI_INPUT`
 
@@ -442,27 +531,60 @@ For ratio KPIs such as DOT, a raw table should additionally carry the numerator 
 
 These tables are used only when `SCORECARD_DEFINITION.calculation_mode = SOURCE_PROVIDED`. They allow SAZ to provide pillar and final results directly, rather than asking the generic engine to recalculate them.
 
-`PILLAR_INPUT` has one row per parent supplier x pillar x reporting period.
+`PILLAR_INPUT` has one row per supplier x sub-category x pillar x reporting period.
+
+Every input and score table carries both `supplier_id` and `parent_supplier_id`. `supplier_id` is the grain the row is measured at; `parent_supplier_id` is the roll-up key used for parent-level reporting. A zone with vendor-level detail populates them with different values. A zone such as SAZ, whose source only identifies the parent company, sets both to the same value. This keeps one common schema across all zones without forcing a zone to invent a supplier identity it does not have.
+
+`sub_category` is an optional common fact dimension across all zones. A zone such as SAZ that measures the same supplier across multiple product lines writes its source subcategory; zones without this detail write `NULL`. Where populated, it is part of the logical record grain so separate product-line scores are not overwritten.
 
 | Column | Example | Purpose |
 |---|---|---|
 | `pillar_input_id` | `SAZ-PARENT001-SERVICE-202608` | Primary key |
+| `supplier_id` | `SUP-10027` | FK to `SUPPLIER`; the grain this score is measured at |
 | `parent_supplier_id` | `PARENT-001` | Scorecard roll-up key |
 | `scorecard_id` | `SAZ_SPM_CALCULATION` | FK to `SCORECARD_DEFINITION` |
 | `pillar_id` | `SERVICE_LEVEL` | FK to `PILLAR_DEFINITION` |
+| `sub_category` | `FOLDING CARTONS` | Optional product-line dimension; `NULL` when the zone has no such split |
 | `reporting_period` | `2026-08-01` | Reporting month |
 | `source_pillar_score_pct` | `0.84` | Upstream pillar score percentage |
 | `source_weighted_contribution` | `33.60` | Upstream contribution, when supplied |
 | `source_coverage_pct` | `0.95` | Upstream coverage, when supplied |
 | `source_reference` | `saz_supplier_score_feed` | Source lineage |
 
-`SCORECARD_INPUT` has one row per parent supplier x scorecard x reporting period.
+`SCORECARD_INPUT` has one row per supplier x sub-category x scorecard x reporting period.
+
+The resulting logical unique keys are:
+
+```text
+PILLAR_INPUT / PILLAR_SCORE:
+    supplier_id + parent_supplier_id + zone + country
+    + gpo_category + purchasing_category + scorecard_category + sub_category
+    + pillar_id + reporting_period
+
+SCORECARD_INPUT / SCORECARD_SCORE:
+    supplier_id + parent_supplier_id + zone + country
+    + gpo_category + purchasing_category + scorecard_category + sub_category
+    + scorecard_id + reporting_period
+
+KPI_INPUT / KPI_SCORE:
+    supplier_id + parent_supplier_id + zone + country
+    + gpo_category + purchasing_category + scorecard_category + sub_category
+    + kpi_version_id + reporting_period
+```
+
+Scores are stored at the most granular level the source provides, and the API/frontend aggregates upward on demand. Every geographic and category dimension therefore lives on the fact row rather than only on `SUPPLIER`, so a grid can group by zone, country, or any category level without re-joining the supplier master on every query, and without a supplier's separate results overwriting one another.
+
+`zone` and `country` are part of the grain, not just supplier attributes. A parent supplier can operate across several geographies with genuinely different performance, so collapsing them would overwrite real results. In the current multi-zone data, 131 of 2,505 parent suppliers span more than one country and 62 span more than one zone; `ARDAGH GROUP` alone spans 14 countries across 4 zones.
+
+Any dimension a zone does not supply is written as `NULL`. SAZ maps its own three category levels onto the generic fields — `main_category` to `gpo_category` (and `scorecard_category`), `category` to `purchasing_category`, `subcategory` to `sub_category` — and writes `NULL` for `country`.
 
 | Column | Example | Purpose |
 |---|---|---|
 | `scorecard_input_id` | `SAZ-PARENT001-202608` | Primary key |
+| `supplier_id` | `SUP-10027` | FK to `SUPPLIER`; the grain this score is measured at |
 | `parent_supplier_id` | `PARENT-001` | Scorecard roll-up key |
 | `scorecard_id` | `SAZ_SPM_CALCULATION` | FK to `SCORECARD_DEFINITION` |
+| `sub_category` | `FOLDING CARTONS` | Optional product-line dimension; `NULL` when the zone has no such split |
 | `reporting_period` | `2026-08-01` | Reporting month |
 | `source_normalized_score` | `81.50` | Upstream final score |
 | `source_coverage_pct` | `0.92` | Upstream coverage, when supplied |
@@ -507,7 +629,9 @@ For an `ENGINE_CALCULATED` scorecard, the scoring job joins active configuration
 
 | Derived column | Generic rule |
 |---|---|
-| `parent_supplier_id` | From `SUPPLIER` |
+| `supplier_id` | From `SUPPLIER`; the grain this score is measured at |
+| `parent_supplier_id` | From `SUPPLIER`; roll-up key |
+| `sub_category` | Optional product-line dimension carried through from `KPI_INPUT` |
 | `raw_value` | KPI-specific governed aggregation of applicable inputs |
 | `score_status` | `VALID_DATA`, `MISSING_DATA`, or `NOT_APPLICABLE` |
 | `attainment` | Linear higher/lower or quartile-based formula from `KPI_VERSION` |

@@ -1,0 +1,65 @@
+s_no,mapping_main_category,source_main_category,pillar_name,pillar_id,kpi_display_name,source_kpi_id,status
+1,Direct Category,Directs,Service Level,SERVICE_LEVEL,Input Quality,quality_cars;quality_documentation,REVIEW_MULTI_SOURCE
+2,Direct Category,Directs,Service Level,SERVICE_LEVEL,OTIF,otif,PROPOSED
+3,Direct Category,Directs,Service Level,SERVICE_LEVEL,Order Acceptance %,order_acceptance_rate,PROPOSED
+4,Direct Category,Directs,Operational,OPERATIONAL,Invoice Compliance,invoice_compliance_po_not_found,PROPOSED
+5,Direct Category,Directs,Operational,OPERATIONAL,Price Divergence,price,PROPOSED
+6,Direct Category,Directs,Sustainability,SUSTAINABILITY,Acceptance Term,acceptance_term,PROPOSED
+7,Direct Category,Directs,Sustainability,SUSTAINABILITY,Eclipse,eclipse_adherence,PROPOSED
+8,Direct Category,Directs,Value Creation,VALUE_CREATION,Cost,cost,PROPOSED
+9,Direct Category,Directs,Value Creation,VALUE_CREATION,Cash,cash_flow,PROPOSED
+10,Direct Category,Directs,Value Creation,VALUE_CREATION,Engagement,engagement,PROPOSED
+11,Brand Commercial,Brand Commercials,Service Level,SERVICE_LEVEL,NPS,nps,PROPOSED
+12,Brand Commercial,Brand Commercials,Service Level,SERVICE_LEVEL,Ratio / Prod,ratio_prod,PROPOSED
+13,Brand Commercial,Brand Commercials,Service Level,SERVICE_LEVEL,Media Tool,media_tools,PROPOSED
+14,Brand Commercial,Brand Commercials,Service Level,SERVICE_LEVEL,CAC,cac,PROPOSED
+15,Brand Commercial,Brand Commercials,Service Level,SERVICE_LEVEL,CPO,cpo,PROPOSED
+16,Brand Commercial,Brand Commercials,Service Level,SERVICE_LEVEL,Extra Cost,extra_cost,PROPOSED
+17,Brand Commercial,Brand Commercials,Operational,OPERATIONAL,Media System,media_system,PROPOSED
+18,Brand Commercial,Brand Commercials,Sustainability,SUSTAINABILITY,Acceptance Term,acceptance_term,PROPOSED
+19,Brand Commercial,Brand Commercials,Value Creation,VALUE_CREATION,Cost,op,REVIEW_SOURCE_NAME_DIFFERS
+20,Brand Commercial,Brand Commercials,Value Creation,VALUE_CREATION,Cash,cash_flow,PROPOSED
+21,Brand Commercial,Brand Commercials,Value Creation,VALUE_CREATION,Engagement,,MISSING_SOURCE_COLUMN
+22,Brand Act Commercial,Brand Act Commercial,Service Level,SERVICE_LEVEL,On Time (Production),ontime_production,PROPOSED
+23,Brand Act Commercial,Brand Act Commercial,Service Level,SERVICE_LEVEL,Quality (Recall + Recall On Time),quality_recall_ontime_recall,PROPOSED
+24,Brand Act Commercial,Brand Act Commercial,Service Level,SERVICE_LEVEL,Media Proof,docs_nok_media_system,REVIEW_SOURCE_NAME_DIFFERS
+25,Brand Act Commercial,Brand Act Commercial,Service Level,SERVICE_LEVEL,Contract Compliance,contract_compliance,PROPOSED
+26,Brand Act Commercial,Brand Act Commercial,Operational,OPERATIONAL,Invoice Compliance,invoice_compliance,PROPOSED
+27,Brand Act Commercial,Brand Act Commercial,Operational,OPERATIONAL,Price Divergence,price,PROPOSED
+28,Brand Act Commercial,Brand Act Commercial,Operational,OPERATIONAL,Invoice Upload,upload_nf,PROPOSED
+29,Brand Act Commercial,Brand Act Commercial,Sustainability,SUSTAINABILITY,Acceptance Term,acceptance_term,PROPOSED
+30,Brand Act Commercial,Brand Act Commercial,Sustainability,SUSTAINABILITY,Event Audit,events_audit,PROPOSED
+31,Brand Act Commercial,Brand Act Commercial,Value Creation,VALUE_CREATION,Cost,cost,PROPOSED
+32,Brand Act Commercial,Brand Act Commercial,Value Creation,VALUE_CREATION,Cash,cash_flow,PROPOSED
+33,Brand Act Commercial,Brand Act Commercial,Value Creation,VALUE_CREATION,Engagement,engagement,PROPOSED
+34,BST,BST,Service Level,SERVICE_LEVEL,Turnover,turnover,PROPOSED
+35,BST,BST,Service Level,SERVICE_LEVEL,Satisfaction,satisfaction,PROPOSED
+36,BST,BST,Service Level,SERVICE_LEVEL,Absenteeism,absenteeism,PROPOSED
+37,BST,BST,Service Level,SERVICE_LEVEL,Quality,quality_tech,REVIEW_SOURCE_NAME_DIFFERS
+38,BST,BST,Service Level,SERVICE_LEVEL,Satisfaction,satisfaction,REVIEW_DUPLICATE_MAPPING_ROW
+39,BST,BST,Service Level,SERVICE_LEVEL,Turnover Perception,turnover_perception,PROPOSED
+40,BST,BST,Service Level,SERVICE_LEVEL,SLA Vacancies,sla_vacancies,PROPOSED
+41,BST,BST,Service Level,SERVICE_LEVEL,Blank Route,blank_route,PROPOSED
+42,BST,BST,Service Level,SERVICE_LEVEL,BEES Tasks,bees_tasks,PROPOSED
+43,BST,BST,Service Level,SERVICE_LEVEL,GPS,gps,PROPOSED
+44,BST,BST,Service Level,SERVICE_LEVEL,Turnover,turnover,REVIEW_DUPLICATE_MAPPING_ROW
+45,BST,BST,Service Level,SERVICE_LEVEL,Absenteeism,absenteeism,REVIEW_DUPLICATE_MAPPING_ROW
+46,BST,BST,Operational,OPERATIONAL,PO Not Found,invoice_compliance_po_not_found,PROPOSED
+47,BST,BST,Operational,OPERATIONAL,Price Divergence,price,PROPOSED
+48,BST,BST,Operational,OPERATIONAL,Invoice Upload,upload_nf,PROPOSED
+49,BST,BST,Sustainability,SUSTAINABILITY,Acceptance Term,acceptance_term,PROPOSED
+50,BST,BST,Sustainability,SUSTAINABILITY,Labor Documentation (Deloitte),deloitte_compliance,PROPOSED
+51,BST,BST,Value Creation,VALUE_CREATION,Cost,cost,PROPOSED
+52,BST,BST,Value Creation,VALUE_CREATION,Cash,cash_flow,PROPOSED
+53,BST,BST,Value Creation,VALUE_CREATION,Engagement,engagement,PROPOSED
+54,CAPEX/MRO,Capex MRO,Service Level,SERVICE_LEVEL,MTF,mtf_total;mtf_audit;mtf_leadtime;mtf_tickets;mtf_audit_div;mtf_on_time,REVIEW_MULTI_SOURCE
+55,CAPEX/MRO,Capex MRO,Service Level,SERVICE_LEVEL,Project NPS,project_nps,PROPOSED
+56,CAPEX/MRO,Capex MRO,Service Level,SERVICE_LEVEL,Portal Adherence,ariba_adherence,REVIEW_SOURCE_NAME_DIFFERS
+57,CAPEX/MRO,Capex MRO,Operational,OPERATIONAL,Invoice Compliance,invoice_compliance,PROPOSED
+58,CAPEX/MRO,Capex MRO,Operational,OPERATIONAL,Price Divergence,price,PROPOSED
+59,CAPEX/MRO,Capex MRO,Operational,OPERATIONAL,Invoice Upload,upload_nf,PROPOSED
+60,CAPEX/MRO,Capex MRO,Sustainability,SUSTAINABILITY,Acceptance Term,acceptance_term,PROPOSED
+61,CAPEX/MRO,Capex MRO,Sustainability,SUSTAINABILITY,Eclipse,eclipse_adherence,PROPOSED
+62,CAPEX/MRO,Capex MRO,Value Creation,VALUE_CREATION,Cost,cost,PROPOSED
+63,CAPEX/MRO,Capex MRO,Value Creation,VALUE_CREATION,Cash,cash_flow,PROPOSED
+64,CAPEX/MRO,Capex MRO,Value Creation,VALUE_CREATION,Engagement,engagement,PROPOSED

@@ -7,7 +7,9 @@ validate referential integrity before the promotion job runs.
 
 from __future__ import annotations
 
+import csv
 from datetime import date
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
@@ -175,6 +177,32 @@ _KPI_NAME_AND_UNIT: dict[str, tuple[str, str | None]] = {
     "otif": ("On Time In Full", "percent_0_100"),
 }
 
+
+def _load_kpi_pillar_ids() -> dict[str, str]:
+    mapping_path = (
+        Path(__file__).resolve().parents[4]
+        / "Mapping"
+        / "SAZ_Category_Pillar_KPI_Mapping_Resolved.csv"
+    )
+    assignments: dict[str, str] = {}
+    with mapping_path.open(encoding="utf-8", newline="") as mapping_file:
+        for row in csv.DictReader(mapping_file):
+            kpi_id = row["source_kpi_id"].strip()
+            pillar_id = row["pillar_id"].strip()
+            if not kpi_id:
+                continue
+            existing_pillar_id = assignments.get(kpi_id)
+            if existing_pillar_id is not None and existing_pillar_id != pillar_id:
+                raise ValueError(
+                    f"Conflicting pillar mappings for {kpi_id}: "
+                    f"{existing_pillar_id} and {pillar_id}"
+                )
+            assignments[kpi_id] = pillar_id
+    return assignments
+
+
+_KPI_PILLAR_IDS = _load_kpi_pillar_ids()
+
 _KNOWN_KPI_IDS = sorted({
     kpi_id
     for kpi_ids in MAIN_CATEGORY_TO_KPI_COLUMNS.values()
@@ -186,6 +214,7 @@ KPI_DEFINITIONS: list[KpiDefinition] = [
         kpi_id=kpi_id,
         kpi_name=_KPI_NAME_AND_UNIT.get(kpi_id, (None, None))[0],
         input_unit=_KPI_NAME_AND_UNIT.get(kpi_id, (None, None))[1],
+        pillar_id=_KPI_PILLAR_IDS.get(kpi_id),
     )
     for kpi_id in _KNOWN_KPI_IDS
 ]
@@ -204,4 +233,11 @@ KPI_VERSIONS: list[KpiVersion] = [
     )
     for kpi_id in _KNOWN_KPI_IDS
 ]
+
+# Resolves KPI_INPUT.kpi_id to its effective KPI_VERSION. SAZ has exactly one
+# version per KPI; a zone with re-versioned scoring rules must resolve by
+# reporting_period against effective_from/effective_to instead.
+KPI_VERSION_ID_BY_KPI_ID: dict[str, str] = {
+    version.kpi_id: version.kpi_version_id for version in KPI_VERSIONS
+}
 

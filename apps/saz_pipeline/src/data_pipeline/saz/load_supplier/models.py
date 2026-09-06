@@ -13,11 +13,12 @@ class SupplierRecord(BaseModel):
     parent_supplier_name: str = Field(..., min_length=1)
     vendor_name: str = Field(..., min_length=1, description="'NA' when only parent-level identity is available")
     zone: str = Field(default="SAZ")
-    scorecard_category: str = Field(..., min_length=1, description="Source main_category")
-    saz_category: str | None = Field(default=None, description="Source category (sub-grouping within main_category)")
+    gpo_category: str = Field(..., min_length=1, description="Source main_category")
+    purchasing_category: str | None = Field(default=None, description="Source category")
+    scorecard_category: str = Field(..., min_length=1, description="Source main_category; drives PILLAR_APPLICABILITY_RULE")
     sub_category: str | None = Field(default=None, description="Source subcategory")
 
-    @field_validator("parent_supplier_name", "vendor_name", "scorecard_category")
+    @field_validator("parent_supplier_name", "vendor_name", "gpo_category", "scorecard_category")
     @classmethod
     def not_blank(cls, value: str) -> str:
         stripped = value.strip()
@@ -25,7 +26,7 @@ class SupplierRecord(BaseModel):
             raise ValueError("must not be blank")
         return stripped
 
-    @field_validator("saz_category", "sub_category", mode="before")
+    @field_validator("purchasing_category", "sub_category", mode="before")
     @classmethod
     def blank_to_none(cls, value: str | None) -> str | None:
         if value is None:

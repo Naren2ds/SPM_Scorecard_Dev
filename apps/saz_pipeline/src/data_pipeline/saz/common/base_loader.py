@@ -82,7 +82,10 @@ class BaseDatabricksLoader(Generic[RecordModel]):
         """Transform raw rows; invalid records are excluded and reported, not fatal."""
         records: list[RecordModel] = []
         rejected: list[dict[str, Any]] = []
-        for row_number, row in enumerate(dataframe.to_dict(orient="records"), start=1):
+        # A column mixing values with None becomes float64, turning None into NaN on
+        # to_dict(); restore None so optional model fields validate correctly.
+        normalized = dataframe.astype(object).where(pd.notna(dataframe), None)
+        for row_number, row in enumerate(normalized.to_dict(orient="records"), start=1):
             try:
                 records.append(self.model_class.model_validate(transform(row)))
             except ValidationError as exc:

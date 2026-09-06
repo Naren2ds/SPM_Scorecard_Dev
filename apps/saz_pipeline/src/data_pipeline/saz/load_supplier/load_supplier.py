@@ -28,7 +28,8 @@ def transform_supplier_row(
 		"vendor_name": "NA",
 		"zone": "SAZ",
 		"scorecard_category": main_category,
-		"saz_category": _source_value(row, "category"),
+		"gpo_category": main_category,
+		"purchasing_category": _source_value(row, "category"),
 		"sub_category": _source_value(row, "subcategory"),
 	}
 
